@@ -47,14 +47,15 @@ bun start
 
 ### Environment Configuration
 
-The API base URL is configured in `src/api/client.ts`:
+The API base URL and Reverb host are configured per environment in `app.config.ts`, selected via the `APP_ENV` variable:
 
-| Environment | API Base URL |
-|---|---|
-| Development | `https://giesencloud.test/api/mobile/v1` |
-| Production | `https://staging.giesen.cloud/api/mobile/v1` |
+| Environment | API Base URL | Reverb Host |
+|---|---|---|
+| Development | `https://giesencloud.test/api/mobile/v1` | `reverb.herd.test` |
+| Staging | `https://staging.giesen.cloud/api/mobile/v1` | `reverb.staging.giesen.cloud` |
+| Production | `https://giesen.cloud/api/mobile/v1` | `reverb.giesen.cloud` |
 
-The iOS development build allows insecure HTTP for `giesencloud.test` via App Transport Security exceptions in `app.json`.
+The iOS development build allows insecure HTTP for `giesencloud.test` via App Transport Security exceptions in `app.config.ts`.
 
 ---
 
@@ -289,13 +290,13 @@ Giesen Live uses Pusher (via Laravel Reverb) for WebSocket communication:
 - **Check interval**: 2 seconds for disconnect detection
 - **Timeout**: Devices marked disconnected after 10 seconds without data
 
-Configuration in `src/services/pusher.ts`:
+Configuration in `app.config.ts` (consumed via `src/constants/config.ts`):
 
-| Setting | Development | Production |
-|---|---|---|
-| Host | `reverb.herd.test` | `reverb.staging.giesen.cloud` |
-| Port | 443 | 443 |
-| TLS | Yes | Yes |
+| Setting | Development | Staging | Production |
+|---|---|---|---|
+| Host | `reverb.herd.test` | `reverb.staging.giesen.cloud` | `reverb.giesen.cloud` |
+| Port | 443 | 443 | 443 |
+| TLS | Yes | Yes | Yes |
 
 ---
 
