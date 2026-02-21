@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/colors";
 import { useAuthStore } from "@/stores/authStore";
+import { GiesenLogo } from "@/components/GiesenLogo";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -53,7 +54,7 @@ export default function LoginScreen() {
       <View style={styles.inner}>
         <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>G</Text>
+            <GiesenLogo size={36} color={Colors.slate} />
           </View>
         </View>
 
@@ -135,16 +136,10 @@ const styles = StyleSheet.create({
   logoCircle: {
     width: 72,
     height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.slate,
+    borderRadius: 18,
+    backgroundColor: Colors.safety,
     alignItems: "center",
     justifyContent: "center",
-  },
-  logoText: {
-    fontFamily: "DMSans-Bold",
-    fontSize: 32,
-    color: Colors.card,
-    lineHeight: 38,
   },
   title: {
     fontFamily: "DMSans-Bold",

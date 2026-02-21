@@ -1,16 +1,18 @@
-import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import { Slot, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "@/stores/authStore";
-import { Colors } from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading, loadUser } = useAuthStore();
+  const segments = useSegments();
+  const router = useRouter();
+  const [appReady, setAppReady] = useState(false);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     "DMSans-Regular": require("../assets/fonts/DMSans-Regular.ttf"),
     "DMSans-Medium": require("../assets/fonts/DMSans-Medium.ttf"),
     "DMSans-SemiBold": require("../assets/fonts/DMSans-SemiBold.ttf"),
@@ -25,30 +27,29 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && !isLoading) {
+    if ((fontsLoaded || fontError) && !isLoading) {
       SplashScreen.hideAsync();
+      setAppReady(true);
     }
-  }, [fontsLoaded, isLoading]);
+  }, [fontsLoaded, fontError, isLoading]);
 
-  if (!fontsLoaded || isLoading) {
+  useEffect(() => {
+    if (!appReady) return;
+
+    const inTabsGroup = segments[0] === "(tabs)";
+    const authenticatedRoutes = ["notifications", "roasts", "planning", "quality", "inventory", "equipment", "reports", "giesen-live", "profile", "profiles", "tab-settings"];
+    const inAuthenticatedRoute = inTabsGroup || authenticatedRoutes.includes(segments[0]);
+
+    if (isAuthenticated && !inAuthenticatedRoute) {
+      router.replace("/(tabs)");
+    } else if (!isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, appReady]);
+
+  if (!appReady) {
     return null;
   }
 
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: Colors.bg },
-      }}
-    >
-      {isAuthenticated ? (
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      ) : (
-        <Stack.Screen
-          name="login"
-          options={{ headerShown: false, animation: "fade" }}
-        />
-      )}
-    </Stack>
-  );
+  return <Slot />;
 }

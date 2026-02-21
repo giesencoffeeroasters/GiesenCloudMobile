@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>GiesenCloud Mobile - Support</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+  :root {
+    --slate: #383838;
+    --slate-light: #4a4a4a;
+    --gravel: #d9d9d4;
+    --gravel-light: #eeeee9;
+    --safety: #ccff00;
+    --sky: #4d92b8;
+    --sky-bg: rgba(77, 146, 184, 0.10);
+    --leaf: #71b068;
+    --leaf-bg: rgba(113, 176, 104, 0.12);
+    --leaf-dark: #5a9551;
+    --sun: #f5c462;
+    --sun-bg: rgba(245, 196, 98, 0.12);
+    --boven: #fc8758;
+    --boven-bg: rgba(252, 135, 88, 0.12);
+    --traffic: #db5a5a;
+    --traffic-bg: rgba(219, 90, 90, 0.12);
+    --grape: #7e6599;
+    --grape-bg: rgba(126, 101, 153, 0.12);
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --text: #2a2a2a;
+    --text-secondary: #7a7a76;
+    --text-tertiary: #a5a5a0;
+    --border: #e8e8e3;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    width: 390px;
+    min-height: 844px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 0;
+    height: 54px;
+    background: var(--slate);
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: 0.2px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+  .status-bar .icons svg { width: 16px; height: 16px; fill: #fff; }
+  .status-bar .notch {
+    width: 126px; height: 34px; background: #000; border-radius: 0 0 20px 20px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  }
+
+  /* Header */
+  .header {
+    background: var(--slate);
+    padding: 0 20px 20px;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .back-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.1); border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .back-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 1.8; }
+  .header-title {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .header-actions { display: flex; gap: 8px; }
+  .header-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.1); border: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 1.8; }
+
+  /* Content */
+  .content {
+    padding: 16px;
+    padding-bottom: 100px;
+  }
+
+  /* Section Headers */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .section-header:not(:first-child) {
+    margin-top: 24px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .section-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--sky);
+    text-decoration: none;
+  }
+
+  /* Quick Actions Grid */
+  .quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .action-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .action-card:hover {
+    border-color: var(--gravel);
+  }
+  .action-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .action-icon svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.8;
+    fill: none;
+  }
+  .action-icon.sky { background: var(--sky-bg); }
+  .action-icon.sky svg { stroke: var(--sky); }
+  .action-icon.grape { background: var(--grape-bg); }
+  .action-icon.grape svg { stroke: var(--grape); }
+  .action-icon.leaf { background: var(--leaf-bg); }
+  .action-icon.leaf svg { stroke: var(--leaf); }
+  .action-icon.boven { background: var(--boven-bg); }
+  .action-icon.boven svg { stroke: var(--boven); }
+  .action-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .action-card-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  /* Ticket Cards */
+  .ticket-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ticket-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .ticket-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .ticket-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+  }
+  .ticket-status {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ticket-status.open { color: var(--sky); background: var(--sky-bg); }
+  .ticket-status.waiting { color: #c5a230; background: var(--sun-bg); }
+  .ticket-status.resolved { color: var(--leaf); background: var(--leaf-bg); }
+  .ticket-subject {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    margin-top: 6px;
+  }
+  .ticket-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .ticket-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .ticket-meta-item svg {
+    width: 13px;
+    height: 13px;
+    stroke: var(--text-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+  }
+  .priority-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .priority-dot.high { background: var(--traffic); }
+  .priority-dot.medium { background: var(--sun); }
+  .priority-dot.low { background: var(--leaf); }
+
+  /* Article Cards */
+  .article-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .article-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .article-card:hover {
+    border-color: var(--gravel);
+  }
+  .article-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .article-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .article-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--grape);
+    background: var(--grape-bg);
+  }
+  .article-reading {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  .article-reading svg {
+    width: 13px;
+    height: 13px;
+    stroke: var(--text-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+  }
+
+  /* Bottom Tab Bar */
+  .tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 390px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 8px 28px;
+    z-index: 100;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    padding: 4px 8px;
+  }
+  .tab-item.active { color: var(--slate); }
+  .tab-item.active .tab-icon-wrap { background: var(--slate); }
+  .tab-item.active .tab-icon-wrap svg { stroke: var(--safety); }
+  .tab-icon-wrap {
+    width: 36px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tab-item svg { width: 20px; height: 20px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.8; }
+</style>
+</head>
+<body>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="notch"></div>
+  <span class="time">9:41</span>
+  <div class="icons">
+    <svg viewBox="0 0 16 16"><path d="M1 10l3-3 3 3M5.5 8.5l3-3 3 3M10 7l3-3 3 3" stroke="#fff" stroke-width="1.4" fill="none"/></svg>
+    <svg viewBox="0 0 16 16"><path d="M1 4h2v8H1zM5 2h2v10H5zM9 5h2v7H9zM13 1h2v11h-2z" fill="#fff"/></svg>
+    <svg viewBox="0 0 24 12"><rect x="0" y="0" width="20" height="12" rx="2" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="2" y="2" width="14" height="8" rx="1" fill="#fff"/><rect x="21.5" y="3.5" width="2" height="5" rx="1" fill="#fff"/></svg>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-left">
+      <button class="back-btn">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="header-title">Support</div>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- Quick Actions -->
+  <div class="section-header">
+    <div class="section-title">Quick Actions</div>
+  </div>
+  <div class="quick-actions">
+    <!-- New Ticket -->
+    <div class="action-card">
+      <div class="action-icon sky">
+        <svg viewBox="0 0 24 24"><path d="M15 5v2M15 11v2M15 17v2M5 5h14a2 2 0 012 2v3a2 2 0 000 4v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3a2 2 0 000-4V7a2 2 0 012-2z"/></svg>
+      </div>
+      <div class="action-card-title">New Ticket</div>
+      <div class="action-card-desc">Submit a new support request</div>
+    </div>
+    <!-- Knowledge Base -->
+    <div class="action-card">
+      <div class="action-icon grape">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </div>
+      <div class="action-card-title">Knowledge Base</div>
+      <div class="action-card-desc">Browse guides and articles</div>
+    </div>
+    <!-- Service Appointment -->
+    <div class="action-card">
+      <div class="action-icon leaf">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+      </div>
+      <div class="action-card-title">Service Appointment</div>
+      <div class="action-card-desc">Schedule roaster maintenance</div>
+    </div>
+    <!-- Contact Us -->
+    <div class="action-card">
+      <div class="action-icon boven">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      </div>
+      <div class="action-card-title">Contact Us</div>
+      <div class="action-card-desc">Reach our support team directly</div>
+    </div>
+  </div>
+
+  <!-- My Tickets -->
+  <div class="section-header">
+    <div class="section-title">My Tickets</div>
+    <a href="#" class="section-link">View All</a>
+  </div>
+  <div class="ticket-list">
+
+    <!-- Ticket 1 - Open -->
+    <div class="ticket-card">
+      <div class="ticket-top">
+        <div class="ticket-number">#TK-2024-0142</div>
+        <span class="ticket-status open">Open</span>
+      </div>
+      <div class="ticket-subject">Drum motor intermittent noise during preheat cycle</div>
+      <div class="ticket-meta">
+        <div class="ticket-meta-item">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Updated Feb 18
+        </div>
+        <div class="ticket-meta-item">
+          <div class="priority-dot high"></div>
+          High Priority
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticket 2 - Waiting -->
+    <div class="ticket-card">
+      <div class="ticket-top">
+        <div class="ticket-number">#TK-2024-0139</div>
+        <span class="ticket-status waiting">Waiting</span>
+      </div>
+      <div class="ticket-subject">Firmware update request for W15A profiler module</div>
+      <div class="ticket-meta">
+        <div class="ticket-meta-item">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Updated Feb 15
+        </div>
+        <div class="ticket-meta-item">
+          <div class="priority-dot medium"></div>
+          Medium Priority
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticket 3 - Resolved -->
+    <div class="ticket-card">
+      <div class="ticket-top">
+        <div class="ticket-number">#TK-2024-0131</div>
+        <span class="ticket-status resolved">Resolved</span>
+      </div>
+      <div class="ticket-subject">Calibration data sync failure between cloud and roaster</div>
+      <div class="ticket-meta">
+        <div class="ticket-meta-item">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Updated Feb 10
+        </div>
+        <div class="ticket-meta-item">
+          <div class="priority-dot low"></div>
+          Low Priority
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Articles -->
+  <div class="section-header">
+    <div class="section-title">Recent Articles</div>
+    <a href="#" class="section-link">Browse All</a>
+  </div>
+  <div class="article-list">
+
+    <!-- Article 1 -->
+    <div class="article-card">
+      <div class="article-title">How to perform a monthly maintenance check on your Giesen W6A</div>
+      <div class="article-footer">
+        <span class="article-tag">Maintenance</span>
+        <div class="article-reading">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          5 min read
+        </div>
+      </div>
+    </div>
+
+    <!-- Article 2 -->
+    <div class="article-card">
+      <div class="article-title">Troubleshooting profiler connection issues with GiesenCloud</div>
+      <div class="article-footer">
+        <span class="article-tag">Profiler</span>
+        <div class="article-reading">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          3 min read
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span>Dashboard</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+    <span>Roasts</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+    <span>Planning</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+    <span>Inventory</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+    <span>Quality</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+    <span>More</span>
+  </a>
+</div>
+
+</body>
+</html>

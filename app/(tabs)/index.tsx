@@ -1,33 +1,74 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
+  Switch,
+  ScrollView,
+  FlatList,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
+import { GiesenLogo } from "@/components/GiesenLogo";
+import { WIDGET_MAP } from "@/constants/widgets";
 import { useAuthStore } from "@/stores/authStore";
+import { useWidgetStore } from "@/stores/widgetStore";
 import apiClient from "@/api/client";
-import type { ApiResponse, DashboardData, RoastPlan } from "@/types";
+import type { ApiResponse, DashboardData } from "@/types";
+
+import { QuickStatsWidget } from "@/components/dashboard/QuickStatsWidget";
+import { ScheduleWidget } from "@/components/dashboard/ScheduleWidget";
+import { LiveRoastersWidget } from "@/components/dashboard/LiveRoastersWidget";
+import { QuickActionsWidget } from "@/components/dashboard/QuickActionsWidget";
+import { RecentActivityWidget } from "@/components/dashboard/RecentActivityWidget";
+import { InventoryAlertsWidget } from "@/components/dashboard/InventoryAlertsWidget";
+import { ProductionSummaryWidget } from "@/components/dashboard/ProductionSummaryWidget";
+import { RecentRoastsWidget } from "@/components/dashboard/RecentRoastsWidget";
+
+type WidgetProps = { data: DashboardData | null };
+
+const WIDGET_COMPONENTS: Record<string, React.ComponentType<WidgetProps>> = {
+  quick_stats: QuickStatsWidget,
+  todays_schedule: ScheduleWidget,
+  live_roasters: LiveRoastersWidget,
+  quick_actions: QuickActionsWidget,
+  recent_activity: RecentActivityWidget,
+  inventory_alerts: InventoryAlertsWidget,
+  production_summary: ProductionSummaryWidget,
+  recent_roasts: RecentRoastsWidget,
+};
 
 export default function DashboardScreen() {
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
+  const {
+    widgetOrder,
+    disabledWidgets,
+    isLoaded,
+    loadWidgets,
+    setWidgetOrder,
+    toggleWidget,
+    resetToDefault,
+  } = useWidgetStore();
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const fetchDashboard = async (refresh = false) => {
-    if (refresh) {
-      setIsRefreshing(true);
-    }
-
+    if (refresh) setIsRefreshing(true);
     try {
-      const response = await apiClient.get<ApiResponse<DashboardData>>("/dashboard");
+      const response =
+        await apiClient.get<ApiResponse<DashboardData>>("/dashboard");
       setData(response.data.data);
     } catch {
-      // Silently fail - data will remain null and the empty state shows
+      // Silently fail
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -35,280 +76,431 @@ export default function DashboardScreen() {
   };
 
   useEffect(() => {
+    loadWidgets();
     fetchDashboard();
   }, []);
 
+  const renderWidget = useCallback(
+    (key: string) => {
+      const Component = WIDGET_COMPONENTS[key];
+      if (!Component) return null;
+      return (
+        <View key={key} style={styles.widgetWrapper}>
+          <Component data={data} />
+        </View>
+      );
+    },
+    [data]
+  );
+
+  /* ── Edit mode: move helpers ── */
+  const moveWidget = useCallback(
+    (index: number, direction: "up" | "down") => {
+      const newOrder = [...widgetOrder];
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= newOrder.length) return;
+      [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
+      setWidgetOrder(newOrder);
+    },
+    [widgetOrder, setWidgetOrder]
+  );
+
+  if (!isLoaded) return null;
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={() => fetchDashboard(true)}
-          tintColor={Colors.slate}
-        />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>G</Text>
-          </View>
-          <View>
-            <Text style={styles.teamName}>
-              {user?.current_team?.name ?? "GiesenCloud"}
-            </Text>
-            <Text style={styles.greeting}>Welcome, {user?.name ?? "User"}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Stats Cards */}
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.slate} />
-        </View>
-      ) : (
-        <>
-          <View style={styles.statsRow}>
-            <StatCard
-              title="Today's Roasts"
-              value={data?.today_roasts ?? 0}
-              color={Colors.sky}
-            />
-            <StatCard
-              title="Active Roasters"
-              value={data?.active_roasters ?? 0}
-              color={Colors.leaf}
-            />
-            <StatCard
-              title="Low Stock"
-              value={data?.low_stock_count ?? 0}
-              color={data?.low_stock_count ? Colors.traffic : Colors.textTertiary}
-            />
-          </View>
-
-          {/* Today's Schedule */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Today's Schedule</Text>
-            {data?.schedule && data.schedule.length > 0 ? (
-              data.schedule.map((plan) => (
-                <ScheduleCard key={plan.id} plan={plan} />
-              ))
-            ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>
-                  No roasts scheduled for today
+    <View style={styles.screen}>
+      {/* ── Header ── */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <View style={styles.logoBox}>
+              <GiesenLogo size={18} color={Colors.text} />
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>
+                {isEditMode ? "Edit Dashboard" : "Dashboard"}
+              </Text>
+              {!isEditMode && (
+                <Text style={styles.headerSubtitle}>
+                  {user?.current_team?.name ?? "GiesenCloud"}
                 </Text>
-              </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.headerActions}>
+            {isEditMode ? (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setIsEditMode(false)}
+                style={styles.doneButton}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  activeOpacity={0.7}
+                  onPress={() => setIsEditMode(true)}
+                >
+                  <Svg
+                    width={18}
+                    height={18}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <Path
+                      d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
+                      stroke="#fff"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <Path
+                      d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
+                      stroke="#fff"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  activeOpacity={0.7}
+                  onPress={() => router.push("/notifications")}
+                >
+                  <Svg
+                    width={20}
+                    height={20}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <Path
+                      d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"
+                      stroke="#fff"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <Path
+                      d="M13.73 21a2 2 0 0 1-3.46 0"
+                      stroke="#fff"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </TouchableOpacity>
+              </>
             )}
           </View>
-        </>
-      )}
-    </ScrollView>
-  );
-}
-
-interface StatCardProps {
-  title: string;
-  value: number;
-  color: string;
-}
-
-function StatCard({ title, value, color }: StatCardProps) {
-  return (
-    <View style={styles.statCard}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statTitle}>{title}</Text>
-    </View>
-  );
-}
-
-interface ScheduleCardProps {
-  plan: RoastPlan;
-}
-
-function ScheduleCard({ plan }: ScheduleCardProps) {
-  const statusColor: Record<string, string> = {
-    pending: Colors.sun,
-    in_progress: Colors.sky,
-    completed: Colors.leaf,
-    cancelled: Colors.traffic,
-  };
-
-  return (
-    <View style={styles.scheduleCard}>
-      <View style={styles.scheduleCardHeader}>
-        <Text style={styles.scheduleProfileName}>{plan.profile.name}</Text>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: statusColor[plan.status] ?? Colors.textTertiary },
-          ]}
-        >
-          <Text style={styles.statusText}>{plan.status.replace("_", " ")}</Text>
         </View>
       </View>
-      <View style={styles.scheduleDetails}>
-        <Text style={styles.scheduleDetailText}>{plan.device.name}</Text>
-        <Text style={styles.scheduleDetailSeparator}> / </Text>
-        <Text style={styles.scheduleDetailText}>{plan.green_coffee}</Text>
-        <Text style={styles.scheduleDetailSeparator}> / </Text>
-        <Text style={styles.scheduleDataText}>{plan.batch_size} kg</Text>
-      </View>
+
+      {/* ── Content ── */}
+      {isEditMode ? (
+        <ScrollView
+          style={styles.editContainer}
+          contentContainerStyle={styles.editListContent}
+        >
+          <Text style={styles.editSectionLabel}>ACTIVE WIDGETS</Text>
+          {widgetOrder.map((key, index) => {
+            const widget = WIDGET_MAP[key];
+            if (!widget) return null;
+            return (
+              <View key={key} style={styles.editCard}>
+                {/* Move buttons */}
+                <View style={styles.moveButtons}>
+                  <TouchableOpacity
+                    onPress={() => moveWidget(index, "up")}
+                    disabled={index === 0}
+                    style={[styles.moveButton, index === 0 && { opacity: 0.3 }]}
+                    activeOpacity={0.6}
+                  >
+                    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M18 15l-6-6-6 6"
+                        stroke={Colors.textSecondary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => moveWidget(index, "down")}
+                    disabled={index === widgetOrder.length - 1}
+                    style={[styles.moveButton, index === widgetOrder.length - 1 && { opacity: 0.3 }]}
+                    activeOpacity={0.6}
+                  >
+                    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M6 9l6 6 6-6"
+                        stroke={Colors.textSecondary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Widget info */}
+                <View style={styles.editInfo}>
+                  <Text style={styles.editTitle}>{widget.title}</Text>
+                  <Text style={styles.editDescription}>{widget.description}</Text>
+                </View>
+
+                {/* Toggle */}
+                <Switch
+                  value={true}
+                  onValueChange={() => toggleWidget(key)}
+                  trackColor={{ false: Colors.border, true: Colors.safety }}
+                  thumbColor="#fff"
+                />
+              </View>
+            );
+          })}
+
+          {/* Disabled widgets */}
+          {disabledWidgets.length > 0 && (
+            <>
+              <Text style={[styles.editSectionLabel, { marginTop: 24 }]}>
+                AVAILABLE WIDGETS
+              </Text>
+              {disabledWidgets.map((key) => {
+                const widget = WIDGET_MAP[key];
+                if (!widget) return null;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.editCard, styles.editCardDisabled]}
+                    activeOpacity={0.7}
+                    onPress={() => toggleWidget(key)}
+                  >
+                    <View style={styles.dragHandle}>
+                      <Svg
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <Path
+                          d="M12 5v14M5 12h14"
+                          stroke={Colors.sky}
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                        />
+                      </Svg>
+                    </View>
+                    <View style={styles.editInfo}>
+                      <Text
+                        style={[
+                          styles.editTitle,
+                          { color: Colors.textSecondary },
+                        ]}
+                      >
+                        {widget.title}
+                      </Text>
+                      <Text style={styles.editDescription}>
+                        {widget.description}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
+
+          {/* Reset button */}
+          <TouchableOpacity
+            style={styles.resetButton}
+            activeOpacity={0.7}
+            onPress={resetToDefault}
+          >
+            <Text style={styles.resetButtonText}>Reset to Default</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => fetchDashboard(true)}
+              tintColor={Colors.slate}
+            />
+          }
+        >
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.slate} />
+            </View>
+          ) : (
+            widgetOrder.map((key) => renderWidget(key))
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: Colors.bg,
   },
-  contentContainer: {
-    paddingTop: 60,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
+
+  /* ── Header ── */
   header: {
+    backgroundColor: Colors.slate,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 24,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  logoCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.slate,
+  logoBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.safety,
     alignItems: "center",
     justifyContent: "center",
   },
-  logoText: {
-    fontFamily: "DMSans-Bold",
-    fontSize: 18,
-    color: Colors.card,
-    lineHeight: 22,
-  },
-  teamName: {
+  headerTitle: {
     fontFamily: "DMSans-SemiBold",
-    fontSize: 17,
-    color: Colors.text,
+    fontSize: 20,
+    color: "#ffffff",
   },
-  greeting: {
+  headerSubtitle: {
     fontFamily: "DMSans-Regular",
-    fontSize: 13,
-    color: Colors.textSecondary,
+    fontSize: 12,
+    color: Colors.gravel,
     marginTop: 1,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: Colors.headerOverlay,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  doneButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: Colors.safety,
+  },
+  doneButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 14,
+    color: Colors.slate,
+  },
+
+  /* ── Normal mode ── */
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 24,
   },
   loadingContainer: {
     paddingVertical: 80,
     alignItems: "center",
   },
-  statsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 28,
+  widgetWrapper: {
+    marginBottom: 20,
   },
-  statCard: {
+
+  /* ── Edit mode ── */
+  editContainer: {
     flex: 1,
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    alignItems: "center",
   },
-  statValue: {
-    fontFamily: "JetBrainsMono-Bold",
-    fontSize: 28,
-    lineHeight: 34,
-    marginBottom: 4,
+  editListContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
-  statTitle: {
+  editSectionLabel: {
     fontFamily: "DMSans-Medium",
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textAlign: "center",
+    fontSize: 11,
+    color: Colors.textTertiary,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 10,
   },
-  section: {
-    gap: 12,
-  },
-  sectionTitle: {
-    fontFamily: "DMSans-SemiBold",
-    fontSize: 18,
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  scheduleCard: {
+  editCard: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.card,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  scheduleCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    paddingHorizontal: 14,
     marginBottom: 8,
+    gap: 12,
   },
-  scheduleProfileName: {
-    fontFamily: "DMSans-SemiBold",
-    fontSize: 15,
-    color: Colors.text,
+  editCardDisabled: {
+    opacity: 0.6,
+  },
+  moveButtons: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  moveButton: {
+    width: 28,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dragHandle: {
+    width: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  editInfo: {
     flex: 1,
   },
-  statusBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  statusText: {
-    fontFamily: "DMSans-Medium",
-    fontSize: 11,
-    color: Colors.card,
-    textTransform: "capitalize",
-  },
-  scheduleDetails: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  scheduleDetailText: {
-    fontFamily: "DMSans-Regular",
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
-  scheduleDetailSeparator: {
-    fontFamily: "DMSans-Regular",
-    fontSize: 13,
-    color: Colors.textTertiary,
-  },
-  scheduleDataText: {
-    fontFamily: "JetBrainsMono-Regular",
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
-  emptyState: {
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 32,
-    alignItems: "center",
-  },
-  emptyStateText: {
-    fontFamily: "DMSans-Regular",
+  editTitle: {
+    fontFamily: "DMSans-SemiBold",
     fontSize: 14,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  editDescription: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 12,
     color: Colors.textTertiary,
+  },
+  resetButton: {
+    alignItems: "center",
+    paddingVertical: 16,
+    marginTop: 16,
+  },
+  resetButtonText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 14,
+    color: Colors.traffic,
   },
 });

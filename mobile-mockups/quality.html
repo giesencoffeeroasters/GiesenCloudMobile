@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>GiesenCloud Mobile - Quality</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+  :root {
+    --slate: #383838;
+    --slate-light: #4a4a4a;
+    --gravel: #d9d9d4;
+    --gravel-light: #eeeee9;
+    --safety: #ccff00;
+    --sky: #4d92b8;
+    --sky-dark: #3a7a9e;
+    --sky-bg: rgba(77, 146, 184, 0.12);
+    --leaf: #71b068;
+    --leaf-bg: rgba(113, 176, 104, 0.12);
+    --sun: #f5c462;
+    --sun-bg: rgba(245, 196, 98, 0.12);
+    --boven: #fc8758;
+    --boven-bg: rgba(252, 135, 88, 0.12);
+    --traffic: #db5a5a;
+    --traffic-bg: rgba(219, 90, 90, 0.12);
+    --grape: #7e6599;
+    --grape-bg: rgba(126, 101, 153, 0.12);
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --text: #2a2a2a;
+    --text-secondary: #7a7a76;
+    --text-tertiary: #a5a5a0;
+    --border: #e8e8e3;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    width: 390px;
+    min-height: 844px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 0;
+    height: 54px;
+    background: var(--slate);
+  }
+  .status-bar .time {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.2px;
+  }
+  .status-bar .icons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .status-bar .icons svg { width: 16px; height: 16px; fill: #fff; }
+  .status-bar .notch {
+    width: 126px;
+    height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Header */
+  .header {
+    background: var(--slate);
+    padding: 0 20px 20px;
+    position: relative;
+  }
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-logo {
+    width: 32px;
+    height: 32px;
+    background: var(--safety);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--slate);
+  }
+  .header-title {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .header-team {
+    color: var(--gravel);
+    font-size: 12px;
+    font-weight: 400;
+    margin-top: 1px;
+  }
+  .header-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .header-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+  }
+  .header-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 1.8; }
+
+  /* Content */
+  .content {
+    padding: 0 16px;
+    padding-bottom: 100px;
+    margin-top: -1px;
+  }
+
+  /* Quick Stats */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    padding: 14px 12px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+  .stat-card.sky::before { background: var(--sky); }
+  .stat-card.leaf::before { background: var(--leaf); }
+  .stat-card.grape::before { background: var(--grape); }
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .stat-card.sky .stat-value { color: var(--sky); }
+  .stat-card.leaf .stat-value { color: var(--leaf); }
+  .stat-card.grape .stat-value { color: var(--grape); }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Section */
+  .section {
+    margin-top: 24px;
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .section-action {
+    font-size: 13px;
+    color: var(--sky);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  /* Session Cards */
+  .session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .session-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .session-card.in-progress {
+    border-color: var(--boven);
+    box-shadow: 0 0 0 1px var(--boven), 0 4px 12px rgba(252, 135, 88, 0.08);
+  }
+  .session-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .session-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .session-date {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+  }
+  .session-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+  .status-in-progress {
+    color: var(--boven);
+    background: var(--boven-bg);
+  }
+  .status-scheduled {
+    color: var(--sky);
+    background: var(--sky-bg);
+  }
+  .status-completed {
+    color: var(--leaf);
+    background: var(--leaf-bg);
+  }
+  .session-meta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .session-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .session-meta-item svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+  }
+  .session-progress {
+    margin-top: 12px;
+  }
+  .progress-bar-bg {
+    height: 6px;
+    background: var(--gravel-light);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+  .progress-bar-fill.boven {
+    background: linear-gradient(90deg, var(--boven), var(--sun));
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  /* Completed Session Cards */
+  .completed-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .completed-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .completed-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .completed-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .completed-date {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+  }
+  .completed-score {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    margin-left: 16px;
+  }
+  .score-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .score-value.excellent { color: var(--leaf); }
+  .score-value.very-good { color: var(--sky); }
+  .score-value.good { color: var(--sun); }
+  .score-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    margin-top: 3px;
+  }
+  .completed-meta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .completed-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .completed-meta-item svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+  }
+
+  /* Score Bar */
+  .score-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    gap: 2px;
+  }
+  .score-segment {
+    height: 100%;
+    border-radius: 2px;
+  }
+  .score-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+  .score-bar-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+  }
+
+  /* Attribute Scores */
+  .attribute-scores {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+    margin-top: 10px;
+  }
+  .attribute-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .attribute-name {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .attribute-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* Floating Action Button */
+  .fab {
+    position: fixed;
+    bottom: 104px;
+    right: calc(50% - 195px + 20px);
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: var(--slate);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(56, 56, 56, 0.3), 0 2px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    z-index: 90;
+  }
+  .fab svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--safety);
+    fill: none;
+    stroke-width: 2.5;
+  }
+
+  /* Bottom Tab Bar */
+  .tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 390px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 8px 28px;
+    z-index: 100;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .tab-item.active {
+    color: var(--slate);
+  }
+  .tab-item.active .tab-icon-wrap {
+    background: var(--slate);
+  }
+  .tab-item.active .tab-icon-wrap svg {
+    stroke: var(--safety);
+  }
+  .tab-icon-wrap {
+    width: 36px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tab-item svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--text-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="notch"></div>
+  <span class="time">9:41</span>
+  <div class="icons">
+    <svg viewBox="0 0 16 16"><path d="M1 10l3-3 3 3M5.5 8.5l3-3 3 3M10 7l3-3 3 3" stroke="#fff" stroke-width="1.4" fill="none"/></svg>
+    <svg viewBox="0 0 16 16"><path d="M1 4h2v8H1zM5 2h2v10H5zM9 5h2v7H9zM13 1h2v11h-2z" fill="#fff"/></svg>
+    <svg viewBox="0 0 24 12"><rect x="0" y="0" width="20" height="12" rx="2" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="2" y="2" width="14" height="8" rx="1" fill="#fff"/><rect x="21.5" y="3.5" width="2" height="5" rx="1" fill="#fff"/></svg>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-content">
+    <div class="header-left">
+      <div class="header-logo">G</div>
+      <div>
+        <div class="header-title">Quality</div>
+        <div class="header-team">Cupping Sessions</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn">
+        <svg viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+      </button>
+      <button class="header-btn">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <!-- Quick Stats -->
+  <div class="stats-row">
+    <div class="stat-card sky">
+      <div class="stat-value">3</div>
+      <div class="stat-label">This Week</div>
+    </div>
+    <div class="stat-card leaf">
+      <div class="stat-value">84</div>
+      <div class="stat-label">Avg Score</div>
+    </div>
+    <div class="stat-card grape">
+      <div class="stat-value">47</div>
+      <div class="stat-label">Samples YTD</div>
+    </div>
+  </div>
+
+  <!-- Active Sessions -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Active Sessions</span>
+      <a class="section-action" href="#">View All</a>
+    </div>
+    <div class="session-list">
+      <!-- In Progress Session -->
+      <div class="session-card in-progress">
+        <div class="session-top">
+          <div>
+            <div class="session-name">Weekly Cupping - Week 8</div>
+            <div class="session-date">Wed, Feb 19 &middot; 10:00 AM</div>
+          </div>
+          <span class="session-status status-in-progress">In Progress</span>
+        </div>
+        <div class="session-meta">
+          <div class="session-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>6 samples</span>
+          </div>
+          <div class="session-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span>3 evaluators</span>
+          </div>
+        </div>
+        <div class="session-progress">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill boven" style="width: 50%"></div>
+          </div>
+          <div class="progress-label">
+            <span>3 of 6 samples scored</span>
+            <span>50%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scheduled Session -->
+      <div class="session-card">
+        <div class="session-top">
+          <div>
+            <div class="session-name">New Origin Evaluation</div>
+            <div class="session-date">Thu, Feb 20 &middot; 2:00 PM</div>
+          </div>
+          <span class="session-status status-scheduled">Scheduled</span>
+        </div>
+        <div class="session-meta">
+          <div class="session-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>4 samples</span>
+          </div>
+          <div class="session-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span>2 evaluators</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Completed Sessions -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Completed Sessions</span>
+      <a class="section-action" href="#">History</a>
+    </div>
+    <div class="session-list">
+      <!-- Completed Session 1 -->
+      <div class="completed-card">
+        <div class="completed-top">
+          <div class="completed-info">
+            <div class="completed-name">Weekly Cupping - Week 7</div>
+            <div class="completed-date">Wed, Feb 12 &middot; 10:00 AM</div>
+          </div>
+          <div class="completed-score">
+            <div class="score-value excellent">86.5</div>
+            <div class="score-label">Avg Score</div>
+          </div>
+        </div>
+        <div class="completed-meta">
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>5 samples</span>
+          </div>
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span>4 evaluators</span>
+          </div>
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>Completed</span>
+          </div>
+        </div>
+        <div class="score-bar">
+          <div class="score-segment" style="flex: 1; background: var(--leaf);"></div>
+          <div class="score-segment" style="flex: 2; background: var(--sky);"></div>
+          <div class="score-segment" style="flex: 1.5; background: var(--sun);"></div>
+          <div class="score-segment" style="flex: 0.5; background: var(--boven);"></div>
+        </div>
+        <div class="attribute-scores">
+          <div class="attribute-row">
+            <span class="attribute-name">Aroma</span>
+            <span class="attribute-value">8.5</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Flavor</span>
+            <span class="attribute-value">8.8</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Acidity</span>
+            <span class="attribute-value">8.2</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Body</span>
+            <span class="attribute-value">8.5</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Aftertaste</span>
+            <span class="attribute-value">8.0</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Balance</span>
+            <span class="attribute-value">8.3</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed Session 2 -->
+      <div class="completed-card">
+        <div class="completed-top">
+          <div class="completed-info">
+            <div class="completed-name">Pre-shipment Approval</div>
+            <div class="completed-date">Mon, Feb 10 &middot; 11:00 AM</div>
+          </div>
+          <div class="completed-score">
+            <div class="score-value very-good">83.2</div>
+            <div class="score-label">Avg Score</div>
+          </div>
+        </div>
+        <div class="completed-meta">
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>3 samples</span>
+          </div>
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span>2 evaluators</span>
+          </div>
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>Completed</span>
+          </div>
+        </div>
+        <div class="score-bar">
+          <div class="score-segment" style="flex: 0.5; background: var(--leaf);"></div>
+          <div class="score-segment" style="flex: 1.5; background: var(--sky);"></div>
+          <div class="score-segment" style="flex: 1; background: var(--sun);"></div>
+        </div>
+        <div class="attribute-scores">
+          <div class="attribute-row">
+            <span class="attribute-name">Aroma</span>
+            <span class="attribute-value">8.0</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Flavor</span>
+            <span class="attribute-value">8.5</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Acidity</span>
+            <span class="attribute-value">8.0</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Body</span>
+            <span class="attribute-value">8.2</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Aftertaste</span>
+            <span class="attribute-value">7.8</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Balance</span>
+            <span class="attribute-value">8.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed Session 3 -->
+      <div class="completed-card">
+        <div class="completed-top">
+          <div class="completed-info">
+            <div class="completed-name">Weekly Cupping - Week 6</div>
+            <div class="completed-date">Wed, Feb 5 &middot; 10:00 AM</div>
+          </div>
+          <div class="completed-score">
+            <div class="score-value good">79.8</div>
+            <div class="score-label">Avg Score</div>
+          </div>
+        </div>
+        <div class="completed-meta">
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>8 samples</span>
+          </div>
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span>3 evaluators</span>
+          </div>
+          <div class="completed-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>Completed</span>
+          </div>
+        </div>
+        <div class="score-bar">
+          <div class="score-segment" style="flex: 0.5; background: var(--sky);"></div>
+          <div class="score-segment" style="flex: 2; background: var(--sun);"></div>
+          <div class="score-segment" style="flex: 1; background: var(--boven);"></div>
+          <div class="score-segment" style="flex: 0.3; background: var(--traffic);"></div>
+        </div>
+        <div class="attribute-scores">
+          <div class="attribute-row">
+            <span class="attribute-name">Aroma</span>
+            <span class="attribute-value">7.8</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Flavor</span>
+            <span class="attribute-value">7.5</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Acidity</span>
+            <span class="attribute-value">8.0</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Body</span>
+            <span class="attribute-value">8.2</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Aftertaste</span>
+            <span class="attribute-value">7.3</span>
+          </div>
+          <div class="attribute-row">
+            <span class="attribute-name">Balance</span>
+            <span class="attribute-value">7.5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Action Button -->
+<button class="fab">
+  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <span>Dashboard</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap">
+      <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+    </div>
+    <span>Roasts</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <span>Planning</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap">
+      <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+    </div>
+    <span>Inventory</span>
+  </a>
+  <a class="tab-item active" href="#">
+    <div class="tab-icon-wrap">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    </div>
+    <span>Quality</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+    </div>
+    <span>More</span>
+  </a>
+</div>
+
+</body>
+</html>

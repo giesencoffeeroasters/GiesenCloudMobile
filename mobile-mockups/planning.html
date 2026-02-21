@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>GiesenCloud Mobile - Roast Planning</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+  :root {
+    --slate: #383838;
+    --slate-light: #4a4a4a;
+    --gravel: #d9d9d4;
+    --gravel-light: #eeeee9;
+    --safety: #ccff00;
+    --sky: #4d92b8;
+    --sky-bg: rgba(77, 146, 184, 0.10);
+    --leaf: #71b068;
+    --leaf-bg: rgba(113, 176, 104, 0.12);
+    --sun: #f5c462;
+    --sun-bg: rgba(245, 196, 98, 0.12);
+    --boven: #fc8758;
+    --boven-bg: rgba(252, 135, 88, 0.12);
+    --traffic: #db5a5a;
+    --traffic-bg: rgba(219, 90, 90, 0.12);
+    --grape: #7e6599;
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --text: #2a2a2a;
+    --text-secondary: #7a7a76;
+    --text-tertiary: #a5a5a0;
+    --border: #e8e8e3;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    width: 390px;
+    min-height: 844px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 0;
+    height: 54px;
+    background: var(--slate);
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: 0.2px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+  .status-bar .icons svg { width: 16px; height: 16px; fill: #fff; }
+  .status-bar .notch {
+    width: 126px; height: 34px; background: #000; border-radius: 0 0 20px 20px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  }
+
+  /* Header */
+  .header {
+    background: var(--slate);
+    padding: 0 20px 20px;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header-title {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .header-actions { display: flex; gap: 8px; }
+  .header-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.1); border: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 1.8; }
+
+  /* Date Strip */
+  .date-strip {
+    display: flex;
+    gap: 4px;
+    padding: 16px 16px 0;
+    overflow-x: auto;
+  }
+  .date-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    border: 1px solid var(--border);
+    min-width: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .date-item.active {
+    background: var(--slate);
+    border-color: var(--slate);
+  }
+  .date-day {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-tertiary);
+  }
+  .date-item.active .date-day { color: rgba(255,255,255,0.6); }
+  .date-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 2px;
+  }
+  .date-item.active .date-num { color: var(--safety); }
+  .date-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--sky);
+    margin-top: 4px;
+  }
+  .date-item.active .date-dot { background: var(--safety); }
+  .date-item:not(.has-roasts) .date-dot { visibility: hidden; }
+
+  /* View Toggle */
+  .view-toggle {
+    display: flex;
+    margin: 16px 16px 0;
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    border: 1px solid var(--border);
+  }
+  .view-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .view-btn.active {
+    background: var(--slate);
+    color: #fff;
+  }
+
+  /* Summary */
+  .day-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 16px 8px;
+  }
+  .day-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .day-label span {
+    color: var(--text-tertiary);
+    font-weight: 400;
+  }
+  .day-stats {
+    display: flex;
+    gap: 12px;
+  }
+  .day-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .day-stat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  /* Content */
+  .content {
+    padding: 0 16px;
+    padding-bottom: 100px;
+  }
+
+  /* Planning Cards */
+  .planning-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .plan-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 0;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+  }
+  .plan-time-strip {
+    width: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0;
+    background: var(--gravel-light);
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .plan-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+  .plan-time-ampm {
+    font-size: 9px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  .plan-body {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .plan-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .plan-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .plan-status {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .status-completed { color: var(--leaf); background: var(--leaf-bg); }
+  .status-progress { color: var(--boven); background: var(--boven-bg); }
+  .status-planned { color: var(--sky); background: var(--sky-bg); }
+
+  .plan-meta {
+    display: flex;
+    gap: 16px;
+  }
+  .plan-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .plan-meta-item svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+  }
+  .plan-meta-item strong {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .plan-profile-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--gravel-light);
+    border-radius: 7px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .plan-profile-bar svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--grape);
+    fill: none;
+    stroke-width: 1.8;
+  }
+  .plan-profile-name {
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* Card status stripe */
+  .plan-card.completed { border-left: 3px solid var(--leaf); }
+  .plan-card.in-progress { border-left: 3px solid var(--boven); }
+  .plan-card.planned { border-left: 3px solid var(--sky); }
+
+  .plan-card.in-progress .plan-time-strip {
+    background: var(--boven-bg);
+  }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 100px;
+    right: calc(50% - 195px + 20px);
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: var(--slate);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(56, 56, 56, 0.3);
+    z-index: 50;
+  }
+  .fab svg { width: 24px; height: 24px; stroke: var(--safety); fill: none; stroke-width: 2.5; }
+
+  /* Bottom Tab Bar */
+  .tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 390px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 8px 28px;
+    z-index: 100;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    padding: 4px 8px;
+  }
+  .tab-item.active { color: var(--slate); }
+  .tab-item.active .tab-icon-wrap { background: var(--slate); }
+  .tab-item.active .tab-icon-wrap svg { stroke: var(--safety); }
+  .tab-icon-wrap {
+    width: 36px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tab-item svg { width: 20px; height: 20px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.8; }
+</style>
+</head>
+<body>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="notch"></div>
+  <span class="time">9:41</span>
+  <div class="icons">
+    <svg viewBox="0 0 16 16"><path d="M1 10l3-3 3 3M5.5 8.5l3-3 3 3M10 7l3-3 3 3" stroke="#fff" stroke-width="1.4" fill="none"/></svg>
+    <svg viewBox="0 0 16 16"><path d="M1 4h2v8H1zM5 2h2v10H5zM9 5h2v7H9zM13 1h2v11h-2z" fill="#fff"/></svg>
+    <svg viewBox="0 0 24 12"><rect x="0" y="0" width="20" height="12" rx="2" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="2" y="2" width="14" height="8" rx="1" fill="#fff"/><rect x="21.5" y="3.5" width="2" height="5" rx="1" fill="#fff"/></svg>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-title">Roast Planning</div>
+    <div class="header-actions">
+      <button class="header-btn">
+        <svg viewBox="0 0 24 24"><polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/></svg>
+      </button>
+      <button class="header-btn">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Date Strip -->
+<div class="date-strip">
+  <div class="date-item has-roasts">
+    <span class="date-day">Mon</span>
+    <span class="date-num">17</span>
+    <span class="date-dot"></span>
+  </div>
+  <div class="date-item has-roasts">
+    <span class="date-day">Tue</span>
+    <span class="date-num">18</span>
+    <span class="date-dot"></span>
+  </div>
+  <div class="date-item active has-roasts">
+    <span class="date-day">Wed</span>
+    <span class="date-num">19</span>
+    <span class="date-dot"></span>
+  </div>
+  <div class="date-item has-roasts">
+    <span class="date-day">Thu</span>
+    <span class="date-num">20</span>
+    <span class="date-dot"></span>
+  </div>
+  <div class="date-item has-roasts">
+    <span class="date-day">Fri</span>
+    <span class="date-num">21</span>
+    <span class="date-dot"></span>
+  </div>
+  <div class="date-item">
+    <span class="date-day">Sat</span>
+    <span class="date-num">22</span>
+    <span class="date-dot"></span>
+  </div>
+  <div class="date-item">
+    <span class="date-day">Sun</span>
+    <span class="date-num">23</span>
+    <span class="date-dot"></span>
+  </div>
+</div>
+
+<!-- View Toggle -->
+<div class="view-toggle">
+  <button class="view-btn active">Day</button>
+  <button class="view-btn">Week</button>
+  <button class="view-btn">List</button>
+</div>
+
+<!-- Day Summary -->
+<div class="day-summary">
+  <div class="day-label">Wednesday <span>&middot; 4 roasts</span></div>
+  <div class="day-stats">
+    <div class="day-stat">
+      <div class="day-stat-dot" style="background: var(--leaf);"></div>
+      1
+    </div>
+    <div class="day-stat">
+      <div class="day-stat-dot" style="background: var(--boven);"></div>
+      1
+    </div>
+    <div class="day-stat">
+      <div class="day-stat-dot" style="background: var(--sky);"></div>
+      2
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <div class="planning-list">
+    <!-- Completed -->
+    <div class="plan-card completed">
+      <div class="plan-time-strip">
+        <div class="plan-time">08:30</div>
+        <div class="plan-time-ampm">AM</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-top">
+          <div class="plan-name">Ethiopia Yirgacheffe</div>
+          <span class="plan-status status-completed">Done</span>
+        </div>
+        <div class="plan-meta">
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6V2M6 6V4M18 6V4"/></svg>
+            <strong>W15A</strong>
+          </div>
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <strong>12 kg</strong>
+          </div>
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            12:14
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- In Progress -->
+    <div class="plan-card in-progress">
+      <div class="plan-time-strip">
+        <div class="plan-time">10:15</div>
+        <div class="plan-time-ampm">AM</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-top">
+          <div class="plan-name">Colombia Huila Supremo</div>
+          <span class="plan-status status-progress">Roasting</span>
+        </div>
+        <div class="plan-meta">
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6V2M6 6V4M18 6V4"/></svg>
+            <strong>W15A</strong>
+          </div>
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <strong>15 kg</strong>
+          </div>
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            13:00
+          </div>
+        </div>
+        <div class="plan-profile-bar">
+          <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+          Profile: <span class="plan-profile-name">Colombia Dark Medium v3</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Planned -->
+    <div class="plan-card planned">
+      <div class="plan-time-strip">
+        <div class="plan-time">11:45</div>
+        <div class="plan-time-ampm">AM</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-top">
+          <div class="plan-name">Brazil Santos Natural</div>
+          <span class="plan-status status-planned">Planned</span>
+        </div>
+        <div class="plan-meta">
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6V2M6 6V4M18 6V4"/></svg>
+            <strong>W6A</strong>
+          </div>
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <strong>6 kg</strong>
+          </div>
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            11:30
+          </div>
+        </div>
+        <div class="plan-profile-bar">
+          <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+          Profile: <span class="plan-profile-name">Brazil Natural Light v2</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Planned 2 -->
+    <div class="plan-card planned">
+      <div class="plan-time-strip">
+        <div class="plan-time">14:00</div>
+        <div class="plan-time-ampm">PM</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-top">
+          <div class="plan-name">Guatemala Antigua SHB</div>
+          <span class="plan-status status-planned">Planned</span>
+        </div>
+        <div class="plan-meta">
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6V2M6 6V4M18 6V4"/></svg>
+            <strong>W6A</strong>
+          </div>
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <strong>6 kg</strong>
+          </div>
+          <div class="plan-meta-item">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            12:00
+          </div>
+        </div>
+        <div class="plan-profile-bar">
+          <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+          Profile: <span class="plan-profile-name">Guatemala Classic Medium</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab">
+  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span>Dashboard</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+    <span>Roasts</span>
+  </a>
+  <a class="tab-item active" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+    <span>Planning</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+    <span>Inventory</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+    <span>Quality</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+    <span>More</span>
+  </a>
+</div>
+
+</body>
+</html>

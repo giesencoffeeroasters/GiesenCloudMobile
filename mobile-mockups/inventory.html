@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>GiesenCloud Mobile - Inventory</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+  :root {
+    --slate: #383838;
+    --slate-light: #4a4a4a;
+    --gravel: #d9d9d4;
+    --gravel-light: #eeeee9;
+    --safety: #ccff00;
+    --sky: #4d92b8;
+    --sky-bg: rgba(77, 146, 184, 0.10);
+    --leaf: #71b068;
+    --leaf-bg: rgba(113, 176, 104, 0.12);
+    --leaf-dark: #5a9551;
+    --sun: #f5c462;
+    --sun-bg: rgba(245, 196, 98, 0.12);
+    --boven: #fc8758;
+    --boven-bg: rgba(252, 135, 88, 0.12);
+    --traffic: #db5a5a;
+    --traffic-bg: rgba(219, 90, 90, 0.12);
+    --grape: #7e6599;
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --text: #2a2a2a;
+    --text-secondary: #7a7a76;
+    --text-tertiary: #a5a5a0;
+    --border: #e8e8e3;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    width: 390px;
+    min-height: 844px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 0;
+    height: 54px;
+    background: var(--slate);
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: 0.2px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+  .status-bar .icons svg { width: 16px; height: 16px; fill: #fff; }
+  .status-bar .notch {
+    width: 126px; height: 34px; background: #000; border-radius: 0 0 20px 20px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  }
+
+  /* Header */
+  .header {
+    background: var(--slate);
+    padding: 0 20px 20px;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header-title {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .header-actions { display: flex; gap: 8px; }
+  .header-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.1); border: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 1.8; }
+
+  /* Search */
+  .search-wrapper {
+    padding: 16px 16px 0;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+  }
+  .search-box svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--text-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+    flex-shrink: 0;
+  }
+  .search-box input {
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    flex: 1;
+  }
+  .search-box input::placeholder { color: var(--text-tertiary); }
+
+  /* Filter Chips */
+  .filter-chips {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chip {
+    padding: 7px 16px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip.active {
+    background: var(--slate);
+    color: #fff;
+    border-color: var(--slate);
+  }
+
+  /* Summary Row */
+  .summary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 16px 16px 0;
+  }
+  .summary-item {
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .summary-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .summary-value.blue { color: var(--sky); }
+  .summary-value.orange { color: var(--boven); }
+  .summary-value.green { color: var(--leaf); }
+  .summary-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+
+  /* Content */
+  .content {
+    padding: 16px;
+    padding-bottom: 100px;
+  }
+
+  /* Inventory Cards */
+  .inventory-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .inv-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .inv-card-main {
+    padding: 16px;
+    display: flex;
+    gap: 14px;
+  }
+
+  .inv-stock-indicator {
+    width: 4px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+  .inv-stock-indicator.good { background: var(--leaf); }
+  .inv-stock-indicator.low { background: var(--sun); }
+  .inv-stock-indicator.critical { background: var(--traffic); }
+
+  .inv-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .inv-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .inv-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .inv-stock-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-good { color: var(--leaf); background: var(--leaf-bg); }
+  .badge-low { color: var(--sun); background: var(--sun-bg); }
+  .badge-critical { color: var(--traffic); background: var(--traffic-bg); }
+
+  .inv-sku {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+  }
+
+  .inv-details {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+  }
+
+  .inv-detail {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .inv-detail-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+
+  .inv-detail-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 1px;
+  }
+
+  .inv-weight {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+  .inv-weight .unit {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .inv-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .inv-meta-tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .inv-meta-tag svg {
+    width: 13px;
+    height: 13px;
+    stroke: var(--text-tertiary);
+    fill: none;
+    stroke-width: 1.8;
+  }
+
+  .inv-actions {
+    display: flex;
+    border-top: 1px solid var(--border);
+  }
+  .inv-action {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .inv-action:first-child {
+    border-right: 1px solid var(--border);
+  }
+  .inv-action svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+  }
+  .inv-action:hover {
+    background: var(--gravel-light);
+    color: var(--text);
+  }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 100px;
+    right: calc(50% - 195px + 20px);
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: var(--slate);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(56, 56, 56, 0.3);
+    z-index: 50;
+  }
+  .fab svg { width: 24px; height: 24px; stroke: var(--safety); fill: none; stroke-width: 2.5; }
+
+  /* Bottom Tab Bar */
+  .tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 390px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 8px 28px;
+    z-index: 100;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    padding: 4px 8px;
+  }
+  .tab-item.active { color: var(--slate); }
+  .tab-item.active .tab-icon-wrap { background: var(--slate); }
+  .tab-item.active .tab-icon-wrap svg { stroke: var(--safety); }
+  .tab-icon-wrap {
+    width: 36px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tab-item svg { width: 20px; height: 20px; stroke: var(--text-tertiary); fill: none; stroke-width: 1.8; }
+</style>
+</head>
+<body>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="notch"></div>
+  <span class="time">9:41</span>
+  <div class="icons">
+    <svg viewBox="0 0 16 16"><path d="M1 10l3-3 3 3M5.5 8.5l3-3 3 3M10 7l3-3 3 3" stroke="#fff" stroke-width="1.4" fill="none"/></svg>
+    <svg viewBox="0 0 16 16"><path d="M1 4h2v8H1zM5 2h2v10H5zM9 5h2v7H9zM13 1h2v11h-2z" fill="#fff"/></svg>
+    <svg viewBox="0 0 24 12"><rect x="0" y="0" width="20" height="12" rx="2" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="2" y="2" width="14" height="8" rx="1" fill="#fff"/><rect x="21.5" y="3.5" width="2" height="5" rx="1" fill="#fff"/></svg>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-title">Inventory</div>
+    <div class="header-actions">
+      <button class="header-btn">
+        <svg viewBox="0 0 24 24"><polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/></svg>
+      </button>
+      <button class="header-btn">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="search-wrapper">
+  <div class="search-box">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search beans, SKU, supplier...">
+  </div>
+</div>
+
+<!-- Filter Chips -->
+<div class="filter-chips">
+  <div class="chip active">All</div>
+  <div class="chip">Green Beans</div>
+  <div class="chip">Roasted</div>
+  <div class="chip">Blends</div>
+</div>
+
+<!-- Summary Row -->
+<div class="summary-row">
+  <div class="summary-item">
+    <div class="summary-value blue">127</div>
+    <div class="summary-label">Total Items</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-value orange">8</div>
+    <div class="summary-label">Low Stock</div>
+  </div>
+  <div class="summary-item">
+    <div class="summary-value green">4,230<span style="font-size: 12px; color: var(--text-secondary); font-weight: 400;"> kg</span></div>
+    <div class="summary-label">Total Weight</div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <div class="inventory-list">
+
+    <!-- Item 1 - Good stock -->
+    <div class="inv-card">
+      <div class="inv-card-main">
+        <div class="inv-stock-indicator good"></div>
+        <div class="inv-info">
+          <div class="inv-top">
+            <div>
+              <div class="inv-name">Ethiopia Yirgacheffe Grade 1</div>
+              <div class="inv-sku">GC-ETH-YRG-001</div>
+            </div>
+            <span class="inv-stock-badge badge-good">In Stock</span>
+          </div>
+          <div class="inv-details">
+            <div class="inv-detail">
+              <span class="inv-detail-label">Weight</span>
+              <span class="inv-weight">245<span class="unit"> kg</span></span>
+            </div>
+            <div class="inv-detail">
+              <span class="inv-detail-label">Location</span>
+              <span class="inv-detail-value">Warehouse A</span>
+            </div>
+          </div>
+          <div class="inv-meta-row">
+            <div class="inv-meta-tag">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Daterra Trading
+            </div>
+            <div class="inv-meta-tag">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Received Feb 12
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inv-actions">
+        <button class="inv-action">
+          <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+          Adjust Weight
+        </button>
+        <button class="inv-action">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          View Details
+        </button>
+      </div>
+    </div>
+
+    <!-- Item 2 - Low stock -->
+    <div class="inv-card">
+      <div class="inv-card-main">
+        <div class="inv-stock-indicator low"></div>
+        <div class="inv-info">
+          <div class="inv-top">
+            <div>
+              <div class="inv-name">Brazil Santos Natural</div>
+              <div class="inv-sku">GC-BRA-SAN-003</div>
+            </div>
+            <span class="inv-stock-badge badge-low">Low Stock</span>
+          </div>
+          <div class="inv-details">
+            <div class="inv-detail">
+              <span class="inv-detail-label">Weight</span>
+              <span class="inv-weight">38<span class="unit"> kg</span></span>
+            </div>
+            <div class="inv-detail">
+              <span class="inv-detail-label">Location</span>
+              <span class="inv-detail-value">Warehouse A</span>
+            </div>
+          </div>
+          <div class="inv-meta-row">
+            <div class="inv-meta-tag">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Volcafe Ltd
+            </div>
+            <div class="inv-meta-tag">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Received Jan 28
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inv-actions">
+        <button class="inv-action">
+          <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+          Adjust Weight
+        </button>
+        <button class="inv-action">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          View Details
+        </button>
+      </div>
+    </div>
+
+    <!-- Item 3 - Critical -->
+    <div class="inv-card">
+      <div class="inv-card-main">
+        <div class="inv-stock-indicator critical"></div>
+        <div class="inv-info">
+          <div class="inv-top">
+            <div>
+              <div class="inv-name">Colombia Supremo Dark</div>
+              <div class="inv-sku">GC-COL-SUP-007</div>
+            </div>
+            <span class="inv-stock-badge badge-critical">Critical</span>
+          </div>
+          <div class="inv-details">
+            <div class="inv-detail">
+              <span class="inv-detail-label">Weight</span>
+              <span class="inv-weight">12<span class="unit"> kg</span></span>
+            </div>
+            <div class="inv-detail">
+              <span class="inv-detail-label">Location</span>
+              <span class="inv-detail-value">Roastery Floor</span>
+            </div>
+          </div>
+          <div class="inv-meta-row">
+            <div class="inv-meta-tag">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Sucafina
+            </div>
+            <div class="inv-meta-tag">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Received Jan 15
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inv-actions">
+        <button class="inv-action">
+          <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+          Adjust Weight
+        </button>
+        <button class="inv-action">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          View Details
+        </button>
+      </div>
+    </div>
+
+    <!-- Item 4 - Good stock (blend) -->
+    <div class="inv-card">
+      <div class="inv-card-main">
+        <div class="inv-stock-indicator good"></div>
+        <div class="inv-info">
+          <div class="inv-top">
+            <div>
+              <div class="inv-name">House Blend Espresso</div>
+              <div class="inv-sku">GC-BLD-HBE-001</div>
+            </div>
+            <span class="inv-stock-badge badge-good">In Stock</span>
+          </div>
+          <div class="inv-details">
+            <div class="inv-detail">
+              <span class="inv-detail-label">Weight</span>
+              <span class="inv-weight">89<span class="unit"> kg</span></span>
+            </div>
+            <div class="inv-detail">
+              <span class="inv-detail-label">Location</span>
+              <span class="inv-detail-value">Warehouse B</span>
+            </div>
+          </div>
+          <div class="inv-meta-row">
+            <div class="inv-meta-tag">
+              <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              Internal Blend
+            </div>
+            <div class="inv-meta-tag">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Blended Feb 17
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inv-actions">
+        <button class="inv-action">
+          <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+          Adjust Weight
+        </button>
+        <button class="inv-action">
+          <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          View Details
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab">
+  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span>Dashboard</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+    <span>Roasts</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+    <span>Planning</span>
+  </a>
+  <a class="tab-item active" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+    <span>Inventory</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+    <span>Quality</span>
+  </a>
+  <a class="tab-item" href="#">
+    <div class="tab-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+    <span>More</span>
+  </a>
+</div>
+
+</body>
+</html>
