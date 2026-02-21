@@ -12,7 +12,7 @@ import {
   TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
@@ -704,9 +704,19 @@ const modalStyles = StyleSheet.create({
 export default function RoastsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ segment?: string }>();
 
   // Segment state
-  const [activeSegment, setActiveSegment] = useState<Segment>("roasts");
+  const [activeSegment, setActiveSegment] = useState<Segment>(
+    params.segment === "profiles" ? "profiles" : "roasts"
+  );
+
+  // Sync segment when navigating back with param
+  useEffect(() => {
+    if (params.segment === "profiles") {
+      setActiveSegment("profiles");
+    }
+  }, [params.segment]);
 
   // Roasts state
   const [activeFilter, setActiveFilter] = useState<FilterOption>("All");
