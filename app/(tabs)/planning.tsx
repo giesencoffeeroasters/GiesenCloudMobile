@@ -967,7 +967,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   dateItemToday: {
-    borderColor: Colors.slate,
+    borderColor: Colors.safety,
     borderWidth: 1.5,
   },
   dateItemSelected: {
