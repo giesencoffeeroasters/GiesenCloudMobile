@@ -6,12 +6,19 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "ios:dev": "APP_ENV=development expo run:ios",
+    "ios:staging": "APP_ENV=staging expo run:ios",
+    "ios:prod": "APP_ENV=production expo run:ios",
+    "android:dev": "APP_ENV=development expo run:android",
+    "android:staging": "APP_ENV=staging expo run:android",
+    "android:prod": "APP_ENV=production expo run:android"
   },
   "dependencies": {
     "@react-native-community/netinfo": "11.4.1",
     "axios": "^1.13.5",
     "expo": "~54.0.33",
+    "expo-constants": "~18.0.13",
     "expo-router": "^6.0.23",
     "expo-secure-store": "^15.0.8",
     "expo-splash-screen": "^31.0.13",

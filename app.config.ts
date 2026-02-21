@@ -1,0 +1,75 @@
+import { ExpoConfig, ConfigContext } from "expo/config";
+
+const APP_ENV = process.env.APP_ENV || "development";
+
+const envConfig = {
+  development: {
+    name: "GiesenCloud (Dev)",
+    apiUrl: "https://giesencloud.test/api/mobile/v1",
+    reverbHost: "reverb.herd.test",
+    reverbKey: "laravel-herd",
+  },
+  staging: {
+    name: "GiesenCloud (Staging)",
+    apiUrl: "https://staging.giesen.cloud/api/mobile/v1",
+    reverbHost: "reverb.staging.giesen.cloud",
+    reverbKey: "laravel-herd",
+  },
+  production: {
+    name: "GiesenCloud",
+    apiUrl: "https://giesen.cloud/api/mobile/v1",
+    reverbHost: "reverb.giesen.cloud",
+    reverbKey: "laravel-herd",
+  },
+} as const;
+
+const env = envConfig[APP_ENV as keyof typeof envConfig] ?? envConfig.development;
+
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  name: env.name,
+  slug: "GiesenCloudMobile",
+  version: "1.0.0",
+  orientation: "portrait",
+  icon: "./assets/icon.png",
+  userInterfaceStyle: "light",
+  newArchEnabled: true,
+  scheme: "giesencloud",
+  splash: {
+    image: "./assets/splash-icon.png",
+    resizeMode: "contain",
+    backgroundColor: "#383838",
+  },
+  ios: {
+    supportsTablet: false,
+    bundleIdentifier: "com.giesen.cloud",
+    ...(APP_ENV === "development" && {
+      infoPlist: {
+        NSAppTransportSecurity: {
+          NSAllowsArbitraryLoads: false,
+          NSExceptionDomains: {
+            "giesencloud.test": {
+              NSExceptionAllowsInsecureHTTPLoads: true,
+              NSIncludesSubdomains: true,
+            },
+          },
+        },
+      },
+    }),
+  },
+  android: {
+    adaptiveIcon: {
+      foregroundImage: "./assets/adaptive-icon.png",
+      backgroundColor: "#383838",
+    },
+    edgeToEdgeEnabled: true,
+    package: "com.giesen.cloud",
+  },
+  plugins: ["expo-router", "expo-secure-store"],
+  extra: {
+    appEnv: APP_ENV,
+    apiUrl: env.apiUrl,
+    reverbHost: env.reverbHost,
+    reverbKey: env.reverbKey,
+  },
+});
