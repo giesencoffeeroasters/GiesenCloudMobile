@@ -23,6 +23,7 @@ import {
   PlanningItem,
   ProfilerProfile,
   ProfilerDevice,
+  Employee,
   ApiResponse,
   PaginatedResponse,
 } from "@/types/index";
@@ -102,6 +103,8 @@ const MONTH_NAMES = [
 
 const DAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+const EMPLOYEES_ENDPOINT = "/employees";
+
 export default function PlanDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -118,6 +121,13 @@ export default function PlanDetailScreen() {
   const [editDevice, setEditDevice] = useState<ProfilerDevice | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editDescription, setEditDescription] = useState("");
+
+  // Employee edit state
+  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
+  const [showEmployeePicker, setShowEmployeePicker] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
 
   // Picker state
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -194,6 +204,20 @@ export default function PlanDetailScreen() {
     }
   };
 
+  const fetchEmployees = async () => {
+    setLoadingEmployees(true);
+    try {
+      const response = await apiClient.get<PaginatedResponse<Employee>>(EMPLOYEES_ENDPOINT, {
+        params: { per_page: 100 },
+      });
+      setEmployees(response.data.data);
+    } catch (err) {
+      console.error("Failed to fetch employees:", err);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
   const enterEditMode = () => {
     if (!plan) return;
     // Populate edit form from plan
@@ -226,12 +250,18 @@ export default function PlanDetailScreen() {
     );
     setEditAmount(plan.amount != null ? String(plan.amount / 1000) : "");
     setEditDescription(plan.description ?? "");
+    setEditEmployee(
+      plan.employee
+        ? { id: plan.employee.id, name: plan.employee.name }
+        : null
+    );
     setFormErrors({});
     setIsEditing(true);
 
     // Fetch picker data
     fetchProfiles();
     fetchDevices();
+    fetchEmployees();
   };
 
   const cancelEdit = () => {
@@ -258,6 +288,16 @@ export default function PlanDetailScreen() {
         (d.model ?? "").toLowerCase().includes(query)
     );
   }, [devices, deviceSearch]);
+
+  const filteredEmployees = useMemo(() => {
+    if (!employeeSearch.trim()) return employees;
+    const query = employeeSearch.toLowerCase().trim();
+    return employees.filter(
+      (e) =>
+        e.name.toLowerCase().includes(query) ||
+        (e.email ?? "").toLowerCase().includes(query)
+    );
+  }, [employees, employeeSearch]);
 
   // Calendar helpers
   const calendarDays = useMemo(
@@ -322,6 +362,7 @@ export default function PlanDetailScreen() {
           profiler_device_id: editDevice!.id,
           amount: Math.round(Number(editAmount) * 1000),
           description: editDescription.trim() || null,
+          employee_id: editEmployee?.id ?? null,
         }
       );
 
@@ -667,6 +708,52 @@ export default function PlanDetailScreen() {
               ) : null}
             </View>
 
+            {/* Employee Picker */}
+            <View style={styles.fieldCard}>
+              <Text style={styles.fieldLabel}>
+                Operator{" "}
+                <Text style={styles.fieldLabelOptional}>(optional)</Text>
+              </Text>
+              <TouchableOpacity
+                style={styles.pickerButton}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setEmployeeSearch("");
+                  setShowEmployeePicker(true);
+                }}
+              >
+                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"
+                    stroke={Colors.textSecondary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+                <View style={styles.pickerButtonContent}>
+                  <Text
+                    style={[
+                      styles.pickerButtonText,
+                      !editEmployee && styles.pickerButtonPlaceholder,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {editEmployee ? editEmployee.name : "Select operator"}
+                  </Text>
+                </View>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M6 9l6 6 6-6"
+                    stroke={Colors.textTertiary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+
             {/* Amount */}
             <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Batch Size</Text>
@@ -903,6 +990,9 @@ export default function PlanDetailScreen() {
                         activeOpacity={0.7}
                         onPress={() => {
                           setEditProfile(item);
+                          if (item.start_weight !== null && item.start_weight > 0) {
+                            setEditAmount(String(parseFloat((item.start_weight / 1000).toFixed(2))));
+                          }
                           setShowProfilePicker(false);
                         }}
                       >
@@ -1028,6 +1118,146 @@ export default function PlanDetailScreen() {
                             {item.model}
                             {item.serial_number ? ` - ${item.serial_number}` : ""}
                           </Text>
+                        </View>
+                        {isActive ? (
+                          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                            <Path
+                              d="M20 6L9 17l-5-5"
+                              stroke={Colors.safety}
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </Svg>
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
+
+        {/* Employee Picker Modal */}
+        <Modal
+          visible={showEmployeePicker}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowEmployeePicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContentFull, { paddingBottom: insets.bottom + 16 }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Operator</Text>
+                <TouchableOpacity
+                  onPress={() => setShowEmployeePicker(false)}
+                  activeOpacity={0.7}
+                >
+                  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M18 6L6 18M6 6l12 12"
+                      stroke={Colors.text}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalSearchBar}>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35"
+                    stroke={Colors.textTertiary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+                <TextInput
+                  style={styles.modalSearchInput}
+                  placeholder="Search operators..."
+                  placeholderTextColor={Colors.textTertiary}
+                  value={employeeSearch}
+                  onChangeText={setEmployeeSearch}
+                  autoFocus
+                />
+              </View>
+
+              {loadingEmployees ? (
+                <View style={styles.modalLoading}>
+                  <ActivityIndicator size="large" color={Colors.slate} />
+                </View>
+              ) : (
+                <FlatList
+                  data={filteredEmployees}
+                  keyExtractor={(item) => String(item.id)}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.modalListContent}
+                  keyboardShouldPersistTaps="handled"
+                  ListHeaderComponent={
+                    <TouchableOpacity
+                      style={[styles.pickerItem, !editEmployee && styles.pickerItemActive]}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setEditEmployee(null);
+                        setShowEmployeePicker(false);
+                      }}
+                    >
+                      <View style={styles.pickerItemContent}>
+                        <Text
+                          style={[
+                            styles.pickerItemName,
+                            !editEmployee && styles.pickerItemNameActive,
+                          ]}
+                        >
+                          No operator
+                        </Text>
+                      </View>
+                      {!editEmployee ? (
+                        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                          <Path
+                            d="M20 6L9 17l-5-5"
+                            stroke={Colors.safety}
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </Svg>
+                      ) : null}
+                    </TouchableOpacity>
+                  }
+                  ListEmptyComponent={
+                    <View style={styles.modalEmpty}>
+                      <Text style={styles.modalEmptyText}>No operators found</Text>
+                    </View>
+                  }
+                  renderItem={({ item }) => {
+                    const isActive = editEmployee?.id === item.id;
+                    return (
+                      <TouchableOpacity
+                        style={[styles.pickerItem, isActive && styles.pickerItemActive]}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setEditEmployee(item);
+                          setShowEmployeePicker(false);
+                        }}
+                      >
+                        <View style={styles.pickerItemContent}>
+                          <Text
+                            style={[
+                              styles.pickerItemName,
+                              isActive && styles.pickerItemNameActive,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {item.name}
+                          </Text>
+                          {item.email ? (
+                            <Text style={styles.pickerItemMeta}>{item.email}</Text>
+                          ) : null}
                         </View>
                         {isActive ? (
                           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">

@@ -21,6 +21,7 @@ import apiClient from "@/api/client";
 import {
   ProfilerProfile,
   ProfilerDevice,
+  Employee,
   ApiResponse,
   PaginatedResponse,
 } from "@/types/index";
@@ -59,6 +60,8 @@ const MONTH_NAMES = [
 
 const DAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+const EMPLOYEES_ENDPOINT = "/employees";
+
 export default function CreatePlanScreen() {
   const insets = useSafeAreaInsets();
 
@@ -67,12 +70,15 @@ export default function CreatePlanScreen() {
   const [selectedProfile, setSelectedProfile] = useState<ProfilerProfile | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<ProfilerDevice | null>(null);
   const [amount, setAmount] = useState("");
+  const [batchCount, setBatchCount] = useState(1);
   const [description, setDescription] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   // Picker state
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showProfilePicker, setShowProfilePicker] = useState(false);
   const [showDevicePicker, setShowDevicePicker] = useState(false);
+  const [showEmployeePicker, setShowEmployeePicker] = useState(false);
 
   // Calendar state
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
@@ -83,11 +89,15 @@ export default function CreatePlanScreen() {
   const [devices, setDevices] = useState<ProfilerDevice[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
   const [loadingDevices, setLoadingDevices] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [profileSearch, setProfileSearch] = useState("");
   const [deviceSearch, setDeviceSearch] = useState("");
+  const [employeeSearch, setEmployeeSearch] = useState("");
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
+  const [submissionProgress, setSubmissionProgress] = useState<{ completed: number; total: number } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const fetchProfiles = async () => {
@@ -116,9 +126,24 @@ export default function CreatePlanScreen() {
     }
   };
 
+  const fetchEmployees = async () => {
+    setLoadingEmployees(true);
+    try {
+      const response = await apiClient.get<PaginatedResponse<Employee>>(EMPLOYEES_ENDPOINT, {
+        params: { per_page: 100 },
+      });
+      setEmployees(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch employees:", error);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfiles();
     fetchDevices();
+    fetchEmployees();
   }, []);
 
   const filteredProfiles = useMemo(() => {
@@ -140,6 +165,17 @@ export default function CreatePlanScreen() {
         (d.model ?? "").toLowerCase().includes(query)
     );
   }, [devices, deviceSearch]);
+
+  const filteredEmployees = useMemo(() => {
+    if (!employeeSearch.trim()) return employees;
+    const query = employeeSearch.toLowerCase().trim();
+    return employees.filter((e) => e.name.toLowerCase().includes(query));
+  }, [employees, employeeSearch]);
+
+  const totalWeightKg = useMemo(
+    () => Number(amount) * batchCount,
+    [amount, batchCount]
+  );
 
   // Calendar helpers
   const calendarDays = useMemo(
@@ -202,17 +238,56 @@ export default function CreatePlanScreen() {
 
     setSubmitting(true);
     setErrors({});
+    setSubmissionProgress(null);
+
+    const payload = {
+      planned_at: plannedAt,
+      profiler_profile_id: selectedProfile!.id,
+      profiler_device_id: selectedDevice!.id,
+      amount: Math.round(Number(amount) * 1000),
+      description: description.trim() || null,
+      employee_id: selectedEmployee?.id ?? null,
+    };
 
     try {
-      await apiClient.post("/planning", {
-        planned_at: plannedAt,
-        profiler_profile_id: selectedProfile!.id,
-        profiler_device_id: selectedDevice!.id,
-        amount: Math.round(Number(amount) * 1000),
-        description: description.trim() || null,
-      });
+      if (batchCount > 1) {
+        let completed = 0;
+        setSubmissionProgress({ completed: 0, total: batchCount });
 
-      router.back();
+        for (let i = 0; i < batchCount; i++) {
+          try {
+            await apiClient.post("/planning", payload);
+            completed++;
+            setSubmissionProgress({ completed, total: batchCount });
+          } catch (error: any) {
+            if (error.response?.status === 422) {
+              const serverErrors = error.response.data.errors ?? {};
+              const flatErrors: Record<string, string> = {};
+              for (const key of Object.keys(serverErrors)) {
+                flatErrors[key] = Array.isArray(serverErrors[key])
+                  ? serverErrors[key][0]
+                  : serverErrors[key];
+              }
+              setErrors(flatErrors);
+            } else {
+              setErrors({
+                general:
+                  completed > 0
+                    ? `Created ${completed} of ${batchCount} plans before an error occurred.`
+                    : "Something went wrong. Please try again.",
+              });
+            }
+            setSubmitting(false);
+            setSubmissionProgress(null);
+            return;
+          }
+        }
+
+        router.back();
+      } else {
+        await apiClient.post("/planning", payload);
+        router.back();
+      }
     } catch (error: any) {
       if (error.response?.status === 422) {
         const serverErrors = error.response.data.errors ?? {};
@@ -228,6 +303,7 @@ export default function CreatePlanScreen() {
       }
     } finally {
       setSubmitting(false);
+      setSubmissionProgress(null);
     }
   };
 
@@ -422,6 +498,50 @@ export default function CreatePlanScreen() {
             ) : null}
           </View>
 
+          {/* Employee Picker */}
+          <View style={styles.fieldCard}>
+            <Text style={styles.fieldLabel}>
+              Operator{" "}
+              <Text style={styles.fieldLabelOptional}>(optional)</Text>
+            </Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              activeOpacity={0.7}
+              onPress={() => {
+                setEmployeeSearch("");
+                setShowEmployeePicker(true);
+              }}
+            >
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"
+                  stroke={Colors.textSecondary}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text
+                style={[
+                  styles.pickerButtonText,
+                  !selectedEmployee && styles.pickerButtonPlaceholder,
+                ]}
+                numberOfLines={1}
+              >
+                {selectedEmployee ? selectedEmployee.name : "Select operator"}
+              </Text>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M6 9l6 6 6-6"
+                  stroke={Colors.textTertiary}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+
           {/* Amount */}
           <View style={styles.fieldCard}>
             <Text style={styles.fieldLabel}>Batch Size</Text>
@@ -448,6 +568,42 @@ export default function CreatePlanScreen() {
               <Text style={styles.fieldError}>{errors.amount}</Text>
             ) : null}
           </View>
+
+          {/* Batch Count Stepper */}
+          <View style={styles.fieldCard}>
+            <Text style={styles.fieldLabel}>Number of Batches</Text>
+            <View style={styles.stepperRow}>
+              <TouchableOpacity
+                style={[styles.stepperButton, batchCount <= 1 && styles.stepperButtonDisabled]}
+                activeOpacity={0.7}
+                onPress={() => setBatchCount((c) => Math.max(1, c - 1))}
+                disabled={batchCount <= 1}
+              >
+                <Text style={[styles.stepperButtonText, batchCount <= 1 && styles.stepperButtonTextDisabled]}>-</Text>
+              </TouchableOpacity>
+              <View style={styles.stepperValue}>
+                <Text style={styles.stepperValueText}>{batchCount}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.stepperButton}
+                activeOpacity={0.7}
+                onPress={() => setBatchCount((c) => c + 1)}
+              >
+                <Text style={styles.stepperButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Total Weight Summary */}
+          {batchCount > 1 && amount && !isNaN(Number(amount)) && Number(amount) > 0 ? (
+            <View style={styles.totalWeightCard}>
+              <Text style={styles.totalWeightLabel}>Total Weight</Text>
+              <Text style={styles.totalWeightValue}>{totalWeightKg} kg</Text>
+              <Text style={styles.totalWeightBreakdown}>
+                {batchCount} batches x {amount} kg each
+              </Text>
+            </View>
+          ) : null}
 
           {/* Description */}
           <View style={styles.fieldCard}>
@@ -480,9 +636,17 @@ export default function CreatePlanScreen() {
             disabled={!isFormValid || submitting}
           >
             {submitting ? (
-              <ActivityIndicator size="small" color={Colors.text} />
+              submissionProgress ? (
+                <Text style={styles.submitButtonText}>
+                  Creating {submissionProgress.completed}/{submissionProgress.total}...
+                </Text>
+              ) : (
+                <ActivityIndicator size="small" color={Colors.text} />
+              )
             ) : (
-              <Text style={styles.submitButtonText}>Create Plan</Text>
+              <Text style={styles.submitButtonText}>
+                {batchCount > 1 ? `Create ${batchCount} Plans` : "Create Plan"}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -663,6 +827,9 @@ export default function CreatePlanScreen() {
                       activeOpacity={0.7}
                       onPress={() => {
                         setSelectedProfile(item);
+                        if (item.start_weight != null && item.start_weight > 0) {
+                          setAmount(String(item.start_weight / 1000));
+                        }
                         setShowProfilePicker(false);
                       }}
                     >
@@ -788,6 +955,144 @@ export default function CreatePlanScreen() {
                         <Text style={styles.pickerItemMeta}>
                           {item.model}
                           {item.serial_number ? ` - ${item.serial_number}` : ""}
+                        </Text>
+                      </View>
+                      {isActive ? (
+                        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                          <Path
+                            d="M20 6L9 17l-5-5"
+                            stroke={Colors.safety}
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </Svg>
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Employee Picker Modal */}
+      <Modal
+        visible={showEmployeePicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowEmployeePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContentFull, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Operator</Text>
+              <TouchableOpacity
+                onPress={() => setShowEmployeePicker(false)}
+                activeOpacity={0.7}
+              >
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M18 6L6 18M6 6l12 12"
+                    stroke={Colors.text}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+
+            {/* Search */}
+            <View style={styles.modalSearchBar}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35"
+                  stroke={Colors.textTertiary}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder="Search operators..."
+                placeholderTextColor={Colors.textTertiary}
+                value={employeeSearch}
+                onChangeText={setEmployeeSearch}
+                autoFocus
+              />
+            </View>
+
+            {loadingEmployees ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator size="large" color={Colors.slate} />
+              </View>
+            ) : (
+              <FlatList
+                data={filteredEmployees}
+                keyExtractor={(item) => String(item.id)}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.modalListContent}
+                keyboardShouldPersistTaps="handled"
+                ListHeaderComponent={
+                  <TouchableOpacity
+                    style={[styles.pickerItem, !selectedEmployee && styles.pickerItemActive]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setSelectedEmployee(null);
+                      setShowEmployeePicker(false);
+                    }}
+                  >
+                    <View style={styles.pickerItemContent}>
+                      <Text
+                        style={[
+                          styles.pickerItemName,
+                          !selectedEmployee && styles.pickerItemNameActive,
+                        ]}
+                      >
+                        No operator
+                      </Text>
+                    </View>
+                    {!selectedEmployee ? (
+                      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="M20 6L9 17l-5-5"
+                          stroke={Colors.safety}
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    ) : null}
+                  </TouchableOpacity>
+                }
+                ListEmptyComponent={
+                  <View style={styles.modalEmpty}>
+                    <Text style={styles.modalEmptyText}>No operators found</Text>
+                  </View>
+                }
+                renderItem={({ item }) => {
+                  const isActive = selectedEmployee?.id === item.id;
+                  return (
+                    <TouchableOpacity
+                      style={[styles.pickerItem, isActive && styles.pickerItemActive]}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setSelectedEmployee(item);
+                        setShowEmployeePicker(false);
+                      }}
+                    >
+                      <View style={styles.pickerItemContent}>
+                        <Text
+                          style={[
+                            styles.pickerItemName,
+                            isActive && styles.pickerItemNameActive,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.name}
                         </Text>
                       </View>
                       {isActive ? (
@@ -1179,5 +1484,69 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textTertiary,
     marginTop: 2,
+  },
+
+  /* -- Batch Count Stepper -- */
+  stepperRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  stepperButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: Colors.gravelLight,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepperButtonDisabled: {
+    opacity: 0.4,
+  },
+  stepperButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 20,
+    color: Colors.text,
+  },
+  stepperButtonTextDisabled: {
+    color: Colors.textTertiary,
+  },
+  stepperValue: {
+    minWidth: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepperValueText: {
+    fontFamily: "JetBrainsMono-Medium",
+    fontSize: 20,
+    color: Colors.text,
+  },
+
+  /* -- Total Weight Card -- */
+  totalWeightCard: {
+    backgroundColor: Colors.skyBg,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.sky,
+    padding: 16,
+  },
+  totalWeightLabel: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 13,
+    color: Colors.sky,
+    marginBottom: 4,
+  },
+  totalWeightValue: {
+    fontFamily: "JetBrainsMono-Medium",
+    fontSize: 20,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  totalWeightBreakdown: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
 });

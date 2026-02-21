@@ -196,6 +196,12 @@ export interface ProfilerProfile {
   created_at: string;
 }
 
+export interface Employee {
+  id: number;
+  name: string;
+  email?: string;
+}
+
 export interface ProfileSummary {
   total_count: number;
   favorites_count: number;
