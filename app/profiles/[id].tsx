@@ -704,7 +704,7 @@ export default function ProfileDetailScreen() {
             label="START WEIGHT"
             value={
               profile.start_weight !== null
-                ? profile.start_weight.toFixed(1)
+                ? (profile.start_weight / 1000).toFixed(1)
                 : "-"
             }
             unit={profile.start_weight !== null ? " kg" : ""}
@@ -721,7 +721,7 @@ export default function ProfileDetailScreen() {
             label="END WEIGHT"
             value={
               profile.end_weight !== null
-                ? profile.end_weight.toFixed(1)
+                ? (profile.end_weight / 1000).toFixed(1)
                 : "-"
             }
             unit={profile.end_weight !== null ? " kg" : ""}

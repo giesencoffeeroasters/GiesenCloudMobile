@@ -282,7 +282,7 @@ function ProfileCard({ profile }: ProfileCardProps) {
           <View style={styles.profileDataItem}>
             <Text style={styles.profileDataLabel}>WEIGHT</Text>
             <Text style={styles.profileDataValue}>
-              {profile.start_weight !== null ? profile.start_weight.toFixed(1) : "-"}
+              {profile.start_weight !== null ? (profile.start_weight / 1000).toFixed(1) : "-"}
               <Text style={styles.profileDataUnit}>
                 {profile.start_weight !== null ? " kg" : ""}
               </Text>
@@ -310,7 +310,7 @@ interface RoastCardProps {
 function RoastCard({ roast }: RoastCardProps) {
   const score = roast.cupping_score;
   const tier = getScoreTier(score);
-  const weightKg = roast.start_weight !== null ? `${roast.start_weight.toFixed(0)} kg` : "-";
+  const weightKg = roast.start_weight !== null ? `${(roast.start_weight / 1000).toFixed(1)} kg` : "-";
 
   return (
     <View style={[styles.roastCard, { borderLeftColor: tier.color }]}>
@@ -381,7 +381,7 @@ function RoastCard({ roast }: RoastCardProps) {
           <View style={styles.roastDataItem}>
             <Text style={styles.roastDataLabel}>WEIGHT</Text>
             <Text style={styles.roastDataValue}>
-              {roast.start_weight !== null ? roast.start_weight.toFixed(1) : "-"}
+              {roast.start_weight !== null ? (roast.start_weight / 1000).toFixed(1) : "-"}
               <Text style={styles.roastDataUnit}>{roast.start_weight !== null ? " kg" : ""}</Text>
             </Text>
           </View>

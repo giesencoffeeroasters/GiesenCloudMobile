@@ -224,7 +224,7 @@ export default function PlanDetailScreen() {
           }
         : null
     );
-    setEditAmount(String(plan.amount ?? ""));
+    setEditAmount(plan.amount != null ? String(plan.amount / 1000) : "");
     setEditDescription(plan.description ?? "");
     setFormErrors({});
     setIsEditing(true);
@@ -320,7 +320,7 @@ export default function PlanDetailScreen() {
           planned_at: editPlannedAt,
           profiler_profile_id: editProfile!.id,
           profiler_device_id: editDevice!.id,
-          amount: Number(editAmount),
+          amount: Math.round(Number(editAmount) * 1000),
           description: editDescription.trim() || null,
         }
       );
@@ -1109,7 +1109,7 @@ export default function PlanDetailScreen() {
 
           <View style={styles.heroWeight}>
             <Text style={styles.heroWeightValue}>
-              {plan.amount ?? 0}
+              {((plan.amount ?? 0) / 1000).toFixed(1)}
             </Text>
             <Text style={styles.heroWeightUnit}>kg</Text>
           </View>
@@ -1118,7 +1118,7 @@ export default function PlanDetailScreen() {
           {plan.roasted_amount !== null && plan.roasted_amount > 0 ? (
             <View style={styles.thresholdRow}>
               <Text style={styles.thresholdLabel}>Roasted Amount</Text>
-              <Text style={styles.thresholdValue}>{plan.roasted_amount} kg</Text>
+              <Text style={styles.thresholdValue}>{((plan.roasted_amount ?? 0) / 1000).toFixed(1)} kg</Text>
             </View>
           ) : null}
         </View>

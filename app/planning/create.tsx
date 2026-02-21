@@ -208,7 +208,7 @@ export default function CreatePlanScreen() {
         planned_at: plannedAt,
         profiler_profile_id: selectedProfile!.id,
         profiler_device_id: selectedDevice!.id,
-        amount: Number(amount),
+        amount: Math.round(Number(amount) * 1000),
         description: description.trim() || null,
       });
 

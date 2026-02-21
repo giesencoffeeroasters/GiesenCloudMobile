@@ -151,7 +151,7 @@ function ProfileCard({ profile }: ProfileCardProps) {
           <View style={styles.profileDataItem}>
             <Text style={styles.profileDataLabel}>WEIGHT</Text>
             <Text style={styles.profileDataValue}>
-              {profile.start_weight !== null ? profile.start_weight.toFixed(1) : "-"}
+              {profile.start_weight !== null ? (profile.start_weight / 1000).toFixed(1) : "-"}
               <Text style={styles.profileDataUnit}>
                 {profile.start_weight !== null ? " kg" : ""}
               </Text>

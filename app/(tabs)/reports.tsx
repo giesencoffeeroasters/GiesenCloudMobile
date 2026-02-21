@@ -707,7 +707,7 @@ export default function ReportsScreen() {
                         {item.count} items
                       </Text>
                       <Text style={styles.listRowSub}>
-                        {item.total_weight.toFixed(1)} kg
+                        {(item.total_weight / 1000).toFixed(1)} kg
                       </Text>
                     </View>
                   </View>

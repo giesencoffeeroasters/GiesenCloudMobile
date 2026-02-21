@@ -738,7 +738,7 @@ export default function RoastDetailScreen() {
             label="START WEIGHT"
             value={
               roast.start_weight !== null
-                ? roast.start_weight.toFixed(1)
+                ? (roast.start_weight / 1000).toFixed(1)
                 : "-"
             }
             unit={roast.start_weight !== null ? " kg" : ""}
@@ -746,7 +746,7 @@ export default function RoastDetailScreen() {
           <StatCard
             label="END WEIGHT"
             value={
-              roast.end_weight !== null ? roast.end_weight.toFixed(1) : "-"
+              roast.end_weight !== null ? (roast.end_weight / 1000).toFixed(1) : "-"
             }
             unit={roast.end_weight !== null ? " kg" : ""}
           />

@@ -189,7 +189,7 @@ function PlanCard({ plan, onPress }: PlanCardProps) {
   const { time, period } = extractTime(plan.planned_at);
   const profileName = plan.profile?.name ?? "No profile";
   const deviceName = plan.device?.name ?? "Unknown device";
-  const weight = plan.amount ? `${plan.amount} kg` : "-";
+  const weight = plan.amount ? `${(plan.amount / 1000).toFixed(1)} kg` : "-";
   const duration = plan.profile?.duration
     ? formatDuration(plan.profile.duration)
     : "-";
