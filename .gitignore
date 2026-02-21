@@ -13,3 +13,5 @@ web-build/
 !.env.example
 ios/
 android/
+.DS_Store
+.claude/
