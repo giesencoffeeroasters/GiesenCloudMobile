@@ -594,6 +594,7 @@ export default function PlanningScreen() {
               key={item.key}
               style={[
                 styles.dateItem,
+                item.isToday && !isSelected && styles.dateItemToday,
                 isSelected && styles.dateItemSelected,
               ]}
               onPress={() => setSelectedKey(item.key)}
@@ -964,6 +965,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  dateItemToday: {
+    borderColor: Colors.slate,
+    borderWidth: 1.5,
   },
   dateItemSelected: {
     backgroundColor: Colors.slate,
