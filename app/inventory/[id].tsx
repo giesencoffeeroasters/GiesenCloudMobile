@@ -503,7 +503,7 @@ export default function InventoryDetailScreen() {
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Price per kg</Text>
                   <Text style={styles.detailValue}>
-                    {item.currency ?? ""} {item.price_per_kg.toFixed(2)}
+                    {item.currency ?? ""} {Number(item.price_per_kg).toFixed(2)}
                   </Text>
                 </View>
               </View>
@@ -665,7 +665,7 @@ export default function InventoryDetailScreen() {
                     <View style={styles.qualityStat}>
                       <Text style={styles.qualityStatLabel}>Moisture</Text>
                       <Text style={styles.qualityStatValue}>
-                        {item.latest_physical_reading.moisture_content.toFixed(1)}
+                        {Number(item.latest_physical_reading.moisture_content).toFixed(1)}
                       </Text>
                       <Text style={styles.qualityStatUnit}>%</Text>
                     </View>
@@ -674,7 +674,7 @@ export default function InventoryDetailScreen() {
                     <View style={styles.qualityStat}>
                       <Text style={styles.qualityStatLabel}>Water Activity</Text>
                       <Text style={styles.qualityStatValue}>
-                        {item.latest_physical_reading.water_activity.toFixed(3)}
+                        {Number(item.latest_physical_reading.water_activity).toFixed(3)}
                       </Text>
                       <Text style={styles.qualityStatUnit}>aw</Text>
                     </View>
@@ -683,7 +683,7 @@ export default function InventoryDetailScreen() {
                     <View style={styles.qualityStat}>
                       <Text style={styles.qualityStatLabel}>Density</Text>
                       <Text style={styles.qualityStatValue}>
-                        {Math.round(item.latest_physical_reading.density)}
+                        {Math.round(Number(item.latest_physical_reading.density))}
                       </Text>
                       <Text style={styles.qualityStatUnit}>g/L</Text>
                     </View>
@@ -698,7 +698,7 @@ export default function InventoryDetailScreen() {
                       <View style={styles.secondaryItem}>
                         <Text style={styles.secondaryLabel}>Temperature</Text>
                         <Text style={styles.secondaryValue}>
-                          {item.latest_physical_reading.temperature.toFixed(1)}{"\u00B0"}C
+                          {Number(item.latest_physical_reading.temperature).toFixed(1)}{"\u00B0"}C
                         </Text>
                       </View>
                     ) : null}
@@ -706,7 +706,7 @@ export default function InventoryDetailScreen() {
                       <View style={styles.secondaryItem}>
                         <Text style={styles.secondaryLabel}>Humidity</Text>
                         <Text style={styles.secondaryValue}>
-                          {item.latest_physical_reading.humidity.toFixed(1)}%
+                          {Number(item.latest_physical_reading.humidity).toFixed(1)}%
                         </Text>
                       </View>
                     ) : null}
@@ -776,7 +776,7 @@ export default function InventoryDetailScreen() {
 
                 {item.latest_defect_analysis.sample_weight_grams ? (
                   <Text style={styles.measuredAt}>
-                    Sample weight: {(item.latest_defect_analysis.sample_weight_grams / 1000).toFixed(1)} kg
+                    Sample weight: {(Number(item.latest_defect_analysis.sample_weight_grams) / 1000).toFixed(1)} kg
                     {item.latest_defect_analysis.analyzed_at
                       ? ` \u00B7 ${formatDate(item.latest_defect_analysis.analyzed_at)}`
                       : ""}
@@ -825,7 +825,7 @@ export default function InventoryDetailScreen() {
                           />
                         </View>
                         <Text style={styles.screenPct}>
-                          {result.percentage.toFixed(1)}%
+                          {Number(result.percentage).toFixed(1)}%
                         </Text>
                       </View>
                     );
@@ -884,7 +884,7 @@ export default function InventoryDetailScreen() {
                                   { color: scoreStyle.color },
                                 ]}
                               >
-                                {sample.average_score.toFixed(1)}
+                                {Number(sample.average_score).toFixed(1)}
                               </Text>
                             </View>
                           ) : null}

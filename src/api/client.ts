@@ -18,11 +18,18 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
+let onUnauthorized: (() => void) | null = null;
+
+export function setOnUnauthorized(callback: () => void) {
+  onUnauthorized = callback;
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
       await SecureStore.deleteItemAsync("auth_token");
+      onUnauthorized?.();
     }
     return Promise.reject(error);
   }

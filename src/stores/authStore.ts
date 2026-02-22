@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
 import * as Notifications from "expo-notifications";
-import apiClient from "@/api/client";
+import apiClient, { setOnUnauthorized } from "@/api/client";
 import { disconnectPusher } from "@/services/pusher";
 import { getExpoPushToken } from "@/hooks/usePushNotifications";
 
@@ -27,7 +27,13 @@ interface AuthState {
   loadUser: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set) => {
+  // Sync auth state when API client detects a 401
+  setOnUnauthorized(() => {
+    set({ user: null, isAuthenticated: false });
+  });
+
+  return ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -85,4 +91,5 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     }
   },
-}));
+});
+});
