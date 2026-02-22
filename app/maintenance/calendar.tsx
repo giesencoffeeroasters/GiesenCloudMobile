@@ -359,7 +359,7 @@ export default function CalendarScreen() {
           <TouchableOpacity
             style={styles.backBtn}
             activeOpacity={0.7}
-            onPress={() => router.back()}
+            onPress={() => router.navigate("/(tabs)/maintenance")}
           >
             <BackIcon color="#ffffff" />
           </TouchableOpacity>
@@ -380,7 +380,7 @@ export default function CalendarScreen() {
         <TouchableOpacity
           style={styles.backBtn}
           activeOpacity={0.7}
-          onPress={() => router.back()}
+          onPress={() => router.navigate("/(tabs)/maintenance")}
         >
           <BackIcon color="#ffffff" />
         </TouchableOpacity>

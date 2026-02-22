@@ -152,7 +152,7 @@ export default function InventoryDetailScreen() {
               <TouchableOpacity
                 style={styles.backButton}
                 activeOpacity={0.7}
-                onPress={() => router.back()}
+                onPress={() => router.navigate("/(tabs)/inventory")}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -191,7 +191,7 @@ export default function InventoryDetailScreen() {
               <TouchableOpacity
                 style={styles.backButton}
                 activeOpacity={0.7}
-                onPress={() => router.back()}
+                onPress={() => router.navigate("/(tabs)/inventory")}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -219,7 +219,7 @@ export default function InventoryDetailScreen() {
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.back()}
+            onPress={() => router.navigate("/(tabs)/inventory")}
             activeOpacity={0.7}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>
@@ -242,7 +242,7 @@ export default function InventoryDetailScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.back()}
+              onPress={() => router.navigate("/(tabs)/inventory")}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path

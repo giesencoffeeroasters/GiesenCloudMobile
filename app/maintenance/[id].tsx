@@ -750,7 +750,7 @@ export default function MaintenanceTaskDetailScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.back()}
+              onPress={() => router.navigate("/(tabs)/maintenance")}
             >
               <BackIcon />
             </TouchableOpacity>
@@ -794,7 +794,7 @@ export default function MaintenanceTaskDetailScreen() {
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.back()}
+            onPress={() => router.navigate("/(tabs)/maintenance")}
             activeOpacity={0.7}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>
@@ -1212,7 +1212,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       </TouchableOpacity>
       <TouchableOpacity
         style={{ marginTop: 12, paddingVertical: 8 }}
-        onPress={() => router.back()}
+        onPress={() => router.navigate("/(tabs)/maintenance")}
         activeOpacity={0.7}
       >
         <Text

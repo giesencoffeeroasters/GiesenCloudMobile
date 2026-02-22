@@ -9,9 +9,11 @@ import {
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Rect, Line, Text as SvgText, G } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 
 /* ------------------------------------------------------------------ */
@@ -339,6 +341,7 @@ function SkeletonCard() {
 
 export default function ReportsScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
   const screenWidth = Dimensions.get("window").width;
 
   const [activeTab, setActiveTab] = useState<ReportTab>("production");
@@ -391,9 +394,11 @@ export default function ReportsScreen() {
     [activeTab, startDate, endDate]
   );
 
-  useEffect(() => {
-    fetchReport();
-  }, [fetchReport]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchReport();
+    }, [fetchReport, user?.current_team?.id])
+  );
 
   const tabs: { key: ReportTab; label: string }[] = [
     { key: "production", label: "Production" },

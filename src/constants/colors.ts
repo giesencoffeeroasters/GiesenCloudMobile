@@ -3,7 +3,7 @@ export const Colors = {
   slateLight: "#4a4a4a",
   gravel: "#d9d9d4",
   gravelLight: "#eeeee9",
-  safety: "#ccff00",
+  safety: "#d9d9d4",
   sky: "#4d92b8",
   skyDark: "#3a7a9e",
   skyBg: "rgba(77, 146, 184, 0.10)",

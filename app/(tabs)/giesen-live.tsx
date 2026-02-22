@@ -9,9 +9,11 @@ import {
   Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Rect, Line, Path, Circle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import { useLiveStore, DeviceReading } from "@/stores/liveStore";
 
@@ -267,6 +269,7 @@ function MachineCard({
 /* ─── Main screen ─── */
 export default function GiesenLiveScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
   const [devicesMeta, setDevicesMeta] = useState<DeviceMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -294,9 +297,11 @@ export default function GiesenLiveScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchDevices();
-  }, [fetchDevices]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDevices();
+    }, [fetchDevices, user?.current_team?.id])
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);

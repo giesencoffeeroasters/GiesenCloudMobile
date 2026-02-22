@@ -283,10 +283,10 @@ export default function CreatePlanScreen() {
           }
         }
 
-        router.back();
+        router.navigate("/(tabs)/planning");
       } else {
         await apiClient.post("/planning", payload);
-        router.back();
+        router.navigate("/(tabs)/planning");
       }
     } catch (error: any) {
       if (error.response?.status === 422) {
@@ -319,7 +319,7 @@ export default function CreatePlanScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.back()}
+              onPress={() => router.navigate("/(tabs)/planning")}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path
@@ -799,7 +799,6 @@ export default function CreatePlanScreen() {
                 placeholderTextColor={Colors.textTertiary}
                 value={profileSearch}
                 onChangeText={setProfileSearch}
-                autoFocus
               />
             </View>
 
@@ -911,7 +910,6 @@ export default function CreatePlanScreen() {
                 placeholderTextColor={Colors.textTertiary}
                 value={deviceSearch}
                 onChangeText={setDeviceSearch}
-                autoFocus
               />
             </View>
 
@@ -1021,7 +1019,6 @@ export default function CreatePlanScreen() {
                 placeholderTextColor={Colors.textTertiary}
                 value={employeeSearch}
                 onChangeText={setEmployeeSearch}
-                autoFocus
               />
             </View>
 

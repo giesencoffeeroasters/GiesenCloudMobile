@@ -65,19 +65,24 @@ export default function DashboardScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const fetchDashboard = async (refresh = false) => {
-    if (refresh) setIsRefreshing(true);
-    try {
-      const response =
-        await apiClient.get<ApiResponse<DashboardData>>("/dashboard");
-      setData(response.data.data);
-    } catch {
-      // Silently fail
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const teamId = user?.current_team?.id;
+
+  const fetchDashboard = useCallback(
+    async (refresh = false) => {
+      if (refresh) setIsRefreshing(true);
+      try {
+        const response =
+          await apiClient.get<ApiResponse<DashboardData>>("/dashboard");
+        setData(response.data.data);
+      } catch {
+        // Silently fail
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    []
+  );
 
   useRoastPlanningBroadcast(() => {
     fetchDashboard();
@@ -87,11 +92,19 @@ export default function DashboardScreen() {
     loadWidgets();
   }, []);
 
+  // Fetch on focus and when team changes
   useFocusEffect(
     useCallback(() => {
       fetchDashboard();
-    }, [])
+    }, [fetchDashboard, teamId])
   );
+
+  // Clear old data and refetch when team changes
+  useEffect(() => {
+    setData(null);
+    setIsLoading(true);
+    fetchDashboard();
+  }, [teamId, fetchDashboard]);
 
   const renderWidget = useCallback(
     (key: string) => {

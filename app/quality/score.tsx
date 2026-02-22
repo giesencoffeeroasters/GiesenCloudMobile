@@ -611,7 +611,7 @@ export default function ScoreSampleScreen() {
         `/quality/${sessionId}/samples/${sampleId}/evaluate`,
         payload
       );
-      router.back();
+      router.navigate("/(tabs)/quality");
     } catch (err: any) {
       const msg =
         err.response?.data?.message ??
@@ -711,7 +711,7 @@ export default function ScoreSampleScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.back()}
+              onPress={() => router.navigate("/(tabs)/quality")}
             >
               <BackIcon />
             </TouchableOpacity>
@@ -757,7 +757,7 @@ export default function ScoreSampleScreen() {
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.back()}
+            onPress={() => router.navigate("/(tabs)/quality")}
             activeOpacity={0.7}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>

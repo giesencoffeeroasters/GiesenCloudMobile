@@ -426,7 +426,7 @@ export default function PlanDetailScreen() {
             setDeleting(true);
             try {
               await apiClient.delete(`/planning/${id}`);
-              router.back();
+              router.navigate("/(tabs)/planning");
             } catch (err) {
               Alert.alert("Error", "Failed to delete plan.");
             } finally {
@@ -448,7 +448,7 @@ export default function PlanDetailScreen() {
               <TouchableOpacity
                 style={styles.backButton}
                 activeOpacity={0.7}
-                onPress={() => router.back()}
+                onPress={() => router.navigate("/(tabs)/planning")}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -487,7 +487,7 @@ export default function PlanDetailScreen() {
               <TouchableOpacity
                 style={styles.backButton}
                 activeOpacity={0.7}
-                onPress={() => router.back()}
+                onPress={() => router.navigate("/(tabs)/planning")}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -513,7 +513,7 @@ export default function PlanDetailScreen() {
           <Text style={styles.errorText}>{error ?? "Plan not found."}</Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.back()}
+            onPress={() => router.navigate("/(tabs)/planning")}
             activeOpacity={0.7}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>
@@ -1303,7 +1303,7 @@ export default function PlanDetailScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.back()}
+              onPress={() => router.navigate("/(tabs)/planning")}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path

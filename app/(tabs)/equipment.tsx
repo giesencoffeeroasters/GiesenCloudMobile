@@ -9,10 +9,12 @@ import {
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import { ProfilerDevice } from "@/types/index";
 
@@ -31,6 +33,7 @@ function formatHours(hours: number | null): string {
 
 export default function EquipmentScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
   const [devices, setDevices] = useState<ProfilerDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,9 +53,11 @@ export default function EquipmentScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchDevices();
-  }, [fetchDevices]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDevices();
+    }, [fetchDevices, user?.current_team?.id])
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);

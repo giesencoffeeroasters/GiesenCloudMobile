@@ -12,10 +12,12 @@ import {
   TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import type { ProfilerProfile, ProfileSummary } from "@/types";
 
@@ -705,6 +707,8 @@ export default function RoastsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ segment?: string }>();
+  const { user } = useAuthStore();
+  const teamId = user?.current_team?.id;
 
   // Segment state
   const [activeSegment, setActiveSegment] = useState<Segment>(
@@ -807,16 +811,30 @@ export default function RoastsScreen() {
     [fetchProfiles, fetchProfilesSummary]
   );
 
+  // Fetch on focus and when team changes
+  useFocusEffect(
+    useCallback(() => {
+      setIsLoading(true);
+      loadData(activeFilter).finally(() => setIsLoading(false));
+    }, [loadData, activeFilter, teamId])
+  );
+
+  // Clear all data and refetch when team changes
   useEffect(() => {
+    setRoasts([]);
+    setSummary(null);
+    setProfiles([]);
+    setProfilesSummary(null);
+    setProfilesLoaded(false);
     setIsLoading(true);
     loadData(activeFilter).finally(() => setIsLoading(false));
-  }, []);
+  }, [teamId, loadData, activeFilter]);
 
   useEffect(() => {
     fetchRoasts(activeFilter);
   }, [activeFilter, fetchRoasts]);
 
-  // Lazy-load profiles when segment first switches
+  // Lazy-load profiles when segment first switches (or after team change resets profilesLoaded)
   useEffect(() => {
     if (activeSegment === "profiles" && !profilesLoaded) {
       setIsProfilesLoading(true);

@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Line, Circle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 
 /* ------------------------------------------------------------------ */
@@ -280,6 +281,7 @@ type FilterOption = "all" | "active" | "completed" | "blind";
 
 export default function QualityScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
   const [activeSessions, setActiveSessions] = useState<QualitySession[]>([]);
   const [completedSessions, setCompletedSessions] = useState<QualitySession[]>(
     []
@@ -324,7 +326,7 @@ export default function QualityScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData().finally(() => setIsLoading(false));
-    }, [loadData])
+    }, [loadData, user?.current_team?.id])
   );
 
   const onRefresh = useCallback(async () => {

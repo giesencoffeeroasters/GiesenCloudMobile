@@ -243,7 +243,7 @@ export default function ProfileDetailScreen() {
               <TouchableOpacity
                 style={detailStyles.backButton}
                 activeOpacity={0.7}
-                onPress={() => router.navigate({ pathname: "/(tabs)/roasts", params: { segment: "profiles" } })}
+                onPress={() => router.navigate("/(tabs)/roasts")}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -282,7 +282,7 @@ export default function ProfileDetailScreen() {
               <TouchableOpacity
                 style={detailStyles.backButton}
                 activeOpacity={0.7}
-                onPress={() => router.navigate({ pathname: "/(tabs)/roasts", params: { segment: "profiles" } })}
+                onPress={() => router.navigate("/(tabs)/roasts")}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -310,7 +310,7 @@ export default function ProfileDetailScreen() {
           </Text>
           <TouchableOpacity
             style={detailStyles.retryButton}
-            onPress={() => router.navigate({ pathname: "/(tabs)/roasts", params: { segment: "profiles" } })}
+            onPress={() => router.navigate("/(tabs)/roasts")}
             activeOpacity={0.7}
           >
             <Text style={detailStyles.retryButtonText}>Go Back</Text>
@@ -329,7 +329,7 @@ export default function ProfileDetailScreen() {
             <TouchableOpacity
               style={detailStyles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.navigate({ pathname: "/(tabs)/roasts", params: { segment: "profiles" } })}
+              onPress={() => router.navigate("/(tabs)/roasts")}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path
@@ -622,10 +622,9 @@ export default function ProfileDetailScreen() {
                   strokeLinecap="round"
                 />
               </Svg>
-              <Text style={detailStyles.cardTitle}>Charge & Setpoints</Text>
+              <Text style={detailStyles.cardTitle}>Charge</Text>
             </View>
 
-            {/* Initial readings */}
             {profile.curve_data.bean_temp?.[0] ? (
               <View style={detailStyles.detailRow}>
                 <Text style={detailStyles.detailLabel}>Bean Temp</Text>
@@ -674,27 +673,47 @@ export default function ProfileDetailScreen() {
                 </View>
               </>
             ) : null}
+          </View>
+        ) : null}
 
-            {/* Setpoints */}
-            {profile.setpoints.length > 0 ? (
-              <>
-                <View style={detailStyles.setpointDivider} />
-                <Text style={detailStyles.setpointSectionLabel}>Setpoints</Text>
-                {profile.setpoints.map((sp, index) => (
-                  <View key={`sp-${index}`}>
-                    {index > 0 ? <View style={detailStyles.detailDivider} /> : null}
-                    <View style={detailStyles.detailRow}>
-                      <Text style={detailStyles.detailLabel}>
-                        {formatSetpointLabel(sp.key)}
-                      </Text>
-                      <Text style={detailStyles.detailValue}>
-                        {formatSetpointValue(sp)}
+        {/* 6b. Setpoints Card */}
+        {profile.setpoints.length > 0 ? (
+          <View style={detailStyles.card}>
+            <View style={detailStyles.cardHeader}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"
+                  stroke={Colors.sun}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={detailStyles.cardTitle}>Setpoints</Text>
+              <Text style={detailStyles.cardCount}>
+                {profile.setpoints.length}
+              </Text>
+            </View>
+            {profile.setpoints.map((sp, index) => (
+              <View key={`sp-${index}`}>
+                {index > 0 ? <View style={detailStyles.detailDivider} /> : null}
+                <View style={detailStyles.eventRow}>
+                  {sp.timePassed != null ? (
+                    <View style={detailStyles.eventTimeBadge}>
+                      <Text style={detailStyles.eventTimeText}>
+                        {formatDuration(Math.round(sp.timePassed))}
                       </Text>
                     </View>
-                  </View>
-                ))}
-              </>
-            ) : null}
+                  ) : null}
+                  <Text style={detailStyles.eventLabel}>
+                    {formatSetpointLabel(sp.key)}
+                  </Text>
+                  <Text style={[detailStyles.detailValue, { marginLeft: "auto" }]}>
+                    {formatSetpointValue(sp)}
+                  </Text>
+                </View>
+              </View>
+            ))}
           </View>
         ) : null}
 
@@ -1100,6 +1119,11 @@ const detailStyles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
+  },
+  setpointTime: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 13,
+    color: Colors.textTertiary,
   },
 
   /* -- Event Timeline -- */

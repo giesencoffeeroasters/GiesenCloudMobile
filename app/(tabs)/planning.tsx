@@ -14,6 +14,7 @@ import { router, useFocusEffect } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import { PlanningItem, ProfilerDevice, ApiResponse } from "@/types/index";
 import { useRoastPlanningBroadcast } from "@/hooks/useRoastPlanningBroadcast";
@@ -280,6 +281,7 @@ function PlanCard({ plan, index, onPress }: PlanCardProps) {
 
 export default function PlanningScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<ViewOption>("Day");
   const [plans, setPlans] = useState<PlanningItem[]>([]);
@@ -395,7 +397,7 @@ export default function PlanningScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchPlans();
-    }, [fetchPlans])
+    }, [fetchPlans, user?.current_team?.id])
   );
 
   const handleRefresh = useCallback(() => {

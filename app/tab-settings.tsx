@@ -121,7 +121,7 @@ export default function TabSettingsScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.back()}
+              onPress={() => router.navigate("/(tabs)/more")}
             >
               <BackIcon />
             </TouchableOpacity>

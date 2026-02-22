@@ -19,6 +19,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import {
   InventoryItem,
@@ -82,6 +83,7 @@ function formatDate(dateString: string | null): string {
 
 export default function InventoryScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterOption>("All");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -154,7 +156,7 @@ export default function InventoryScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchInventory(searchQuery);
-    }, [fetchInventory, searchQuery])
+    }, [fetchInventory, searchQuery, user?.current_team?.id])
   );
 
   useEffect(() => {

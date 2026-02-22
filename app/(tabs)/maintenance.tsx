@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import type {
   MaintenanceTask,
@@ -452,6 +453,7 @@ const FILTER_OPTIONS: { key: FilterOption; label: string }[] = [
 
 export default function MaintenanceScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
   const [summary, setSummary] = useState<MaintenanceSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -524,7 +526,7 @@ export default function MaintenanceScreen() {
     useCallback(() => {
       fetchAssets();
       loadData(activeFilter).finally(() => setIsLoading(false));
-    }, [loadData, activeFilter, fetchAssets])
+    }, [loadData, activeFilter, fetchAssets, user?.current_team?.id])
   );
 
   useEffect(() => {
