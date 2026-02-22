@@ -22,6 +22,7 @@ export interface DashboardData {
 
 export interface RoastPlan {
   id: number;
+  order: number;
   scheduled_at: string;
   profile: {
     id: number;
@@ -144,6 +145,9 @@ export interface ProfilerDevice {
   last_synced_at: string | null;
   roasts_count: number;
   image_url: string | null;
+  has_planning_subscription?: boolean;
+  has_speciality_or_industrial?: boolean;
+  subscription_tier?: string | null;
 }
 
 export interface ProfilerDeviceDetail extends ProfilerDevice {
@@ -253,4 +257,241 @@ export interface ProfilerRoast {
   roasted_at: string;
   green_coffee: string;
   batch_size: number;
+}
+
+// Cupping / Quality types
+export interface CuppingFormAttribute {
+  id: number;
+  name: string;
+  label: string;
+  min_score: number;
+  max_score: number;
+  step: number;
+  sort_order: number;
+  is_required: boolean;
+  has_cup_tracking: boolean;
+  has_descriptors: boolean;
+  score_group: string | null;
+}
+
+export interface CuppingForm {
+  id: number;
+  name: string;
+  type: string;
+  attributes: CuppingFormAttribute[];
+}
+
+export interface CuppingScoreEntry {
+  cupping_form_attribute_id: number;
+  score: number;
+}
+
+export interface CuppingCupScoreEntry {
+  cupping_form_attribute_id: number;
+  cup_number: number;
+  passed: boolean;
+}
+
+export interface CuppingDescriptorEntry {
+  cupping_form_attribute_id: number;
+  cupping_descriptor_id: number;
+  descriptor_name: string | null;
+  is_positive: boolean;
+  intensity: "low" | "medium" | "high" | null;
+}
+
+export interface CuppingDescriptorItem {
+  id: number;
+  name: string;
+}
+
+export interface CuppingDescriptorCategory {
+  id: number;
+  name: string;
+  children: {
+    id: number;
+    name: string;
+    children: CuppingDescriptorItem[];
+  }[];
+}
+
+export interface CuppingEvaluation {
+  id: number;
+  total_score: number | null;
+  defect_cups: number;
+  defect_intensity: number;
+  notes: string | null;
+  scores: CuppingScoreEntry[];
+  cup_scores: CuppingCupScoreEntry[];
+  descriptors: CuppingDescriptorEntry[];
+}
+
+export interface CuppingSample {
+  id: number;
+  sample_number: number;
+  sample_code: string;
+  label: string | null;
+  notes: string | null;
+  average_score: number | null;
+  attributes: { label: string; score: number }[];
+  my_evaluation: CuppingEvaluation | null;
+}
+
+export interface CuppingSessionDetail {
+  id: number;
+  name: string;
+  description: string | null;
+  status: string;
+  is_blind: boolean;
+  scheduled_at: string | null;
+  created_at: string | null;
+  creator: { id: number; name: string } | null;
+  overall_score: number | null;
+  form: CuppingForm;
+  samples: CuppingSample[];
+}
+
+// Maintenance types
+export type MaintenanceTaskStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "overdue"
+  | "skipped";
+export type MaintenancePriority = "critical" | "high" | "medium" | "low";
+export type WarrantyStatus = "active" | "suspended" | "expired" | "voided";
+
+export interface MaintenanceTask {
+  id: number;
+  title: string;
+  status: MaintenanceTaskStatus;
+  status_label: string;
+  priority: MaintenancePriority;
+  priority_label: string;
+  is_warranty_required: boolean;
+  due_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  skipped_at: string | null;
+  skip_reason: string | null;
+  notes: string | null;
+  assignee: { id: number; name: string } | null;
+  asset: { hubspot_id: string; name: string } | null;
+  warranty: MaintenanceWarranty | null;
+  template: {
+    id: number;
+    title: string;
+    description: string | null;
+    estimated_minutes: number | null;
+    trigger_type: string;
+  } | null;
+  steps: MaintenanceTaskStep[];
+  comments: MaintenanceComment[];
+  comments_count: number;
+  steps_completed: number;
+  steps_total: number;
+  created_at: string;
+}
+
+export interface MaintenanceTaskStep {
+  id: number;
+  title: string;
+  is_completed: boolean;
+  completed_at: string | null;
+  completed_by: { id: number; name: string } | null;
+  photo_path: string | null;
+  reading_value: string | null;
+  reading_label: string | null;
+  notes: string | null;
+  requires_photo: boolean;
+  requires_reading: boolean;
+  reading_unit: string | null;
+  description: string | null;
+}
+
+export interface MaintenanceWarranty {
+  id: number;
+  status: WarrantyStatus;
+  compliance_score: number;
+  expires_at: string | null;
+}
+
+export interface MaintenanceComment {
+  id: number;
+  comment: string;
+  is_staff_comment: boolean;
+  user: { id: number; name: string };
+  created_at: string;
+}
+
+export interface MaintenanceSummary {
+  overdue_count: number;
+  pending_count: number;
+  in_progress_count: number;
+  completed_this_month: number;
+  compliance_scores: {
+    asset_name: string;
+    warranty_status: WarrantyStatus;
+    score: number;
+  }[];
+  upcoming_tasks: MaintenanceTask[];
+}
+
+export interface SkipImpact {
+  current_score: number;
+  projected_score: number;
+  will_void: boolean;
+}
+
+// Calendar
+export interface CalendarTask {
+  id: number;
+  title: string;
+  priority: MaintenancePriority;
+  status: MaintenanceTaskStatus;
+  due_at: string;
+  asset_name: string;
+  assignee_name: string | null;
+}
+
+export type CalendarData = Record<string, CalendarTask[]>;
+
+// Warranty detail
+export interface WarrantyDetail {
+  id: number;
+  asset_id: string;
+  asset_name: string;
+  roaster_model: string;
+  status: WarrantyStatus;
+  compliance_score: number;
+  started_at: string | null;
+  expires_at: string | null;
+  tasks_summary: {
+    total: number;
+    completed: number;
+    pending: number;
+    overdue: number;
+    skipped: number;
+    in_progress: number;
+  };
+  recent_tasks: MaintenanceTask[];
+}
+
+// Warranty list item (from /maintenance/warranties)
+export interface WarrantyListItem {
+  id: number;
+  asset_name: string;
+  asset_id: string;
+  roaster_model: string;
+  status: WarrantyStatus;
+  compliance_score: number;
+  started_at: string | null;
+  expires_at: string | null;
+}
+
+// Team asset (for asset filter chips)
+export interface TeamAsset {
+  hubspot_id: string;
+  name: string;
+  model: string;
 }
