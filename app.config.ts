@@ -6,7 +6,7 @@ const envConfig = {
   development: {
     name: "GiesenCloud (Dev)",
     apiUrl: "https://giesencloud.test/api/mobile/v1",
-    reverbHost: "reverb.herd.test",
+    reverbHost: "reverb.test",
     reverbKey: "laravel-herd",
   },
   staging: {
@@ -65,11 +65,23 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     edgeToEdgeEnabled: true,
     package: "com.giesen.cloud",
   },
-  plugins: ["expo-router", "expo-secure-store"],
+  plugins: [
+    "expo-router",
+    "expo-secure-store",
+    [
+      "expo-notifications",
+      {
+        sounds: [],
+      },
+    ],
+  ],
   extra: {
     appEnv: APP_ENV,
     apiUrl: env.apiUrl,
     reverbHost: env.reverbHost,
     reverbKey: env.reverbKey,
+    eas: {
+      projectId: "your-eas-project-id",
+    },
   },
 });

@@ -1,8 +1,10 @@
 import { Platform } from "react-native";
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
+import * as Notifications from "expo-notifications";
 import apiClient from "@/api/client";
 import { disconnectPusher } from "@/services/pusher";
+import { getExpoPushToken } from "@/hooks/usePushNotifications";
 
 interface User {
   id: number;
@@ -43,9 +45,22 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     try {
+      // Unregister push token before logging out
+      try {
+        const pushToken = await getExpoPushToken();
+        if (pushToken) {
+          await apiClient.delete("/device/push-token", {
+            data: { token: pushToken },
+          });
+        }
+      } catch {
+        // Don't block logout if push token removal fails
+      }
+
       await apiClient.post("/auth/logout");
     } finally {
       disconnectPusher();
+      await Notifications.setBadgeCountAsync(0);
       await SecureStore.deleteItemAsync("auth_token");
       set({ user: null, isAuthenticated: false });
     }
