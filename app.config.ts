@@ -43,8 +43,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: false,
     bundleIdentifier: "com.giesen.cloud",
-    ...(APP_ENV === "development" && {
-      infoPlist: {
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+      ...(APP_ENV === "development" && {
         NSAppTransportSecurity: {
           NSAllowsArbitraryLoads: false,
           NSExceptionDomains: {
@@ -54,8 +55,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             },
           },
         },
-      },
-    }),
+      }),
+    },
   },
   android: {
     adaptiveIcon: {
@@ -81,7 +82,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     reverbHost: env.reverbHost,
     reverbKey: env.reverbKey,
     eas: {
-      projectId: "your-eas-project-id",
+      projectId: "17d21c66-42bf-44f3-9e7f-d7b4039c5050",
     },
   },
 });

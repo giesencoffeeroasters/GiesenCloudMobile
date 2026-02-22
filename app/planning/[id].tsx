@@ -231,6 +231,9 @@ export default function PlanDetailScreen() {
             roaster_model: plan.profile.roaster_model ?? null,
             duration: plan.profile.duration ?? null,
             start_weight: plan.profile.start_weight ?? null,
+            end_weight: null,
+            weight_change: null,
+            bean_type: null,
             is_favorite: false,
             roasts_count: 0,
             created_at: "",
@@ -245,6 +248,14 @@ export default function PlanDetailScreen() {
             model: plan.device.model,
             serial_number: null,
             roasting_hours: null,
+            running_hours: null,
+            connection_type: null,
+            ip_address: null,
+            version: null,
+            claim_status: null,
+            last_synced_at: null,
+            roasts_count: 0,
+            image_url: null,
           }
         : null
     );
@@ -1362,13 +1373,6 @@ export default function PlanDetailScreen() {
             <Text style={styles.detailValue}>
               {formatDateShort(plan.planned_at)}
             </Text>
-          </View>
-
-          <View style={styles.detailDivider} />
-
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Time</Text>
-            <Text style={styles.detailValue}>{formatTime(plan.planned_at)}</Text>
           </View>
 
           <View style={styles.detailDivider} />

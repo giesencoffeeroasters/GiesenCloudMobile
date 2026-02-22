@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Switch,
   Platform,
   KeyboardAvoidingView,
+  Modal,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,6 +38,44 @@ interface CuppingForm {
     max_score: string;
   }[];
 }
+
+/* ------------------------------------------------------------------ */
+/*  Date helpers                                                       */
+/* ------------------------------------------------------------------ */
+
+function formatDateDisplay(dateStr: string): string {
+  const date = new Date(dateStr + "T00:00:00");
+  return date.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function getTodayString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getMonthDays(year: number, month: number): { day: number; date: Date }[] {
+  const days: { day: number; date: Date }[] = [];
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    days.push({ day: d, date: new Date(year, month, d) });
+  }
+  return days;
+}
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const DAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 /* ------------------------------------------------------------------ */
 /*  SVG Icons                                                          */
@@ -98,10 +137,20 @@ export default function CreateQualitySessionScreen() {
   const [scheduledAt, setScheduledAt] = useState("");
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
 
+  /* ── Date picker state ── */
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
+
   /* ── Forms data ── */
   const [forms, setForms] = useState<CuppingForm[]>([]);
   const [loadingForms, setLoadingForms] = useState(true);
   const [showFormPicker, setShowFormPicker] = useState(false);
+
+  /* ── Samples state ── */
+  const [samples, setSamples] = useState<{ label: string; notes: string }[]>([
+    { label: "", notes: "" },
+  ]);
 
   /* ── Submit state ── */
   const [submitting, setSubmitting] = useState(false);
@@ -132,14 +181,69 @@ export default function CreateQualitySessionScreen() {
 
   const selectedForm = forms.find((f) => f.id === selectedFormId);
 
+  /* ── Calendar helpers ── */
+  const calendarDays = useMemo(
+    () => getMonthDays(calendarYear, calendarMonth),
+    [calendarYear, calendarMonth]
+  );
+
+  const firstDayOffset = useMemo(() => {
+    const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+    return firstDay === 0 ? 6 : firstDay - 1;
+  }, [calendarYear, calendarMonth]);
+
+  const handlePrevMonth = () => {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear((y) => y - 1);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear((y) => y + 1);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  };
+
+  const handleSelectDate = (day: number) => {
+    const month = String(calendarMonth + 1).padStart(2, "0");
+    const dayStr = String(day).padStart(2, "0");
+    setScheduledAt(`${calendarYear}-${month}-${dayStr}`);
+    setShowDatePicker(false);
+  };
+
+  /* ── Sample helpers ── */
+  function getSampleCode(index: number): string {
+    return String.fromCharCode(65 + index); // A, B, C...
+  }
+
+  function addSample() {
+    setSamples((prev) => [...prev, { label: "", notes: "" }]);
+  }
+
+  function removeSample(index: number) {
+    setSamples((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateSample(index: number, field: "label" | "notes", value: string) {
+    setSamples((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))
+    );
+  }
+
   /* ── Validate ── */
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) {
       newErrors.name = "Session name is required.";
     }
-    if (scheduledAt.trim() && isNaN(Date.parse(scheduledAt.trim()))) {
-      newErrors.scheduled_at = "Please enter a valid date (YYYY-MM-DD).";
+    if (scheduledAt && isNaN(Date.parse(scheduledAt))) {
+      newErrors.scheduled_at = "Please select a valid date.";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -165,6 +269,14 @@ export default function CreateQualitySessionScreen() {
       }
       if (selectedFormId) {
         payload.cupping_form_id = selectedFormId;
+      }
+
+      const validSamples = samples.filter((s) => s.label.trim());
+      if (validSamples.length > 0) {
+        payload.samples = validSamples.map((s) => ({
+          label: s.label.trim(),
+          notes: s.notes.trim() || null,
+        }));
       }
 
       const response = await apiClient.post("/quality", payload);
@@ -396,21 +508,124 @@ export default function CreateQualitySessionScreen() {
           {/* Schedule Date */}
           <View style={styles.fieldCard}>
             <Text style={styles.fieldLabel}>Schedule Date</Text>
-            <TextInput
-              style={[
-                styles.textInput,
-                errors.scheduled_at ? styles.textInputError : null,
-              ]}
-              value={scheduledAt}
-              onChangeText={setScheduledAt}
-              placeholder="YYYY-MM-DD (optional)"
-              placeholderTextColor={Colors.textTertiary}
-              keyboardType="numbers-and-punctuation"
-              returnKeyType="done"
-            />
+            <View style={styles.datePickerRow}>
+              <TouchableOpacity
+                style={[
+                  styles.pickerButton,
+                  { flex: 1 },
+                  errors.scheduled_at ? styles.textInputError : null,
+                ]}
+                activeOpacity={0.7}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M19 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zM16 2v4M8 2v4M3 10h18"
+                    stroke={Colors.textSecondary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+                <Text
+                  style={[
+                    styles.pickerButtonText,
+                    !scheduledAt && styles.pickerPlaceholder,
+                  ]}
+                >
+                  {scheduledAt
+                    ? formatDateDisplay(scheduledAt)
+                    : "Select date (optional)"}
+                </Text>
+                <ChevronDownIcon color={Colors.textTertiary} />
+              </TouchableOpacity>
+              {scheduledAt ? (
+                <TouchableOpacity
+                  style={styles.clearDateButton}
+                  activeOpacity={0.7}
+                  onPress={() => setScheduledAt("")}
+                >
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M18 6L6 18M6 6l12 12"
+                      stroke={Colors.textSecondary}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </TouchableOpacity>
+              ) : null}
+            </View>
             {errors.scheduled_at ? (
               <Text style={styles.fieldError}>{errors.scheduled_at}</Text>
             ) : null}
+          </View>
+
+          {/* Samples */}
+          <View style={styles.fieldCard}>
+            <Text style={styles.fieldLabel}>Samples</Text>
+            <View style={{ gap: 12 }}>
+              {samples.map((sample, index) => (
+                <View key={index} style={styles.sampleEntry}>
+                  <View style={styles.sampleEntryHeader}>
+                    <View style={styles.sampleCodeBadge}>
+                      <Text style={styles.sampleCodeText}>{getSampleCode(index)}</Text>
+                    </View>
+                    <Text style={styles.sampleEntryTitle}>
+                      Sample {index + 1} ({getSampleCode(index)})
+                    </Text>
+                    {samples.length > 1 ? (
+                      <TouchableOpacity
+                        style={styles.removeSampleButton}
+                        activeOpacity={0.7}
+                        onPress={() => removeSample(index)}
+                      >
+                        <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                          <Path
+                            d="M18 6L6 18M6 6l12 12"
+                            stroke={Colors.traffic}
+                            strokeWidth={1.8}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </Svg>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  <TextInput
+                    style={styles.textInput}
+                    value={sample.label}
+                    onChangeText={(v) => updateSample(index, "label", v)}
+                    placeholder="Sample label (e.g. Ethiopia Yirgacheffe)"
+                    placeholderTextColor={Colors.textTertiary}
+                  />
+                  <TextInput
+                    style={[styles.textInput, { minHeight: 50 }]}
+                    value={sample.notes}
+                    onChangeText={(v) => updateSample(index, "notes", v)}
+                    placeholder="Notes (optional)"
+                    placeholderTextColor={Colors.textTertiary}
+                    multiline
+                  />
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.addSampleButton}
+              activeOpacity={0.7}
+              onPress={addSample}
+            >
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M12 5v14M5 12h14"
+                  stroke={Colors.sky}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                />
+              </Svg>
+              <Text style={styles.addSampleButtonText}>Add Sample</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Submit Button */}
@@ -431,6 +646,109 @@ export default function CreateQualitySessionScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Date Picker Modal */}
+      <Modal
+        visible={showDatePicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Date</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(false)}
+                activeOpacity={0.7}
+              >
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M18 6L6 18M6 6l12 12"
+                    stroke={Colors.text}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+
+            {/* Month navigation */}
+            <View style={styles.calendarNav}>
+              <TouchableOpacity onPress={handlePrevMonth} activeOpacity={0.7} style={styles.calendarNavButton}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M15 18l-6-6 6-6"
+                    stroke={Colors.text}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+              <Text style={styles.calendarMonthLabel}>
+                {MONTH_NAMES[calendarMonth]} {calendarYear}
+              </Text>
+              <TouchableOpacity onPress={handleNextMonth} activeOpacity={0.7} style={styles.calendarNavButton}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M9 18l6-6-6-6"
+                    stroke={Colors.text}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </View>
+
+            {/* Day headers */}
+            <View style={styles.calendarDayHeaders}>
+              {DAY_HEADERS.map((label) => (
+                <View key={label} style={styles.calendarDayHeaderCell}>
+                  <Text style={styles.calendarDayHeaderText}>{label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Calendar grid */}
+            <View style={styles.calendarGrid}>
+              {Array.from({ length: firstDayOffset }).map((_, i) => (
+                <View key={`empty-${i}`} style={styles.calendarCell} />
+              ))}
+              {calendarDays.map(({ day }) => {
+                const dayStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const isSelected = dayStr === scheduledAt;
+                const isToday = dayStr === getTodayString();
+
+                return (
+                  <TouchableOpacity
+                    key={day}
+                    style={[
+                      styles.calendarCell,
+                      isSelected && styles.calendarCellSelected,
+                      isToday && !isSelected && styles.calendarCellToday,
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => handleSelectDate(day)}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarCellText,
+                        isSelected && styles.calendarCellTextSelected,
+                        isToday && !isSelected && styles.calendarCellTextToday,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -674,6 +992,169 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     fontSize: 12,
     color: Colors.textTertiary,
+  },
+
+  /* -- Samples -- */
+  sampleEntry: {
+    backgroundColor: Colors.bg,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 12,
+    gap: 8,
+  },
+  sampleEntryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  sampleCodeBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    backgroundColor: Colors.slate,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sampleCodeText: {
+    fontFamily: "JetBrainsMono-Bold",
+    fontSize: 12,
+    color: Colors.safety,
+  },
+  sampleEntryTitle: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 13,
+    color: Colors.text,
+    flex: 1,
+  },
+  removeSampleButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    backgroundColor: Colors.trafficBg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addSampleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.sky,
+    borderStyle: "dashed",
+    marginTop: 4,
+  },
+  addSampleButtonText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 13,
+    color: Colors.sky,
+  },
+
+  /* -- Date picker row -- */
+  datePickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  clearDateButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: Colors.gravelLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* -- Modal -- */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: Colors.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 18,
+    color: Colors.text,
+  },
+
+  /* -- Calendar -- */
+  calendarNav: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  calendarNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: Colors.gravelLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarMonthLabel: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 16,
+    color: Colors.text,
+  },
+  calendarDayHeaders: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  calendarDayHeaderCell: {
+    flex: 1,
+    alignItems: "center",
+  },
+  calendarDayHeaderText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 12,
+    color: Colors.textTertiary,
+  },
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  calendarCell: {
+    width: "14.28%",
+    aspectRatio: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarCellSelected: {
+    backgroundColor: Colors.slate,
+    borderRadius: 10,
+  },
+  calendarCellToday: {
+    borderWidth: 1.5,
+    borderColor: Colors.sky,
+    borderRadius: 10,
+  },
+  calendarCellText: {
+    fontFamily: "JetBrainsMono-Medium",
+    fontSize: 14,
+    color: Colors.text,
+  },
+  calendarCellTextSelected: {
+    color: Colors.safety,
+  },
+  calendarCellTextToday: {
+    color: Colors.sky,
   },
 
   /* -- Submit button -- */

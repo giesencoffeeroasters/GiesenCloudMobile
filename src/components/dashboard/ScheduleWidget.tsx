@@ -7,15 +7,6 @@ interface ScheduleWidgetProps {
   data: DashboardData | null;
 }
 
-function formatScheduleTime(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
 function getStatusStyle(status: string): {
   color: string;
   bg: string;
@@ -55,11 +46,10 @@ interface ScheduleCardProps {
 
 function ScheduleCard({ plan }: ScheduleCardProps) {
   const status = getStatusStyle(plan.status);
-  const time = formatScheduleTime(plan.scheduled_at);
 
   return (
     <View style={styles.scheduleCard}>
-      <Text style={styles.scheduleTime}>{time}</Text>
+      <Text style={styles.scheduleTime}>#{plan.order}</Text>
       <View style={styles.scheduleInfo}>
         <Text style={styles.scheduleProfileName} numberOfLines={1}>
           {plan.profile.name}
@@ -67,7 +57,7 @@ function ScheduleCard({ plan }: ScheduleCardProps) {
         <View style={styles.scheduleMeta}>
           <Text style={styles.scheduleMetaText}>{plan.device.name}</Text>
           <Text style={styles.scheduleMetaSeparator}>{" \u00B7 "}</Text>
-          <Text style={styles.scheduleMetaText}>{plan.batch_size} kg</Text>
+          <Text style={styles.scheduleMetaText}>{(plan.batch_size / 1000).toFixed(1)} kg</Text>
         </View>
       </View>
       <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
@@ -80,7 +70,10 @@ function ScheduleCard({ plan }: ScheduleCardProps) {
 }
 
 export function ScheduleWidget({ data }: ScheduleWidgetProps) {
-  const scheduleItems = data?.schedule?.slice(0, 5) ?? [];
+  const scheduleItems =
+    data?.schedule
+      ?.filter((p) => p.status !== "completed" && p.status !== "cancelled")
+      .slice(0, 5) ?? [];
 
   return (
     <View style={styles.section}>

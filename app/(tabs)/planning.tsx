@@ -15,7 +15,8 @@ import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
-import { PlanningItem, ApiResponse } from "@/types/index";
+import { PlanningItem, ProfilerDevice, ApiResponse } from "@/types/index";
+import { useRoastPlanningBroadcast } from "@/hooks/useRoastPlanningBroadcast";
 
 type PlanStatus = "completed" | "in_progress" | "planned";
 
@@ -79,18 +80,6 @@ function formatDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function extractTime(isoString: string): { time: string; period: string } {
-  const date = new Date(isoString);
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const period = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-  return {
-    time: `${hours}:${minutes}`,
-    period,
-  };
 }
 
 function formatDuration(seconds: number): string {
@@ -180,13 +169,14 @@ function getPlanStatus(plan: PlanningItem): PlanStatus {
 
 interface PlanCardProps {
   plan: PlanningItem;
+  index: number;
   onPress?: () => void;
 }
 
-function PlanCard({ plan, onPress }: PlanCardProps) {
+function PlanCard({ plan, index, onPress }: PlanCardProps) {
   const status = getPlanStatus(plan);
   const config = STATUS_CONFIG[status];
-  const { time, period } = extractTime(plan.planned_at);
+  const orderLabel = `#${index + 1}`;
   const profileName = plan.profile?.name ?? "No profile";
   const deviceName = plan.device?.name ?? "Unknown device";
   const weight = plan.amount ? `${(plan.amount / 1000).toFixed(1)} kg` : "-";
@@ -205,10 +195,9 @@ function PlanCard({ plan, onPress }: PlanCardProps) {
         style={[styles.planCardBorder, { backgroundColor: config.borderColor }]}
       />
 
-      {/* Time strip */}
+      {/* Order strip */}
       <View style={[styles.timeStrip, { backgroundColor: config.stripBg }]}>
-        <Text style={styles.timeStripTime}>{time}</Text>
-        <Text style={styles.timeStripPeriod}>{period}</Text>
+        <Text style={styles.timeStripTime}>{orderLabel}</Text>
       </View>
 
       {/* Card body */}
@@ -300,10 +289,16 @@ export default function PlanningScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterOption>("All");
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [devices, setDevices] = useState<ProfilerDevice[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
   const dateStripRef = useRef<ScrollView>(null);
   const todayOffsetRef = useRef<number>(0);
   const hasScrolledRef = useRef(false);
+
+  useRoastPlanningBroadcast((updated) => {
+    setPlans((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  });
 
   const dateStripItems = useMemo(() => getMultiWeekDays(), []);
   const allDays = useMemo(() => getDayItems(dateStripItems), [dateStripItems]);
@@ -337,6 +332,20 @@ export default function PlanningScreen() {
     }
   }, []);
 
+  const fetchDevices = useCallback(async () => {
+    try {
+      const response = await apiClient.get<ApiResponse<ProfilerDevice[]>>("/devices");
+      const planningDevices = response.data.data.filter((d) => d.has_speciality_or_industrial);
+      setDevices(planningDevices);
+    } catch (error) {
+      console.error("Failed to fetch devices:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDevices();
+  }, [fetchDevices]);
+
   const fetchPlans = useCallback(
     async (isRefresh = false) => {
       if (isRefresh) {
@@ -346,13 +355,14 @@ export default function PlanningScreen() {
       }
 
       try {
+        const deviceParam = selectedDeviceId ? { profiler_device_id: selectedDeviceId } : {};
         if (activeView === "Week" || activeView === "List") {
           const startDate = formatDate(selectedWeekDays[0].fullDate);
           const endDate = formatDate(selectedWeekDays[6].fullDate);
           const response = await apiClient.get<ApiResponse<PlanningItem[]>>(
             "/planning",
             {
-              params: { start_date: startDate, end_date: endDate },
+              params: { from: startDate, to: endDate, ...deviceParam },
             }
           );
           setPlans(response.data.data);
@@ -361,7 +371,7 @@ export default function PlanningScreen() {
           const response = await apiClient.get<ApiResponse<PlanningItem[]>>(
             "/planning",
             {
-              params: { date: dateStr },
+              params: { date: dateStr, ...deviceParam },
             }
           );
           setPlans(response.data.data);
@@ -374,7 +384,7 @@ export default function PlanningScreen() {
         setRefreshing(false);
       }
     },
-    [selectedFullDate, activeView, selectedWeekDays]
+    [selectedFullDate, activeView, selectedWeekDays, selectedDeviceId]
   );
 
   useEffect(() => {
@@ -523,6 +533,55 @@ export default function PlanningScreen() {
                   ]}
                 >
                   {option}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Equipment filter bar */}
+      {showFilter && devices.length > 1 && (
+        <View style={styles.filterBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterBarContent}
+          >
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                selectedDeviceId === null && styles.filterChipActive,
+              ]}
+              onPress={() => setSelectedDeviceId(null)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedDeviceId === null && styles.filterChipTextActive,
+                ]}
+              >
+                All Equipment
+              </Text>
+            </TouchableOpacity>
+            {devices.map((device) => (
+              <TouchableOpacity
+                key={device.id}
+                style={[
+                  styles.filterChip,
+                  selectedDeviceId === device.id && styles.filterChipActive,
+                ]}
+                onPress={() => setSelectedDeviceId(device.id)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    selectedDeviceId === device.id && styles.filterChipTextActive,
+                  ]}
+                >
+                  {device.name ?? device.model}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -797,14 +856,14 @@ export default function PlanningScreen() {
                       <Text style={styles.weekDayCount}>{dayPlans.length}</Text>
                     </View>
                   </View>
-                  {dayPlans.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} onPress={() => router.push(`/planning/${plan.id}`)} />
+                  {dayPlans.map((plan, idx) => (
+                    <PlanCard key={plan.id} plan={plan} index={idx} onPress={() => router.push(`/planning/${plan.id}`)} />
                   ))}
                 </View>
               );
             })
           ) : (
-            filteredPlans.map((plan) => <PlanCard key={plan.id} plan={plan} onPress={() => router.push(`/planning/${plan.id}`)} />)
+            filteredPlans.map((plan, idx) => <PlanCard key={plan.id} plan={plan} index={idx} onPress={() => router.push(`/planning/${plan.id}`)} />)
           )}
         </ScrollView>
       )}

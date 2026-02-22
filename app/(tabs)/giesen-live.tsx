@@ -13,7 +13,6 @@ import Svg, { Rect, Line, Path, Circle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
-import { useGiesenLive } from "@/hooks/useGiesenLive";
 import { useLiveStore, DeviceReading } from "@/stores/liveStore";
 
 interface DeviceMeta {
@@ -274,9 +273,6 @@ export default function GiesenLiveScreen() {
 
   const liveDevices = useLiveStore((s) => s.devices);
   const isConnected = useLiveStore((s) => s.isConnected);
-
-  // Start WebSocket lifecycle
-  useGiesenLive();
 
   const fetchDevices = useCallback(async (isRefresh = false) => {
     try {

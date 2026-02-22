@@ -14,6 +14,7 @@ import Svg, {
 } from "react-native-svg";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { useLiveStore } from "@/stores/liveStore";
 import type { DashboardData, LiveRoaster } from "@/types";
 
 interface LiveRoastersWidgetProps {
@@ -144,7 +145,19 @@ function RoasterCard({ roaster }: RoasterCardProps) {
 }
 
 export function LiveRoastersWidget({ data }: LiveRoastersWidgetProps) {
-  const roasters = data?.live_roasters ?? [];
+  const liveDevices = useLiveStore((s) => s.devices);
+
+  // Map live store devices into the LiveRoaster shape for the cards
+  const roasters: LiveRoaster[] = Array.from(liveDevices.values())
+    .filter((d) => d.status !== "Disconnected")
+    .map((d) => ({
+      device_id: Number(d.machineId) || 0,
+      device_name: d.selectedProfile?.name ? `Roaster ${d.machineId}` : `Roaster ${d.machineId}`,
+      profile_name: d.selectedProfile?.name ?? d.status,
+      bean_temp: d.readings.beans ?? 0,
+      duration: 0,
+      ror: d.readings.ror ?? 0,
+    }));
 
   return (
     <View style={styles.section}>

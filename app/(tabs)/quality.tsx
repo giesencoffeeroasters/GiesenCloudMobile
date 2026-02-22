@@ -301,7 +301,7 @@ export default function QualityScreen() {
         params: { per_page: 50 },
       });
       const sessions: QualitySession[] = response.data.data;
-      setActiveSessions(sessions.filter((s) => s.status === "active"));
+      setActiveSessions(sessions.filter((s) => s.status !== "completed"));
       setCompletedSessions(sessions.filter((s) => s.status === "completed"));
     } catch (error) {
       console.error("Failed to fetch quality sessions:", error);
@@ -511,7 +511,7 @@ export default function QualityScreen() {
                 </View>
               ) : (
                 blindSessions.map((session) =>
-                  session.status === "active" ? (
+                  session.status !== "completed" ? (
                     <ActiveSessionCard key={session.id} session={session} onContinue={() => router.push(`/quality/${session.id}`)} />
                   ) : (
                     <CompletedSessionCard key={session.id} session={session} />

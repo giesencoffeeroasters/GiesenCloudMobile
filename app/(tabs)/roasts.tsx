@@ -149,21 +149,21 @@ function StatsRow({ summary }: StatsRowProps) {
     <View style={styles.statsRow}>
       <View style={styles.statCard}>
         <View style={[styles.statStripe, { backgroundColor: Colors.sky }]} />
-        <Text style={[styles.statValue, { color: Colors.sky }]}>
+        <Text style={[styles.statValue, { color: Colors.sky }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {summary?.this_week_count ?? "-"}
         </Text>
         <Text style={styles.statLabel}>THIS WEEK</Text>
       </View>
       <View style={styles.statCard}>
         <View style={[styles.statStripe, { backgroundColor: Colors.leaf }]} />
-        <Text style={[styles.statValue, { color: Colors.leaf }]}>
+        <Text style={[styles.statValue, { color: Colors.leaf }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {summary?.total_count ?? "-"}
         </Text>
         <Text style={styles.statLabel}>TOTAL ROASTS</Text>
       </View>
       <View style={styles.statCard}>
         <View style={[styles.statStripe, { backgroundColor: scoreColor }]} />
-        <Text style={[styles.statValue, { color: scoreColor }]}>
+        <Text style={[styles.statValue, { color: scoreColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {avgScore !== null && avgScore !== undefined ? avgScore.toFixed(1) : "-"}
         </Text>
         <Text style={styles.statLabel}>AVG CUPPING</Text>
@@ -185,21 +185,21 @@ function ProfileStatsRow({ summary }: ProfileStatsRowProps) {
     <View style={styles.statsRow}>
       <View style={styles.statCard}>
         <View style={[styles.statStripe, { backgroundColor: Colors.grape }]} />
-        <Text style={[styles.statValue, { color: Colors.grape }]}>
+        <Text style={[styles.statValue, { color: Colors.grape }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {summary?.total_count ?? "-"}
         </Text>
         <Text style={styles.statLabel}>TOTAL PROFILES</Text>
       </View>
       <View style={styles.statCard}>
         <View style={[styles.statStripe, { backgroundColor: Colors.sun }]} />
-        <Text style={[styles.statValue, { color: Colors.sun }]}>
+        <Text style={[styles.statValue, { color: Colors.sun }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {summary?.favorites_count ?? "-"}
         </Text>
         <Text style={styles.statLabel}>FAVORITES</Text>
       </View>
       <View style={styles.statCard}>
         <View style={[styles.statStripe, { backgroundColor: Colors.sky }]} />
-        <Text style={[styles.statValue, { color: Colors.sky }]}>
+        <Text style={[styles.statValue, { color: Colors.sky }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {summary?.avg_duration !== null && summary?.avg_duration !== undefined
             ? formatDuration(summary.avg_duration)
             : "-"}
@@ -1401,7 +1401,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     overflow: "hidden",
     position: "relative",
   },
@@ -1416,7 +1416,7 @@ const styles = StyleSheet.create({
     fontFamily: "JetBrainsMono-Bold",
     fontSize: 28,
     fontWeight: "600",
-    lineHeight: 28,
+    lineHeight: 34,
     letterSpacing: -1,
   },
   statLabel: {

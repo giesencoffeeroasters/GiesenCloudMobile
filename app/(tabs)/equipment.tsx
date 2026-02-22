@@ -80,7 +80,34 @@ export default function EquipmentScreen() {
               ]}
             />
           </View>
-          <Text style={styles.deviceModel}>{item.model ?? "Unknown Model"}</Text>
+          <View style={styles.deviceModelRow}>
+            <Text style={styles.deviceModel}>{item.model ?? "Unknown Model"}</Text>
+            {item.subscription_tier ? (
+              <View
+                style={[
+                  styles.tierBadge,
+                  item.subscription_tier === "Industrial"
+                    ? styles.tierBadgeIndustrial
+                    : item.subscription_tier === "Speciality"
+                    ? styles.tierBadgeSpeciality
+                    : styles.tierBadgeBasic,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.tierBadgeText,
+                    item.subscription_tier === "Industrial"
+                      ? styles.tierBadgeTextIndustrial
+                      : item.subscription_tier === "Speciality"
+                      ? styles.tierBadgeTextSpeciality
+                      : styles.tierBadgeTextBasic,
+                  ]}
+                >
+                  {item.subscription_tier}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.deviceDivider} />
@@ -337,11 +364,45 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
   },
+  deviceModelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 2,
+  },
   deviceModel: {
     fontFamily: "JetBrainsMono-Regular",
     fontSize: 13,
     color: Colors.textSecondary,
-    marginTop: 2,
+  },
+  tierBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tierBadgeSpeciality: {
+    backgroundColor: Colors.sunBg,
+  },
+  tierBadgeIndustrial: {
+    backgroundColor: Colors.grapeBg,
+  },
+  tierBadgeBasic: {
+    backgroundColor: Colors.gravelLight,
+  },
+  tierBadgeText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  tierBadgeTextSpeciality: {
+    color: Colors.sun,
+  },
+  tierBadgeTextIndustrial: {
+    color: Colors.grape,
+  },
+  tierBadgeTextBasic: {
+    color: Colors.textTertiary,
   },
   deviceDivider: {
     height: 1,

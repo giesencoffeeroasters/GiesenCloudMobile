@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -20,6 +21,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useWidgetStore } from "@/stores/widgetStore";
 import apiClient from "@/api/client";
 import type { ApiResponse, DashboardData } from "@/types";
+import { useRoastPlanningBroadcast } from "@/hooks/useRoastPlanningBroadcast";
 
 import { QuickStatsWidget } from "@/components/dashboard/QuickStatsWidget";
 import { ScheduleWidget } from "@/components/dashboard/ScheduleWidget";
@@ -29,6 +31,7 @@ import { RecentActivityWidget } from "@/components/dashboard/RecentActivityWidge
 import { InventoryAlertsWidget } from "@/components/dashboard/InventoryAlertsWidget";
 import { ProductionSummaryWidget } from "@/components/dashboard/ProductionSummaryWidget";
 import { RecentRoastsWidget } from "@/components/dashboard/RecentRoastsWidget";
+import { MaintenanceWidget } from "@/components/dashboard/MaintenanceWidget";
 
 type WidgetProps = { data: DashboardData | null };
 
@@ -41,6 +44,7 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<WidgetProps>> = {
   inventory_alerts: InventoryAlertsWidget,
   production_summary: ProductionSummaryWidget,
   recent_roasts: RecentRoastsWidget,
+  maintenance_overview: MaintenanceWidget,
 };
 
 export default function DashboardScreen() {
@@ -75,10 +79,19 @@ export default function DashboardScreen() {
     }
   };
 
+  useRoastPlanningBroadcast(() => {
+    fetchDashboard();
+  });
+
   useEffect(() => {
     loadWidgets();
-    fetchDashboard();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboard();
+    }, [])
+  );
 
   const renderWidget = useCallback(
     (key: string) => {

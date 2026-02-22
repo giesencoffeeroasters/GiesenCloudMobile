@@ -15,6 +15,7 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
@@ -98,9 +99,19 @@ export default function InventoryScreen() {
   // Adjust weight modal state
   const [adjustModalVisible, setAdjustModalVisible] = useState(false);
   const [adjustItem, setAdjustItem] = useState<InventoryItem | null>(null);
-  const [adjustWeight, setAdjustWeight] = useState("");
+  const [adjustMode, setAdjustMode] = useState<"add" | "remove">("add");
+  const [adjustAmount, setAdjustAmount] = useState(0);
+  const [adjustManualInput, setAdjustManualInput] = useState("0");
   const [adjustReason, setAdjustReason] = useState("");
   const [adjustSubmitting, setAdjustSubmitting] = useState(false);
+
+  const currentWeightKg = adjustItem
+    ? Math.round((adjustItem.current_quantity_grams / 1000) * 10) / 10
+    : 0;
+  const newWeightKg =
+    adjustMode === "add"
+      ? Math.round((currentWeightKg + adjustAmount) * 10) / 10
+      : Math.round((currentWeightKg - adjustAmount) * 10) / 10;
 
   const fetchInventory = useCallback(async (search?: string) => {
     try {
@@ -140,6 +151,12 @@ export default function InventoryScreen() {
     [fetchInventory, searchQuery]
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchInventory(searchQuery);
+    }, [fetchInventory, searchQuery])
+  );
+
   useEffect(() => {
     loadData();
   }, []);
@@ -176,17 +193,50 @@ export default function InventoryScreen() {
 
   const handleOpenAdjustModal = (item: InventoryItem) => {
     setAdjustItem(item);
-    setAdjustWeight("");
+    setAdjustMode("add");
+    setAdjustAmount(0);
+    setAdjustManualInput("0");
     setAdjustReason("");
     setAdjustModalVisible(true);
+  };
+
+  const handlePresetPress = (kg: number) => {
+    setAdjustAmount((prev) => Math.round((prev + kg) * 10) / 10);
+    setAdjustManualInput(
+      String(Math.round((adjustAmount + kg) * 10) / 10)
+    );
+  };
+
+  const handleStepperChange = (delta: number) => {
+    setAdjustAmount((prev) => {
+      const next = Math.round((prev + delta) * 10) / 10;
+      const floored = Math.max(0, next);
+      setAdjustManualInput(String(floored));
+      return floored;
+    });
+  };
+
+  const handleManualInputChange = (text: string) => {
+    setAdjustManualInput(text);
+    const parsed = parseFloat(text);
+    if (!isNaN(parsed) && parsed >= 0) {
+      setAdjustAmount(Math.round(parsed * 10) / 10);
+    }
   };
 
   const handleAdjustSubmit = async () => {
     if (!adjustItem) return;
 
-    const weightKg = parseFloat(adjustWeight);
-    if (isNaN(weightKg) || weightKg < 0) {
-      Alert.alert("Invalid Weight", "Please enter a valid weight in kg.");
+    if (adjustAmount === 0) {
+      Alert.alert("Invalid Amount", "Please enter an adjustment amount.");
+      return;
+    }
+
+    if (adjustMode === "remove" && adjustAmount > currentWeightKg) {
+      Alert.alert(
+        "Invalid Amount",
+        `Cannot remove ${adjustAmount.toFixed(1)} kg. Only ${currentWeightKg.toFixed(1)} kg available.`
+      );
       return;
     }
 
@@ -195,10 +245,14 @@ export default function InventoryScreen() {
       return;
     }
 
+    const deltaGrams = adjustMode === "add"
+      ? Math.round(adjustAmount * 1000)
+      : -Math.round(adjustAmount * 1000);
+
     setAdjustSubmitting(true);
     try {
       await apiClient.post(`/inventory/${adjustItem.id}/adjust`, {
-        quantity_grams: Math.round(weightKg * 1000),
+        adjustment: deltaGrams,
         reason: adjustReason.trim(),
       });
 
@@ -540,34 +594,148 @@ export default function InventoryScreen() {
               ) : null}
             </View>
 
-            <View style={styles.modalBody}>
-              <View style={styles.modalField}>
-                <Text style={styles.modalLabel}>New Weight (kg)</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={adjustWeight}
-                  onChangeText={setAdjustWeight}
-                  placeholder="0.0"
-                  placeholderTextColor={Colors.textTertiary}
-                  keyboardType="decimal-pad"
-                  autoFocus
-                />
+            <ScrollView style={styles.modalScrollBody} bounces={false}>
+              {/* Add / Remove toggle */}
+              <View style={styles.toggleRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    adjustMode === "add" && styles.toggleButtonAddActive,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setAdjustMode("add")}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      adjustMode === "add" && styles.toggleButtonTextAddActive,
+                    ]}
+                  >
+                    + Add
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    adjustMode === "remove" && styles.toggleButtonRemoveActive,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setAdjustMode("remove")}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      adjustMode === "remove" && styles.toggleButtonTextRemoveActive,
+                    ]}
+                  >
+                    - Remove
+                  </Text>
+                </TouchableOpacity>
               </View>
 
+              {/* Preset buttons */}
+              <View style={styles.presetRow}>
+                {[1, 5, 10, 25].map((kg) => (
+                  <TouchableOpacity
+                    key={kg}
+                    style={styles.presetButton}
+                    activeOpacity={0.7}
+                    onPress={() => handlePresetPress(kg)}
+                  >
+                    <Text style={styles.presetButtonText}>+{kg} kg</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Stepper */}
+              <View style={styles.modalField}>
+                <Text style={styles.modalLabel}>Adjustment Amount</Text>
+                <View style={styles.stepperRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.stepperButton,
+                      adjustAmount <= 0 && styles.stepperButtonDisabled,
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => handleStepperChange(-0.5)}
+                    disabled={adjustAmount <= 0}
+                  >
+                    <Text
+                      style={[
+                        styles.stepperButtonText,
+                        adjustAmount <= 0 && styles.stepperButtonTextDisabled,
+                      ]}
+                    >
+                      -
+                    </Text>
+                  </TouchableOpacity>
+                  <View style={styles.stepperInputWrapper}>
+                    <TextInput
+                      style={styles.stepperInput}
+                      value={adjustManualInput}
+                      onChangeText={handleManualInputChange}
+                      keyboardType="decimal-pad"
+                      selectTextOnFocus
+                    />
+                    <Text style={styles.stepperInputUnit}>kg</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.stepperButton}
+                    activeOpacity={0.7}
+                    onPress={() => handleStepperChange(0.5)}
+                  >
+                    <Text style={styles.stepperButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Preview card */}
+              <View
+                style={[
+                  styles.previewCard,
+                  adjustMode === "add"
+                    ? styles.previewCardAdd
+                    : styles.previewCardRemove,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.previewTitle,
+                    { color: adjustMode === "add" ? Colors.leaf : Colors.traffic },
+                  ]}
+                >
+                  {adjustMode === "add" ? "ADDING STOCK" : "REMOVING STOCK"}
+                </Text>
+                <Text style={styles.previewWeights}>
+                  {currentWeightKg.toFixed(1)} kg {"  \u2192  "}
+                  {newWeightKg.toFixed(1)} kg
+                </Text>
+                <Text
+                  style={[
+                    styles.previewDelta,
+                    { color: adjustMode === "add" ? Colors.leaf : Colors.traffic },
+                  ]}
+                >
+                  {adjustMode === "add" ? "+" : "-"}
+                  {adjustAmount.toFixed(1)} kg
+                </Text>
+              </View>
+
+              {/* Reason */}
               <View style={styles.modalField}>
                 <Text style={styles.modalLabel}>Reason</Text>
                 <TextInput
                   style={[styles.modalInput, styles.modalInputMultiline]}
                   value={adjustReason}
                   onChangeText={setAdjustReason}
-                  placeholder="e.g. Physical count, spillage, received shipment..."
+                  placeholder="e.g. Received shipment, spillage, physical count..."
                   placeholderTextColor={Colors.textTertiary}
                   multiline
                   numberOfLines={3}
                   textAlignVertical="top"
                 />
               </View>
-            </View>
+            </ScrollView>
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -581,16 +749,19 @@ export default function InventoryScreen() {
               <TouchableOpacity
                 style={[
                   styles.modalSubmitButton,
-                  adjustSubmitting && styles.modalSubmitDisabled,
+                  adjustMode === "remove" && styles.modalSubmitButtonRemove,
+                  (adjustSubmitting || adjustAmount === 0) && styles.modalSubmitDisabled,
                 ]}
                 onPress={handleAdjustSubmit}
                 activeOpacity={0.7}
-                disabled={adjustSubmitting}
+                disabled={adjustSubmitting || adjustAmount === 0}
               >
                 {adjustSubmitting ? (
                   <ActivityIndicator size="small" color={Colors.text} />
                 ) : (
-                  <Text style={styles.modalSubmitText}>Submit</Text>
+                  <Text style={styles.modalSubmitText}>
+                    {adjustMode === "add" ? "Add Stock" : "Remove Stock"}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -986,6 +1157,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 40,
+    maxHeight: "85%",
   },
   modalHeader: {
     padding: 20,
@@ -1003,12 +1175,14 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 4,
   },
-  modalBody: {
-    padding: 20,
-    gap: 16,
+  modalScrollBody: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   modalField: {
     gap: 6,
+    marginBottom: 16,
   },
   modalLabel: {
     fontFamily: "DMSans-Medium",
@@ -1033,6 +1207,7 @@ const styles = StyleSheet.create({
   modalActions: {
     flexDirection: "row",
     paddingHorizontal: 20,
+    paddingTop: 12,
     gap: 12,
   },
   modalCancelButton: {
@@ -1058,6 +1233,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: Colors.safety,
   },
+  modalSubmitButtonRemove: {
+    backgroundColor: Colors.traffic,
+  },
   modalSubmitDisabled: {
     opacity: 0.6,
   },
@@ -1065,5 +1243,146 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-SemiBold",
     fontSize: 15,
     color: Colors.text,
+  },
+
+  /* -- Add/Remove Toggle -- */
+  toggleRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  toggleButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.card,
+  },
+  toggleButtonAddActive: {
+    backgroundColor: Colors.leafBg,
+    borderColor: Colors.leaf,
+  },
+  toggleButtonRemoveActive: {
+    backgroundColor: Colors.trafficBg,
+    borderColor: Colors.traffic,
+  },
+  toggleButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 15,
+    color: Colors.textSecondary,
+  },
+  toggleButtonTextAddActive: {
+    color: Colors.leaf,
+  },
+  toggleButtonTextRemoveActive: {
+    color: Colors.traffic,
+  },
+
+  /* -- Preset Buttons -- */
+  presetRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  presetButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: Colors.gravelLight,
+  },
+  presetButtonText: {
+    fontFamily: "JetBrainsMono-Medium",
+    fontSize: 13,
+    color: Colors.text,
+  },
+
+  /* -- Stepper -- */
+  stepperRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  stepperButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: Colors.gravelLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepperButtonDisabled: {
+    opacity: 0.4,
+  },
+  stepperButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 20,
+    color: Colors.text,
+  },
+  stepperButtonTextDisabled: {
+    color: Colors.textTertiary,
+  },
+  stepperInputWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.bg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    height: 44,
+    paddingHorizontal: 12,
+  },
+  stepperInput: {
+    fontFamily: "JetBrainsMono-Medium",
+    fontSize: 18,
+    color: Colors.text,
+    textAlign: "right",
+    minWidth: 50,
+    paddingVertical: 0,
+  },
+  stepperInputUnit: {
+    fontFamily: "JetBrainsMono-Regular",
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginLeft: 4,
+  },
+
+  /* -- Preview Card -- */
+  previewCard: {
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  previewCardAdd: {
+    backgroundColor: Colors.leafBg,
+    borderColor: Colors.leaf,
+  },
+  previewCardRemove: {
+    backgroundColor: Colors.trafficBg,
+    borderColor: Colors.traffic,
+  },
+  previewTitle: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 11,
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  previewWeights: {
+    fontFamily: "JetBrainsMono-SemiBold",
+    fontSize: 18,
+    color: Colors.text,
+  },
+  previewDelta: {
+    fontFamily: "JetBrainsMono-Medium",
+    fontSize: 14,
+    marginTop: 4,
   },
 });

@@ -7,10 +7,11 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, router, useFocusEffect, ErrorBoundaryProps } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path, Rect } from "react-native-svg";
+import Svg, { Path, Rect, Line, Polygon, Circle, G, Text as SvgText } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
@@ -24,6 +25,16 @@ interface AttributeScore {
   score: number;
 }
 
+interface SampleEvaluation {
+  id: number;
+  total_score: number | null;
+  defect_cups: number;
+  defect_intensity: number;
+  notes: string | null;
+  scores: { cupping_form_attribute_id: number; score: number }[];
+  cup_scores: { cupping_form_attribute_id: number; cup_number: number; passed: boolean }[];
+}
+
 interface Sample {
   id: number;
   sample_number: number;
@@ -32,6 +43,7 @@ interface Sample {
   notes: string | null;
   average_score: number | null;
   attributes: AttributeScore[];
+  my_evaluation: SampleEvaluation | null;
 }
 
 interface SessionDetail {
@@ -44,7 +56,24 @@ interface SessionDetail {
   created_at: string | null;
   creator: { id: number; name: string } | null;
   overall_score: number | null;
-  form: { id: number; name: string; type: string };
+  form: {
+    id: number;
+    name: string;
+    type: string;
+    attributes: Array<{
+      id: number;
+      name: string;
+      label: string;
+      min_score: number;
+      max_score: number;
+      step: number;
+      sort_order: number;
+      is_required: boolean;
+      has_cup_tracking: boolean;
+      has_descriptors: boolean;
+      score_group: string | null;
+    }>;
+  };
   samples: Sample[];
 }
 
@@ -82,12 +111,12 @@ function getStatusConfig(status: string): {
   bg: string;
 } {
   switch (status) {
-    case "active":
-      return { label: "Active", color: Colors.boven, bg: Colors.bovenBg };
-    case "completed":
-      return { label: "Completed", color: Colors.leaf, bg: Colors.leafBg };
     case "draft":
       return { label: "Draft", color: Colors.sky, bg: Colors.skyBg };
+    case "in_progress":
+      return { label: "In Progress", color: Colors.boven, bg: Colors.bovenBg };
+    case "completed":
+      return { label: "Completed", color: Colors.leaf, bg: Colors.leafBg };
     default:
       return {
         label: status,
@@ -137,6 +166,196 @@ function BlindIcon({ color }: { color: string }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Component: Radar Chart                                             */
+/* ------------------------------------------------------------------ */
+
+const RADAR_COLORS = [
+  "#4F46E5", "#DC2626", "#059669", "#D97706",
+  "#7C3AED", "#0891B2", "#DB2777", "#65A30D",
+];
+const RADAR_LEVELS = 5;
+const RADAR_SIZE = 300;
+const RADAR_CENTER = RADAR_SIZE / 2;
+const RADAR_RADIUS = 100;
+const LABEL_OFFSET = 18;
+
+interface RadarChartProps {
+  formAttributes: SessionDetail["form"]["attributes"];
+  samples: Sample[];
+  isBlind: boolean;
+}
+
+function RadarChart({ formAttributes, samples, isBlind }: RadarChartProps) {
+  if (!formAttributes || !samples) return null;
+
+  // Filter out cup-tracked attributes (those are penalty metrics)
+  const axes = formAttributes.filter((a) => !a.has_cup_tracking);
+  const n = axes.length;
+
+  // Only scored samples with attribute data
+  const scoredSamples = samples.filter(
+    (s) => s.attributes && s.attributes.length > 0
+  );
+
+  if (n < 3 || scoredSamples.length === 0) return null;
+
+  const angleStep = (2 * Math.PI) / n;
+
+  // Get point position for a given axis index and radius
+  const getPoint = (index: number, radius: number) => {
+    const angle = angleStep * index - Math.PI / 2;
+    return {
+      x: RADAR_CENTER + radius * Math.cos(angle),
+      y: RADAR_CENTER + radius * Math.sin(angle),
+    };
+  };
+
+  // Build polygon points string for a given radius
+  const ringPoints = (radius: number) =>
+    axes.map((_, i) => {
+      const p = getPoint(i, radius);
+      return `${p.x},${p.y}`;
+    }).join(" ");
+
+  // Build polygon points for a sample's scores
+  const samplePoints = (sample: Sample) =>
+    axes.map((attr, i) => {
+      const match = sample.attributes.find((a) => a.label === (attr.label || attr.name));
+      const score = match ? Number(match.score) : 0;
+      const maxScore = attr.max_score || 10;
+      const r = Math.min(1, Math.max(0, score / maxScore)) * RADAR_RADIUS;
+      const p = getPoint(i, r);
+      return `${p.x},${p.y}`;
+    }).join(" ");
+
+  // Label positioning
+  const getLabelAnchor = (index: number): "start" | "middle" | "end" => {
+    const angle = angleStep * index - Math.PI / 2;
+    const cos = Math.cos(angle);
+    if (cos > 0.25) return "start";
+    if (cos < -0.25) return "end";
+    return "middle";
+  };
+
+  return (
+    <View style={styles.radarCard}>
+      <Text style={styles.sectionTitle}>Score Comparison</Text>
+
+      <View style={styles.radarChartWrap}>
+        <Svg width={RADAR_SIZE} height={RADAR_SIZE} viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`}>
+          {/* Grid rings */}
+          {Array.from({ length: RADAR_LEVELS }, (_, level) => {
+            const r = ((level + 1) / RADAR_LEVELS) * RADAR_RADIUS;
+            return (
+              <Polygon
+                key={`ring-${level}`}
+                points={ringPoints(r)}
+                fill={level % 2 === 0 ? "#F3F4F6" : "#F9FAFB"}
+                stroke="#E5E7EB"
+                strokeWidth={0.8}
+              />
+            );
+          }).reverse()}
+
+          {/* Axis lines */}
+          {axes.map((_, i) => {
+            const p = getPoint(i, RADAR_RADIUS);
+            return (
+              <Line
+                key={`axis-${i}`}
+                x1={RADAR_CENTER}
+                y1={RADAR_CENTER}
+                x2={p.x}
+                y2={p.y}
+                stroke="#D1D5DB"
+                strokeWidth={0.8}
+              />
+            );
+          })}
+
+          {/* Sample polygons */}
+          {scoredSamples.map((sample, sIdx) => {
+            const color = RADAR_COLORS[sIdx % RADAR_COLORS.length];
+            const pts = samplePoints(sample);
+            return (
+              <G key={`sample-${sample.id}`}>
+                <Polygon
+                  points={pts}
+                  fill={color}
+                  fillOpacity={0.1}
+                  stroke={color}
+                  strokeWidth={2}
+                />
+                {/* Data points */}
+                {axes.map((attr, i) => {
+                  const match = sample.attributes.find(
+                    (a) => a.label === (attr.label || attr.name)
+                  );
+                  const score = match ? Number(match.score) : 0;
+                  const maxScore = attr.max_score || 10;
+                  const r =
+                    Math.min(1, Math.max(0, score / maxScore)) * RADAR_RADIUS;
+                  const p = getPoint(i, r);
+                  return (
+                    <Circle
+                      key={`dot-${sample.id}-${i}`}
+                      cx={p.x}
+                      cy={p.y}
+                      r={3.5}
+                      fill={color}
+                    />
+                  );
+                })}
+              </G>
+            );
+          })}
+
+          {/* Axis labels */}
+          {axes.map((attr, i) => {
+            const p = getPoint(i, RADAR_RADIUS + LABEL_OFFSET);
+            const anchor = getLabelAnchor(i);
+            return (
+              <SvgText
+                key={`label-${i}`}
+                x={p.x}
+                y={p.y}
+                textAnchor={anchor}
+                alignmentBaseline="central"
+                fontSize={10}
+                fill="#6B7280"
+                fontFamily="DMSans-Regular"
+              >
+                {attr.label || attr.name}
+              </SvgText>
+            );
+          })}
+        </Svg>
+      </View>
+
+      {/* Legend */}
+      <View style={styles.radarLegend}>
+        {scoredSamples.map((sample, sIdx) => {
+          const color = RADAR_COLORS[sIdx % RADAR_COLORS.length];
+          const name = isBlind
+            ? `Sample ${sample.sample_code}`
+            : sample.label || `Sample ${sample.sample_code}`;
+          return (
+            <View key={sample.id} style={styles.radarLegendItem}>
+              <View
+                style={[styles.radarLegendDot, { backgroundColor: color }]}
+              />
+              <Text style={styles.radarLegendText} numberOfLines={1}>
+                {name}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Component: Attribute Score Bar                                     */
 /* ------------------------------------------------------------------ */
 
@@ -176,7 +395,15 @@ function AttributeBar({
 /*  Component: Sample Card                                             */
 /* ------------------------------------------------------------------ */
 
-function SampleCard({ sample }: { sample: Sample }) {
+function SampleCard({
+  sample,
+  sessionId,
+  sessionStatus,
+}: {
+  sample: Sample;
+  sessionId: number;
+  sessionStatus: string;
+}) {
   const score = sample.average_score;
   const scoreColor =
     score !== null ? getScoreColor(score) : Colors.textTertiary;
@@ -209,16 +436,31 @@ function SampleCard({ sample }: { sample: Sample }) {
         </View>
       </View>
 
+      {/* User's evaluation score */}
+      {sample.my_evaluation?.total_score != null ? (
+        <View style={styles.myScoreRow}>
+          <Text style={styles.myScoreLabel}>Your Score</Text>
+          <Text
+            style={[
+              styles.myScoreValue,
+              { color: getScoreColor(Number(sample.my_evaluation.total_score)) },
+            ]}
+          >
+            {Number(sample.my_evaluation.total_score).toFixed(2)}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Attribute bars */}
-      {sample.attributes.length > 0 ? (
+      {sample.attributes && sample.attributes.length > 0 ? (
         <View style={styles.attrBarsContainer}>
           {sample.attributes.map((attr, idx) => (
-            <AttributeBar key={idx} label={attr.label} score={attr.score} />
+            <AttributeBar key={idx} label={attr.label} score={Number(attr.score)} />
           ))}
         </View>
-      ) : (
+      ) : sample.my_evaluation == null ? (
         <Text style={styles.noAttrsText}>No attribute scores yet</Text>
-      )}
+      ) : null}
 
       {/* Notes */}
       {sample.notes ? (
@@ -226,6 +468,43 @@ function SampleCard({ sample }: { sample: Sample }) {
           <Text style={styles.sampleNotesLabel}>Notes</Text>
           <Text style={styles.sampleNotesText}>{sample.notes}</Text>
         </View>
+      ) : null}
+
+      {sessionStatus !== "completed" ? (
+        <TouchableOpacity
+          style={styles.scoreSampleButton}
+          activeOpacity={0.7}
+          onPress={() =>
+            router.push(
+              `/quality/score?sessionId=${sessionId}&sampleId=${sample.id}`
+            )
+          }
+        >
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
+              stroke={sample.average_score !== null ? Colors.boven : Colors.sky}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
+              stroke={sample.average_score !== null ? Colors.boven : Colors.sky}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+          <Text
+            style={[
+              styles.scoreSampleButtonText,
+              { color: sample.average_score !== null ? Colors.boven : Colors.sky },
+            ]}
+          >
+            {sample.average_score !== null ? "Edit Score" : "Score Sample"}
+          </Text>
+        </TouchableOpacity>
       ) : null}
     </View>
   );
@@ -263,6 +542,42 @@ export default function QualityDetailScreen() {
     await fetchSession();
     setRefreshing(false);
   }, [fetchSession]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Refresh when screen comes into focus (e.g., returning from scoring)
+      if (!loading) {
+        fetchSession();
+      }
+    }, [fetchSession, loading])
+  );
+
+  const handleCompleteSession = useCallback(async () => {
+    Alert.alert(
+      "Complete Session",
+      "Are you sure you want to complete this cupping session? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Complete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiClient.patch(`/quality/${id}/status`, {
+                status: "completed",
+              });
+              await fetchSession();
+            } catch (err: any) {
+              Alert.alert(
+                "Error",
+                err.response?.data?.message ?? "Failed to complete session."
+              );
+            }
+          },
+        },
+      ]
+    );
+  }, [id, fetchSession]);
 
   /* ── Header (shared across states) ── */
   function renderHeader(title?: string, subtitle?: string) {
@@ -329,8 +644,10 @@ export default function QualityDetailScreen() {
 
   /* ── Data ── */
   const statusCfg = getStatusConfig(session.status);
-  const sampleCount = session.samples.length;
-  const scoredCount = session.samples.filter(
+  const samples = session.samples ?? [];
+  const formAttributes = session.form?.attributes ?? [];
+  const sampleCount = samples.length;
+  const scoredCount = samples.filter(
     (s) => s.average_score !== null
   ).length;
   const overallScore = session.overall_score;
@@ -418,6 +735,13 @@ export default function QualityDetailScreen() {
           ) : null}
         </View>
 
+        {/* Radar chart — score comparison */}
+        <RadarChart
+          formAttributes={formAttributes}
+          samples={samples}
+          isBlind={session.is_blind}
+        />
+
         {/* Session info card */}
         <View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Session Info</Text>
@@ -442,7 +766,7 @@ export default function QualityDetailScreen() {
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Form</Text>
-            <Text style={styles.infoValue}>{session.form.name}</Text>
+            <Text style={styles.infoValue}>{session.form?.name ?? "N/A"}</Text>
           </View>
 
           <View style={styles.infoDivider} />
@@ -509,13 +833,71 @@ export default function QualityDetailScreen() {
             </View>
           ) : (
             <View style={styles.samplesList}>
-              {session.samples.map((sample) => (
-                <SampleCard key={sample.id} sample={sample} />
+              {samples.map((sample) => (
+                <SampleCard
+                  key={sample.id}
+                  sample={sample}
+                  sessionId={session.id}
+                  sessionStatus={session.status}
+                />
               ))}
             </View>
           )}
         </View>
+
+        {session.status !== "completed" ? (
+          <TouchableOpacity
+            style={styles.completeButton}
+            activeOpacity={0.7}
+            onPress={handleCompleteSession}
+          >
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M20 6L9 17l-5-5"
+                stroke="#fff"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <Text style={styles.completeButtonText}>Complete Session</Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Error Boundary                                                     */
+/* ------------------------------------------------------------------ */
+
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return (
+    <View style={{ flex: 1, backgroundColor: Colors.bg, justifyContent: "center", alignItems: "center", padding: 40 }}>
+      <Text style={{ fontFamily: "DMSans-SemiBold", fontSize: 18, color: Colors.text, marginBottom: 12 }}>
+        Something went wrong
+      </Text>
+      <Text style={{ fontFamily: "DMSans-Regular", fontSize: 13, color: Colors.textSecondary, textAlign: "center", marginBottom: 8 }}>
+        {error.message}
+      </Text>
+      <Text style={{ fontFamily: "JetBrainsMono-Regular", fontSize: 11, color: Colors.textTertiary, textAlign: "center", marginBottom: 24 }}>
+        {error.stack?.split("\n").slice(0, 5).join("\n")}
+      </Text>
+      <TouchableOpacity
+        style={{ backgroundColor: Colors.slate, borderRadius: 8, paddingHorizontal: 24, paddingVertical: 12 }}
+        onPress={retry}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontFamily: "DMSans-Medium", fontSize: 14, color: "#ffffff" }}>Try Again</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={{ marginTop: 12, paddingVertical: 8 }}
+        onPress={() => router.back()}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontFamily: "DMSans-Medium", fontSize: 14, color: Colors.sky }}>Go Back</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -686,6 +1068,44 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 
+  /* -- Radar chart -- */
+  radarCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 20,
+  },
+  radarChartWrap: {
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  radarLegend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  radarLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  radarLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+  },
+  radarLegendText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 12,
+    color: Colors.textSecondary,
+    maxWidth: 120,
+  },
+
   /* -- Info card -- */
   infoCard: {
     backgroundColor: Colors.card,
@@ -845,6 +1265,24 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     fontStyle: "italic",
   },
+  myScoreRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: Colors.gravelLight,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  myScoreLabel: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  myScoreValue: {
+    fontFamily: "JetBrainsMono-Bold",
+    fontSize: 18,
+  },
 
   /* -- Sample notes -- */
   sampleNotes: {
@@ -889,5 +1327,36 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     textAlign: "center",
     paddingHorizontal: 40,
+  },
+
+  /* -- Score sample button -- */
+  scoreSampleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  scoreSampleButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 13,
+  },
+
+  /* -- Complete button -- */
+  completeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: Colors.leaf,
+    borderRadius: 10,
+    paddingVertical: 16,
+  },
+  completeButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 16,
+    color: "#ffffff",
   },
 });

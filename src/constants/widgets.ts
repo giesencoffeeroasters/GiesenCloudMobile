@@ -63,6 +63,13 @@ export const WIDGETS: WidgetDefinition[] = [
     defaultEnabled: false,
     defaultOrder: 7,
   },
+  {
+    key: "maintenance_overview",
+    title: "Maintenance",
+    description: "Overdue tasks, upcoming maintenance, and compliance scores",
+    defaultEnabled: false,
+    defaultOrder: 8,
+  },
 ];
 
 export type WidgetKey = (typeof WIDGETS)[number]["key"];

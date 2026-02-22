@@ -5,6 +5,7 @@ export type TabKey =
   | "Inventory"
   | "Quality"
   | "Equipment"
+  | "Maintenance"
   | "Reports"
   | "GiesenLive";
 
@@ -21,6 +22,7 @@ export const ALL_TABS: TabDefinition[] = [
   { key: "Inventory", route: "inventory", title: "Inventory" },
   { key: "Quality", route: "quality", title: "Quality" },
   { key: "Equipment", route: "equipment", title: "Equipment" },
+  { key: "Maintenance", route: "maintenance", title: "Maintenance" },
   { key: "Reports", route: "reports", title: "Reports" },
   { key: "GiesenLive", route: "giesen-live", title: "Giesen Live" },
 ];

@@ -13,7 +13,7 @@ export const API_BASE_URL: string =
 
 export const BROADCAST_CONFIG = {
   key: extra.reverbKey ?? "laravel-herd",
-  host: extra.reverbHost ?? "reverb.herd.test",
+  host: extra.reverbHost ?? "reverb.test",
   port: 443,
   forceTLS: true,
   authUrl: `${API_BASE_URL}/broadcasting/auth`,
