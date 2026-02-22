@@ -35,6 +35,18 @@ function getNavigationRoute(data: Record<string, any>): string | null {
       return "/notifications";
     case "service_appointment_status_changed":
       return "/notifications";
+    case "maintenance_task_due_soon":
+    case "maintenance_task_overdue":
+      if (innerData?.task_id) {
+        return `/maintenance/${innerData.task_id}`;
+      }
+      return "/(tabs)/maintenance";
+    case "warranty_compliance_warning":
+    case "warranty_voided":
+      if (innerData?.warranty_id) {
+        return `/maintenance/warranty/${innerData.warranty_id}`;
+      }
+      return "/(tabs)/maintenance";
     default:
       return "/notifications";
   }
