@@ -7,16 +7,23 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
-  FlatList,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path, Line, Text as SvgText, G, Rect } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { RoastCurveChart } from "@/components/charts/RoastCurveChart";
 import apiClient from "@/api/client";
-import type { ProfilerProfileDetail, ProfileRecentRoast } from "@/types";
+import type {
+  ProfilerProfileDetail,
+  ProfileRecentRoast,
+  RoastEvent,
+  RoastPhase,
+  RoastSetpoint,
+  ExtendedCurveData,
+  CurvePoint,
+} from "@/types";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -62,362 +69,33 @@ function formatTimeAxis(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Types for curve data                                                */
-/* ------------------------------------------------------------------ */
-
-interface CurvePoint {
-  time: number;
-  value: number;
+function formatSetpointLabel(key: string): string {
+  const labels: Record<string, string> = {
+    power: "Power",
+    air: "Air Temp",
+    speed: "Drum Speed",
+    pressure: "Pressure",
+  };
+  return labels[key] ?? key;
 }
 
-interface CurveData {
-  bean_temp: CurvePoint[];
-  drum_temp: CurvePoint[];
-  ror: CurvePoint[];
+function formatSetpointValue(setpoint: RoastSetpoint): string {
+  if (setpoint.key === "power") {
+    if (setpoint.value === -1) return "Auto";
+    if (setpoint.value === 0) return "Off";
+    return `${setpoint.value}%`;
+  }
+  return String(setpoint.value);
 }
 
-/* ------------------------------------------------------------------ */
-/*  SVG Reference Curve Chart                                           */
-/* ------------------------------------------------------------------ */
-
-const CHART_COLORS = {
-  beanTemp: Colors.sky,
-  drumTemp: Colors.boven,
-  ror: Colors.grape,
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  FIRST_CRACK: "First Crack",
+  SECOND_CRACK: "Second Crack",
+  CHARGE: "Charge",
+  DROP: "Drop",
+  TURNING_POINT: "Turning Point",
+  YELLOW: "Yellowing",
 };
-
-interface ReferenceCurveChartProps {
-  curveData: CurveData;
-  duration: number;
-}
-
-function ReferenceCurveChart({ curveData, duration }: ReferenceCurveChartProps) {
-  const screenWidth = Dimensions.get("window").width;
-  const chartWidth = screenWidth - 40;
-  const chartHeight = 220;
-  const paddingLeft = 40;
-  const paddingRight = 16;
-  const paddingTop = 16;
-  const paddingBottom = 32;
-  const rorAxisWidth = 36;
-
-  const plotWidth = chartWidth - paddingLeft - paddingRight - rorAxisWidth;
-  const plotHeight = chartHeight - paddingTop - paddingBottom;
-
-  const { beanTemp, drumTemp, ror } = useMemo(() => {
-    return {
-      beanTemp: curveData.bean_temp ?? [],
-      drumTemp: curveData.drum_temp ?? [],
-      ror: curveData.ror ?? [],
-    };
-  }, [curveData]);
-
-  const { tempMin, tempMax, rorMin, rorMax, timeMax } = useMemo(() => {
-    const allTempValues = [
-      ...beanTemp.map((p) => p.value),
-      ...drumTemp.map((p) => p.value),
-    ].filter((v) => v !== undefined && v !== null && !isNaN(v));
-
-    const allRorValues = ror
-      .map((p) => p.value)
-      .filter((v) => v !== undefined && v !== null && !isNaN(v));
-
-    const allTimes = [
-      ...beanTemp.map((p) => p.time),
-      ...drumTemp.map((p) => p.time),
-      ...ror.map((p) => p.time),
-    ];
-
-    const tMin = allTempValues.length > 0 ? Math.min(...allTempValues) : 0;
-    const tMax = allTempValues.length > 0 ? Math.max(...allTempValues) : 250;
-    const rMin = allRorValues.length > 0 ? Math.min(...allRorValues) : 0;
-    const rMax = allRorValues.length > 0 ? Math.max(...allRorValues) : 30;
-    const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : (duration ?? 600);
-
-    const tempMargin = (tMax - tMin) * 0.1 || 10;
-    const rorMargin = (rMax - rMin) * 0.15 || 5;
-
-    return {
-      tempMin: Math.max(0, Math.floor((tMin - tempMargin) / 10) * 10),
-      tempMax: Math.ceil((tMax + tempMargin) / 10) * 10,
-      rorMin: Math.max(0, Math.floor(rMin - rorMargin)),
-      rorMax: Math.ceil(rMax + rorMargin),
-      timeMax: maxTime,
-    };
-  }, [beanTemp, drumTemp, ror, duration]);
-
-  const mapX = useCallback(
-    (time: number) => paddingLeft + (time / timeMax) * plotWidth,
-    [timeMax, plotWidth]
-  );
-
-  const mapTempY = useCallback(
-    (value: number) => {
-      const range = tempMax - tempMin || 1;
-      return paddingTop + plotHeight - ((value - tempMin) / range) * plotHeight;
-    },
-    [tempMin, tempMax, plotHeight]
-  );
-
-  const mapRorY = useCallback(
-    (value: number) => {
-      const range = rorMax - rorMin || 1;
-      return paddingTop + plotHeight - ((value - rorMin) / range) * plotHeight;
-    },
-    [rorMin, rorMax, plotHeight]
-  );
-
-  const buildSmoothPath = useCallback(
-    (points: CurvePoint[], mapY: (value: number) => number): string => {
-      const filtered = points.filter(
-        (p) => p.value !== undefined && p.value !== null && !isNaN(p.value)
-      );
-      if (filtered.length < 2) return "";
-
-      let d = `M ${mapX(filtered[0].time)} ${mapY(filtered[0].value)}`;
-
-      for (let i = 1; i < filtered.length; i++) {
-        const x0 = mapX(filtered[i - 1].time);
-        const y0 = mapY(filtered[i - 1].value);
-        const x1 = mapX(filtered[i].time);
-        const y1 = mapY(filtered[i].value);
-        const cx = (x0 + x1) / 2;
-
-        d += ` C ${cx} ${y0}, ${cx} ${y1}, ${x1} ${y1}`;
-      }
-
-      return d;
-    },
-    [mapX]
-  );
-
-  const tempGridLines = useMemo(() => {
-    const lines: number[] = [];
-    const step = Math.max(Math.round((tempMax - tempMin) / 5 / 10) * 10, 10);
-    for (let v = tempMin; v <= tempMax; v += step) {
-      lines.push(v);
-    }
-    return lines;
-  }, [tempMin, tempMax]);
-
-  const timeGridLines = useMemo(() => {
-    const lines: number[] = [];
-    const step = Math.max(Math.round(timeMax / 5 / 60) * 60, 60);
-    for (let t = 0; t <= timeMax; t += step) {
-      lines.push(t);
-    }
-    return lines;
-  }, [timeMax]);
-
-  const beanTempPath = buildSmoothPath(beanTemp, mapTempY);
-  const drumTempPath = buildSmoothPath(drumTemp, mapTempY);
-  const rorPath = buildSmoothPath(ror, mapRorY);
-
-  return (
-    <View style={chartStyles.container}>
-      {/* Legend */}
-      <View style={chartStyles.legend}>
-        <View style={chartStyles.legendItem}>
-          <View
-            style={[chartStyles.legendDot, { backgroundColor: CHART_COLORS.beanTemp }]}
-          />
-          <Text style={chartStyles.legendText}>Bean Temp</Text>
-        </View>
-        <View style={chartStyles.legendItem}>
-          <View
-            style={[chartStyles.legendDot, { backgroundColor: CHART_COLORS.drumTemp }]}
-          />
-          <Text style={chartStyles.legendText}>Drum Temp</Text>
-        </View>
-        {ror.length > 0 ? (
-          <View style={chartStyles.legendItem}>
-            <View
-              style={[chartStyles.legendDot, { backgroundColor: CHART_COLORS.ror }]}
-            />
-            <Text style={chartStyles.legendText}>RoR</Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* SVG Chart */}
-      <Svg width={chartWidth} height={chartHeight}>
-        <Rect
-          x={paddingLeft}
-          y={paddingTop}
-          width={plotWidth}
-          height={plotHeight}
-          fill="#fafaf8"
-          rx={4}
-        />
-
-        {/* Horizontal gridlines */}
-        {tempGridLines.map((val) => (
-          <G key={`hgrid-${val}`}>
-            <Line
-              x1={paddingLeft}
-              y1={mapTempY(val)}
-              x2={paddingLeft + plotWidth}
-              y2={mapTempY(val)}
-              stroke={Colors.border}
-              strokeWidth={0.5}
-              strokeDasharray="4 3"
-            />
-            <SvgText
-              x={paddingLeft - 6}
-              y={mapTempY(val) + 4}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={Colors.textTertiary}
-              textAnchor="end"
-            >
-              {String(val)}
-            </SvgText>
-          </G>
-        ))}
-
-        {/* Vertical gridlines */}
-        {timeGridLines.map((val) => (
-          <G key={`vgrid-${val}`}>
-            <Line
-              x1={mapX(val)}
-              y1={paddingTop}
-              x2={mapX(val)}
-              y2={paddingTop + plotHeight}
-              stroke={Colors.border}
-              strokeWidth={0.5}
-              strokeDasharray="4 3"
-            />
-            <SvgText
-              x={mapX(val)}
-              y={paddingTop + plotHeight + 14}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={Colors.textTertiary}
-              textAnchor="middle"
-            >
-              {formatTimeAxis(val)}
-            </SvgText>
-          </G>
-        ))}
-
-        {/* RoR axis labels */}
-        {ror.length > 0 ? (
-          <G>
-            <SvgText
-              x={paddingLeft + plotWidth + 6}
-              y={mapRorY(rorMax) + 4}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={CHART_COLORS.ror}
-              textAnchor="start"
-            >
-              {String(Math.round(rorMax))}
-            </SvgText>
-            <SvgText
-              x={paddingLeft + plotWidth + 6}
-              y={mapRorY(rorMin) + 4}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={CHART_COLORS.ror}
-              textAnchor="start"
-            >
-              {String(Math.round(rorMin))}
-            </SvgText>
-            <SvgText
-              x={paddingLeft + plotWidth + 6}
-              y={mapRorY((rorMax + rorMin) / 2) + 4}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={CHART_COLORS.ror}
-              textAnchor="start"
-            >
-              {String(Math.round((rorMax + rorMin) / 2))}
-            </SvgText>
-          </G>
-        ) : null}
-
-        {/* Plot border */}
-        <Line
-          x1={paddingLeft}
-          y1={paddingTop + plotHeight}
-          x2={paddingLeft + plotWidth}
-          y2={paddingTop + plotHeight}
-          stroke={Colors.border}
-          strokeWidth={1}
-        />
-        <Line
-          x1={paddingLeft}
-          y1={paddingTop}
-          x2={paddingLeft}
-          y2={paddingTop + plotHeight}
-          stroke={Colors.border}
-          strokeWidth={1}
-        />
-
-        {/* RoR line */}
-        {rorPath.length > 0 ? (
-          <Path
-            d={rorPath}
-            stroke={CHART_COLORS.ror}
-            strokeWidth={1.5}
-            fill="none"
-            strokeLinecap="round"
-            opacity={0.7}
-          />
-        ) : null}
-
-        {/* Drum temp line */}
-        {drumTempPath.length > 0 ? (
-          <Path
-            d={drumTempPath}
-            stroke={CHART_COLORS.drumTemp}
-            strokeWidth={1.8}
-            fill="none"
-            strokeLinecap="round"
-          />
-        ) : null}
-
-        {/* Bean temp line */}
-        {beanTempPath.length > 0 ? (
-          <Path
-            d={beanTempPath}
-            stroke={CHART_COLORS.beanTemp}
-            strokeWidth={2.2}
-            fill="none"
-            strokeLinecap="round"
-          />
-        ) : null}
-      </Svg>
-    </View>
-  );
-}
-
-const chartStyles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
-  legend: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontFamily: "DMSans-Medium",
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-});
 
 /* ------------------------------------------------------------------ */
 /*  Stat Card Component                                                 */
@@ -435,7 +113,12 @@ function StatCard({ label, value, unit, color }: StatCardProps) {
     <View style={detailStyles.statCard}>
       <Text style={detailStyles.statLabel}>{label}</Text>
       <View style={detailStyles.statValueRow}>
-        <Text style={[detailStyles.statValue, color ? { color } : undefined]}>
+        <Text
+          style={[detailStyles.statValue, color ? { color } : undefined]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
           {value}
         </Text>
         {unit ? <Text style={detailStyles.statUnit}>{unit}</Text> : null}
@@ -517,6 +200,38 @@ export default function ProfileDetailScreen() {
     setRefreshing(true);
     fetchProfile();
   }, [fetchProfile]);
+
+  /* -- Computed values -- */
+
+  const firstCrackEvent = useMemo(() => {
+    if (!profile?.events) return null;
+    return profile.events.find((e) => e.type === "FIRST_CRACK") ?? null;
+  }, [profile?.events]);
+
+  const firstCrackTemp = useMemo(() => {
+    if (!firstCrackEvent || !profile?.curve_data?.bean_temp?.length) return null;
+    const beanPoints = profile.curve_data.bean_temp;
+    let closest = beanPoints[0];
+    let minDiff = Math.abs(beanPoints[0].time - firstCrackEvent.timePassed);
+    for (let i = 1; i < beanPoints.length; i++) {
+      const diff = Math.abs(beanPoints[i].time - firstCrackEvent.timePassed);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = beanPoints[i];
+      }
+    }
+    return closest.value;
+  }, [firstCrackEvent, profile?.curve_data?.bean_temp]);
+
+  const developmentTime = useMemo(() => {
+    if (!firstCrackEvent || !profile?.duration) return null;
+    return profile.duration - firstCrackEvent.timePassed;
+  }, [firstCrackEvent, profile?.duration]);
+
+  const developmentPercentage = useMemo(() => {
+    if (developmentTime === null || !profile?.duration || profile.duration === 0) return null;
+    return (developmentTime / profile.duration) * 100;
+  }, [developmentTime, profile?.duration]);
 
   /* -- Loading State -- */
   if (loading) {
@@ -653,7 +368,7 @@ export default function ProfileDetailScreen() {
           />
         }
       >
-        {/* Reference Curve Chart */}
+        {/* 1. Reference Curve Chart */}
         <View style={detailStyles.card}>
           <View style={detailStyles.cardHeader}>
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -668,9 +383,12 @@ export default function ProfileDetailScreen() {
             <Text style={detailStyles.cardTitle}>Reference Curve</Text>
           </View>
           {profile.curve_data ? (
-            <ReferenceCurveChart
+            <RoastCurveChart
               curveData={profile.curve_data}
               duration={profile.duration ?? 600}
+              events={profile.events}
+              phases={profile.phases}
+              clipId="profile-plot-clip"
             />
           ) : (
             <View style={detailStyles.emptyCurve}>
@@ -693,13 +411,100 @@ export default function ProfileDetailScreen() {
           )}
         </View>
 
-        {/* Key Metrics Row */}
+        {/* 2. Phase Bar */}
+        {profile.phases.length > 0 && profile.duration ? (
+          <View style={detailStyles.card}>
+            <View style={detailStyles.cardHeader}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M4 6h16M4 12h16M4 18h16"
+                  stroke={Colors.boven}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                />
+              </Svg>
+              <Text style={detailStyles.cardTitle}>Phases</Text>
+            </View>
+            <View style={detailStyles.phaseBar}>
+              {profile.phases.map((phase, index) => {
+                const phaseDuration = phase.end_time - phase.start_time;
+                const percentage = (phaseDuration / profile.duration!) * 100;
+                return (
+                  <View
+                    key={`phase-${index}`}
+                    style={[
+                      detailStyles.phaseSegment,
+                      {
+                        flex: percentage,
+                        backgroundColor: phase.color || Colors.gravelLight,
+                      },
+                      index === 0 && { borderTopLeftRadius: 6, borderBottomLeftRadius: 6 },
+                      index === profile.phases.length - 1 && { borderTopRightRadius: 6, borderBottomRightRadius: 6 },
+                    ]}
+                  >
+                    <Text
+                      style={detailStyles.phaseSegmentName}
+                      numberOfLines={1}
+                    >
+                      {phase.name}
+                    </Text>
+                    <Text style={detailStyles.phaseSegmentValue}>
+                      {formatDuration(Math.round(phaseDuration))} ({percentage.toFixed(0)}%)
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+
+        {/* 3. Key Metrics Row 1 */}
+        {firstCrackEvent ? (
+          <View style={detailStyles.metricsRow}>
+            <StatCard
+              label="DURATION"
+              value={formatDuration(profile.duration)}
+              color={Colors.text}
+            />
+            <StatCard
+              label="FIRST CRACK"
+              value={formatDuration(firstCrackEvent.timePassed)}
+              unit={firstCrackTemp !== null ? ` @ ${firstCrackTemp.toFixed(0)}\u00B0` : ""}
+              color={Colors.boven}
+            />
+            <StatCard
+              label="DEVELOPMENT"
+              value={developmentTime !== null ? formatDuration(Math.round(developmentTime)) : "-"}
+              unit={developmentPercentage !== null ? ` (${developmentPercentage.toFixed(0)}%)` : ""}
+              color={Colors.grape}
+            />
+          </View>
+        ) : (
+          <View style={detailStyles.metricsRow}>
+            <StatCard
+              label="DURATION"
+              value={formatDuration(profile.duration)}
+              color={Colors.text}
+            />
+            <StatCard
+              label="START WEIGHT"
+              value={
+                profile.start_weight !== null
+                  ? (profile.start_weight / 1000).toFixed(1)
+                  : "-"
+              }
+              unit={profile.start_weight !== null ? " kg" : ""}
+            />
+            <StatCard
+              label="ROASTS"
+              value={String(profile.roasts_count)}
+              color={Colors.grape}
+            />
+          </View>
+        )}
+
+        {/* 4. Key Metrics Row 2 */}
         <View style={detailStyles.metricsRow}>
-          <StatCard
-            label="DURATION"
-            value={formatDuration(profile.duration)}
-            color={Colors.text}
-          />
           <StatCard
             label="START WEIGHT"
             value={
@@ -709,14 +514,6 @@ export default function ProfileDetailScreen() {
             }
             unit={profile.start_weight !== null ? " kg" : ""}
           />
-          <StatCard
-            label="ROASTS"
-            value={String(profile.roasts_count)}
-            color={Colors.grape}
-          />
-        </View>
-
-        <View style={detailStyles.metricsRow}>
           <StatCard
             label="END WEIGHT"
             value={
@@ -738,7 +535,7 @@ export default function ProfileDetailScreen() {
           />
         </View>
 
-        {/* Profile Info Card */}
+        {/* 5. Profile Info Card */}
         <View style={detailStyles.card}>
           <View style={detailStyles.cardHeader}>
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -813,7 +610,187 @@ export default function ProfileDetailScreen() {
           ) : null}
         </View>
 
-        {/* Comment Card */}
+        {/* 6. Charge & Setpoints Card */}
+        {profile.curve_data ? (
+          <View style={detailStyles.card}>
+            <View style={detailStyles.cardHeader}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+                  stroke={Colors.sky}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                />
+              </Svg>
+              <Text style={detailStyles.cardTitle}>Charge & Setpoints</Text>
+            </View>
+
+            {/* Initial readings */}
+            {profile.curve_data.bean_temp?.[0] ? (
+              <View style={detailStyles.detailRow}>
+                <Text style={detailStyles.detailLabel}>Bean Temp</Text>
+                <Text style={detailStyles.detailValue}>
+                  {profile.curve_data.bean_temp[0].value.toFixed(0)}{"\u00B0"}
+                </Text>
+              </View>
+            ) : null}
+
+            {profile.curve_data.drum_temp?.[0] ? (
+              <>
+                <View style={detailStyles.detailDivider} />
+                <View style={detailStyles.detailRow}>
+                  <Text style={detailStyles.detailLabel}>Air Temp</Text>
+                  <Text style={detailStyles.detailValue}>
+                    {profile.curve_data.drum_temp[0].value.toFixed(0)}{"\u00B0"}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+
+            {profile.curve_data.power?.[0] ? (
+              <>
+                <View style={detailStyles.detailDivider} />
+                <View style={detailStyles.detailRow}>
+                  <Text style={detailStyles.detailLabel}>Power</Text>
+                  <Text style={detailStyles.detailValue}>
+                    {profile.curve_data.power[0].value === -1
+                      ? "Auto"
+                      : profile.curve_data.power[0].value === 0
+                        ? "Off"
+                        : `${profile.curve_data.power[0].value}%`}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+
+            {profile.curve_data.drum_speed?.[0] ? (
+              <>
+                <View style={detailStyles.detailDivider} />
+                <View style={detailStyles.detailRow}>
+                  <Text style={detailStyles.detailLabel}>Drum Speed</Text>
+                  <Text style={detailStyles.detailValue}>
+                    {profile.curve_data.drum_speed[0].value}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+
+            {/* Setpoints */}
+            {profile.setpoints.length > 0 ? (
+              <>
+                <View style={detailStyles.setpointDivider} />
+                <Text style={detailStyles.setpointSectionLabel}>Setpoints</Text>
+                {profile.setpoints.map((sp, index) => (
+                  <View key={`sp-${index}`}>
+                    {index > 0 ? <View style={detailStyles.detailDivider} /> : null}
+                    <View style={detailStyles.detailRow}>
+                      <Text style={detailStyles.detailLabel}>
+                        {formatSetpointLabel(sp.key)}
+                      </Text>
+                      <Text style={detailStyles.detailValue}>
+                        {formatSetpointValue(sp)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* 7. Event Timeline Card */}
+        {profile.events.length > 0 ? (
+          <View style={detailStyles.card}>
+            <View style={detailStyles.cardHeader}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2"
+                  stroke={Colors.leaf}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={detailStyles.cardTitle}>Event Timeline</Text>
+              <Text style={detailStyles.cardCount}>
+                {profile.events.length}
+              </Text>
+            </View>
+            {profile.events.map((event, index) => (
+              <View key={`event-${index}`}>
+                {index > 0 ? <View style={detailStyles.detailDivider} /> : null}
+                <View style={detailStyles.eventRow}>
+                  <View style={detailStyles.eventTimeBadge}>
+                    <Text style={detailStyles.eventTimeText}>
+                      {formatDuration(Math.round(event.timePassed))}
+                    </Text>
+                  </View>
+                  <Text style={detailStyles.eventLabel}>
+                    {EVENT_TYPE_LABELS[event.type] ?? event.type}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {/* 8. Connected Inventories Card */}
+        {profile.inventories.length > 0 ? (
+          <View style={detailStyles.card}>
+            <View style={detailStyles.cardHeader}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"
+                  stroke={Colors.leaf}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={detailStyles.cardTitle}>Connected Inventories</Text>
+              <Text style={detailStyles.cardCount}>
+                {profile.inventories.length}
+              </Text>
+            </View>
+            {profile.inventories.map((inv, index) => (
+              <TouchableOpacity
+                key={`inv-${inv.id}`}
+                activeOpacity={0.7}
+                onPress={() => router.push(`/inventory/${inv.id}`)}
+              >
+                {index > 0 ? <View style={detailStyles.detailDivider} /> : null}
+                <View style={detailStyles.inventoryRow}>
+                  <View style={detailStyles.inventoryLeft}>
+                    <Text style={detailStyles.inventoryName} numberOfLines={1}>
+                      {inv.name}
+                    </Text>
+                    <Text style={detailStyles.inventoryNumber}>
+                      {inv.formatted_inventory_number}
+                    </Text>
+                  </View>
+                  <View style={detailStyles.inventoryRight}>
+                    {inv.is_main ? (
+                      <View style={detailStyles.mainBadge}>
+                        <Text style={detailStyles.mainBadgeText}>Main</Text>
+                      </View>
+                    ) : null}
+                    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M9 18l6-6-6-6"
+                        stroke={Colors.textTertiary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
+
+        {/* 9. Comment Card */}
         {profile.comment ? (
           <View style={detailStyles.card}>
             <View style={detailStyles.cardHeader}>
@@ -832,7 +809,7 @@ export default function ProfileDetailScreen() {
           </View>
         ) : null}
 
-        {/* Recent Roasts Section */}
+        {/* 10. Recent Roasts Section */}
         <View style={detailStyles.card}>
           <View style={detailStyles.cardHeader}>
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -1018,6 +995,34 @@ const detailStyles = StyleSheet.create({
     textAlign: "center",
   },
 
+  /* -- Phase Bar -- */
+  phaseBar: {
+    flexDirection: "row",
+    height: 56,
+    borderRadius: 6,
+    overflow: "hidden",
+    gap: 2,
+  },
+  phaseSegment: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  phaseSegmentName: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 10,
+    color: "#ffffff",
+    textAlign: "center",
+  },
+  phaseSegmentValue: {
+    fontFamily: "JetBrainsMono-Regular",
+    fontSize: 9,
+    color: "rgba(255,255,255,0.85)",
+    textAlign: "center",
+    marginTop: 2,
+  },
+
   /* -- Metrics Row -- */
   metricsRow: {
     flexDirection: "row",
@@ -1030,7 +1035,7 @@ const detailStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     gap: 4,
   },
   statLabel: {
@@ -1079,6 +1084,86 @@ const detailStyles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.border,
     marginVertical: 10,
+  },
+
+  /* -- Setpoints -- */
+  setpointDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginTop: 14,
+    marginBottom: 12,
+  },
+  setpointSectionLabel: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+
+  /* -- Event Timeline -- */
+  eventRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 4,
+  },
+  eventTimeBadge: {
+    backgroundColor: Colors.gravelLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    minWidth: 56,
+    alignItems: "center",
+  },
+  eventTimeText: {
+    fontFamily: "JetBrainsMono-Medium",
+    fontSize: 12,
+    color: Colors.text,
+  },
+  eventLabel: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 13,
+    color: Colors.text,
+  },
+
+  /* -- Connected Inventories -- */
+  inventoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+  },
+  inventoryLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  inventoryName: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 14,
+    color: Colors.text,
+  },
+  inventoryNumber: {
+    fontFamily: "JetBrainsMono-Regular",
+    fontSize: 11,
+    color: Colors.textTertiary,
+  },
+  inventoryRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  mainBadge: {
+    backgroundColor: Colors.leafBg,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 5,
+  },
+  mainBadgeText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 11,
+    color: Colors.leaf,
   },
 
   /* -- Favorite -- */

@@ -7,47 +7,15 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path, Line, Text as SvgText, G, Rect } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { RoastCurveChart } from "@/components/charts/RoastCurveChart";
 import apiClient from "@/api/client";
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                               */
-/* ------------------------------------------------------------------ */
-
-interface CurvePoint {
-  time: number;
-  value: number;
-}
-
-interface CurveData {
-  bean_temp: CurvePoint[];
-  drum_temp: CurvePoint[];
-  ror: CurvePoint[];
-}
-
-interface RoastDetail {
-  id: string;
-  profile_name: string;
-  device_name: string;
-  bean_type: string | null;
-  start_weight: number | null;
-  end_weight: number | null;
-  weight_change: number | null;
-  duration: number;
-  roasted_at: string;
-  is_favorite: boolean;
-  comment: string | null;
-  cupping_score: number | null;
-  beans: unknown[] | null;
-  profile: { id: string; name: string } | null;
-  curve_data: CurveData | null;
-}
+import type { RoastDetail, RoastPhase, CurvePoint } from "@/types";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -70,12 +38,6 @@ function formatDate(dateString: string): string {
   });
 }
 
-function formatTimeAxis(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
 function getScoreColor(score: number | null): {
   color: string;
   bg: string;
@@ -95,368 +57,118 @@ function getScoreColor(score: number | null): {
   return { color: Colors.boven, bg: Colors.bovenBg };
 }
 
-/* ------------------------------------------------------------------ */
-/*  SVG Roast Curve Chart                                               */
-/* ------------------------------------------------------------------ */
-
-const CHART_COLORS = {
-  beanTemp: Colors.sky,
-  drumTemp: Colors.boven,
-  ror: Colors.grape,
-};
-
-interface RoastCurveChartProps {
-  curveData: CurveData;
-  duration: number;
+function findClosestReading(
+  points: CurvePoint[],
+  time: number
+): number | null {
+  if (!points || points.length === 0) return null;
+  let closest = points[0];
+  let minDiff = Math.abs(points[0].time - time);
+  for (const p of points) {
+    const diff = Math.abs(p.time - time);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = p;
+    }
+  }
+  return closest.value;
 }
 
-function RoastCurveChart({ curveData, duration }: RoastCurveChartProps) {
-  const screenWidth = Dimensions.get("window").width;
-  const chartWidth = screenWidth - 40; // 20px padding on each side
-  const chartHeight = 220;
-  const paddingLeft = 40;
-  const paddingRight = 16;
-  const paddingTop = 16;
-  const paddingBottom = 32;
-  const rorAxisWidth = 36;
+/* ------------------------------------------------------------------ */
+/*  Phase Bar Component                                                 */
+/* ------------------------------------------------------------------ */
 
-  const plotWidth = chartWidth - paddingLeft - paddingRight - rorAxisWidth;
-  const plotHeight = chartHeight - paddingTop - paddingBottom;
-
-  const { beanTemp, drumTemp, ror } = useMemo(() => {
-    return {
-      beanTemp: curveData.bean_temp ?? [],
-      drumTemp: curveData.drum_temp ?? [],
-      ror: curveData.ror ?? [],
-    };
-  }, [curveData]);
-
-  // Calculate temperature axis range from bean_temp and drum_temp
-  const { tempMin, tempMax, rorMin, rorMax, timeMax } = useMemo(() => {
-    const allTempValues = [
-      ...beanTemp.map((p) => p.value),
-      ...drumTemp.map((p) => p.value),
-    ].filter((v) => v !== undefined && v !== null && !isNaN(v));
-
-    const allRorValues = ror
-      .map((p) => p.value)
-      .filter((v) => v !== undefined && v !== null && !isNaN(v));
-
-    const allTimes = [
-      ...beanTemp.map((p) => p.time),
-      ...drumTemp.map((p) => p.time),
-      ...ror.map((p) => p.time),
-    ];
-
-    const tMin = allTempValues.length > 0 ? Math.min(...allTempValues) : 0;
-    const tMax = allTempValues.length > 0 ? Math.max(...allTempValues) : 250;
-    const rMin = allRorValues.length > 0 ? Math.min(...allRorValues) : 0;
-    const rMax = allRorValues.length > 0 ? Math.max(...allRorValues) : 30;
-    const maxTime = allTimes.length > 0 ? Math.max(...allTimes) : duration;
-
-    // Add margins
-    const tempMargin = (tMax - tMin) * 0.1 || 10;
-    const rorMargin = (rMax - rMin) * 0.15 || 5;
-
-    return {
-      tempMin: Math.max(0, Math.floor((tMin - tempMargin) / 10) * 10),
-      tempMax: Math.ceil((tMax + tempMargin) / 10) * 10,
-      rorMin: Math.max(0, Math.floor(rMin - rorMargin)),
-      rorMax: Math.ceil(rMax + rorMargin),
-      timeMax: maxTime,
-    };
-  }, [beanTemp, drumTemp, ror, duration]);
-
-  // Map data to SVG coordinates
-  const mapX = useCallback(
-    (time: number) => paddingLeft + (time / timeMax) * plotWidth,
-    [timeMax, plotWidth]
-  );
-
-  const mapTempY = useCallback(
-    (value: number) => {
-      const range = tempMax - tempMin || 1;
-      return paddingTop + plotHeight - ((value - tempMin) / range) * plotHeight;
-    },
-    [tempMin, tempMax, plotHeight]
-  );
-
-  const mapRorY = useCallback(
-    (value: number) => {
-      const range = rorMax - rorMin || 1;
-      return paddingTop + plotHeight - ((value - rorMin) / range) * plotHeight;
-    },
-    [rorMin, rorMax, plotHeight]
-  );
-
-  // Build smooth path using cubic bezier
-  const buildSmoothPath = useCallback(
-    (
-      points: CurvePoint[],
-      mapY: (value: number) => number
-    ): string => {
-      const filtered = points.filter(
-        (p) => p.value !== undefined && p.value !== null && !isNaN(p.value)
-      );
-      if (filtered.length < 2) return "";
-
-      let d = `M ${mapX(filtered[0].time)} ${mapY(filtered[0].value)}`;
-
-      for (let i = 1; i < filtered.length; i++) {
-        const x0 = mapX(filtered[i - 1].time);
-        const y0 = mapY(filtered[i - 1].value);
-        const x1 = mapX(filtered[i].time);
-        const y1 = mapY(filtered[i].value);
-        const cx = (x0 + x1) / 2;
-
-        d += ` C ${cx} ${y0}, ${cx} ${y1}, ${x1} ${y1}`;
-      }
-
-      return d;
-    },
-    [mapX]
-  );
-
-  // Generate gridlines
-  const tempGridLines = useMemo(() => {
-    const lines: number[] = [];
-    const step = Math.max(
-      Math.round((tempMax - tempMin) / 5 / 10) * 10,
-      10
-    );
-    for (let v = tempMin; v <= tempMax; v += step) {
-      lines.push(v);
-    }
-    return lines;
-  }, [tempMin, tempMax]);
-
-  const timeGridLines = useMemo(() => {
-    const lines: number[] = [];
-    const step = Math.max(Math.round(timeMax / 5 / 60) * 60, 60);
-    for (let t = 0; t <= timeMax; t += step) {
-      lines.push(t);
-    }
-    return lines;
-  }, [timeMax]);
-
-  const beanTempPath = buildSmoothPath(beanTemp, mapTempY);
-  const drumTempPath = buildSmoothPath(drumTemp, mapTempY);
-  const rorPath = buildSmoothPath(ror, mapRorY);
+function PhaseBar({
+  phases,
+  duration,
+}: {
+  phases: RoastPhase[];
+  duration: number;
+}) {
+  if (phases.length === 0) return null;
 
   return (
-    <View style={chartStyles.container}>
-      {/* Legend */}
-      <View style={chartStyles.legend}>
-        <View style={chartStyles.legendItem}>
-          <View
-            style={[
-              chartStyles.legendDot,
-              { backgroundColor: CHART_COLORS.beanTemp },
-            ]}
-          />
-          <Text style={chartStyles.legendText}>Bean Temp</Text>
-        </View>
-        <View style={chartStyles.legendItem}>
-          <View
-            style={[
-              chartStyles.legendDot,
-              { backgroundColor: CHART_COLORS.drumTemp },
-            ]}
-          />
-          <Text style={chartStyles.legendText}>Drum Temp</Text>
-        </View>
-        {ror.length > 0 && (
-          <View style={chartStyles.legendItem}>
-            <View
-              style={[
-                chartStyles.legendDot,
-                { backgroundColor: CHART_COLORS.ror },
-              ]}
-            />
-            <Text style={chartStyles.legendText}>RoR</Text>
-          </View>
-        )}
-      </View>
-
-      {/* SVG Chart */}
-      <Svg width={chartWidth} height={chartHeight}>
-        {/* Background */}
-        <Rect
-          x={paddingLeft}
-          y={paddingTop}
-          width={plotWidth}
-          height={plotHeight}
-          fill="#fafaf8"
-          rx={4}
-        />
-
-        {/* Horizontal gridlines (temperature) */}
-        {tempGridLines.map((val) => (
-          <G key={`hgrid-${val}`}>
-            <Line
-              x1={paddingLeft}
-              y1={mapTempY(val)}
-              x2={paddingLeft + plotWidth}
-              y2={mapTempY(val)}
-              stroke={Colors.border}
-              strokeWidth={0.5}
-              strokeDasharray="4 3"
-            />
-            <SvgText
-              x={paddingLeft - 6}
-              y={mapTempY(val) + 4}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={Colors.textTertiary}
-              textAnchor="end"
-            >
-              {String(val)}
-            </SvgText>
-          </G>
-        ))}
-
-        {/* Vertical gridlines (time) */}
-        {timeGridLines.map((val) => (
-          <G key={`vgrid-${val}`}>
-            <Line
-              x1={mapX(val)}
-              y1={paddingTop}
-              x2={mapX(val)}
-              y2={paddingTop + plotHeight}
-              stroke={Colors.border}
-              strokeWidth={0.5}
-              strokeDasharray="4 3"
-            />
-            <SvgText
-              x={mapX(val)}
-              y={paddingTop + plotHeight + 14}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={Colors.textTertiary}
-              textAnchor="middle"
-            >
-              {formatTimeAxis(val)}
-            </SvgText>
-          </G>
-        ))}
-
-        {/* RoR axis labels (right side) */}
-        {ror.length > 0 && (
-          <G>
-            <SvgText
-              x={paddingLeft + plotWidth + 6}
-              y={mapRorY(rorMax) + 4}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={CHART_COLORS.ror}
-              textAnchor="start"
-            >
-              {String(Math.round(rorMax))}
-            </SvgText>
-            <SvgText
-              x={paddingLeft + plotWidth + 6}
-              y={mapRorY(rorMin) + 4}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={CHART_COLORS.ror}
-              textAnchor="start"
-            >
-              {String(Math.round(rorMin))}
-            </SvgText>
-            <SvgText
-              x={paddingLeft + plotWidth + 6}
-              y={mapRorY((rorMax + rorMin) / 2) + 4}
-              fontSize={9}
-              fontFamily="JetBrainsMono-Regular"
-              fill={CHART_COLORS.ror}
-              textAnchor="start"
-            >
-              {String(Math.round((rorMax + rorMin) / 2))}
-            </SvgText>
-          </G>
-        )}
-
-        {/* Plot border */}
-        <Line
-          x1={paddingLeft}
-          y1={paddingTop + plotHeight}
-          x2={paddingLeft + plotWidth}
-          y2={paddingTop + plotHeight}
-          stroke={Colors.border}
-          strokeWidth={1}
-        />
-        <Line
-          x1={paddingLeft}
-          y1={paddingTop}
-          x2={paddingLeft}
-          y2={paddingTop + plotHeight}
-          stroke={Colors.border}
-          strokeWidth={1}
-        />
-
-        {/* RoR line (draw first so it appears behind temp lines) */}
-        {rorPath.length > 0 && (
+    <View style={detailStyles.card}>
+      <View style={detailStyles.cardHeader}>
+        <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
           <Path
-            d={rorPath}
-            stroke={CHART_COLORS.ror}
-            strokeWidth={1.5}
-            fill="none"
-            strokeLinecap="round"
-            opacity={0.7}
-          />
-        )}
-
-        {/* Drum temp line */}
-        {drumTempPath.length > 0 && (
-          <Path
-            d={drumTempPath}
-            stroke={CHART_COLORS.drumTemp}
+            d="M3 3v18h18M7 16l4-8 4 4 4-8"
+            stroke={Colors.boven}
             strokeWidth={1.8}
-            fill="none"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
-        )}
-
-        {/* Bean temp line */}
-        {beanTempPath.length > 0 && (
-          <Path
-            d={beanTempPath}
-            stroke={CHART_COLORS.beanTemp}
-            strokeWidth={2.2}
-            fill="none"
-            strokeLinecap="round"
-          />
-        )}
-      </Svg>
+        </Svg>
+        <Text style={detailStyles.cardTitle}>Roast Phases</Text>
+      </View>
+      <View
+        style={{
+          flexDirection: "row",
+          borderRadius: 6,
+          overflow: "hidden",
+          height: 28,
+        }}
+      >
+        {phases.map((phase, i) => {
+          const pct =
+            ((phase.end_time - phase.start_time) / duration) * 100;
+          return (
+            <View
+              key={i}
+              style={{
+                width: `${pct}%`,
+                backgroundColor: phase.color || "#E8E8E3",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "DMSans-Medium",
+                  fontSize: 9,
+                  color: "#ffffff",
+                }}
+                numberOfLines={1}
+              >
+                {phase.name}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+      {/* Phase detail row below bar */}
+      <View style={{ flexDirection: "row", marginTop: 8, gap: 8 }}>
+        {phases.map((phase, i) => {
+          const pct =
+            ((phase.end_time - phase.start_time) / duration) * 100;
+          const time = phase.end_time - phase.start_time;
+          return (
+            <View key={i} style={{ flex: 1, alignItems: "center" }}>
+              <Text
+                style={{
+                  fontFamily: "JetBrainsMono-Medium",
+                  fontSize: 11,
+                  color: Colors.text,
+                }}
+              >
+                {formatDuration(Math.round(time))}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "DMSans-Regular",
+                  fontSize: 10,
+                  color: Colors.textTertiary,
+                }}
+              >
+                {pct.toFixed(0)}%
+              </Text>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
-
-const chartStyles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
-  legend: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontFamily: "DMSans-Medium",
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-});
 
 /* ------------------------------------------------------------------ */
 /*  Stat Card Component                                                 */
@@ -474,7 +186,12 @@ function StatCard({ label, value, unit, color }: StatCardProps) {
     <View style={detailStyles.statCard}>
       <Text style={detailStyles.statLabel}>{label}</Text>
       <View style={detailStyles.statValueRow}>
-        <Text style={[detailStyles.statValue, color ? { color } : undefined]}>
+        <Text
+          style={[detailStyles.statValue, color ? { color } : undefined]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
           {value}
         </Text>
         {unit ? <Text style={detailStyles.statUnit}>{unit}</Text> : null}
@@ -520,12 +237,47 @@ export default function RoastDetailScreen() {
     fetchRoast();
   }, [fetchRoast]);
 
-  // Compute end bean temp from curve data
+  // Temperature metrics from curve data
+  const startBeanTemp = useMemo(() => {
+    if (!roast?.curve_data?.bean_temp?.length) return null;
+    return roast.curve_data.bean_temp[0].value;
+  }, [roast]);
+
   const endBeanTemp = useMemo(() => {
     if (!roast?.curve_data?.bean_temp?.length) return null;
     const points = roast.curve_data.bean_temp;
     return points[points.length - 1].value;
   }, [roast]);
+
+  const endAirTemp = useMemo(() => {
+    if (!roast?.curve_data?.drum_temp?.length) return null;
+    const points = roast.curve_data.drum_temp;
+    return points[points.length - 1].value;
+  }, [roast]);
+
+  // First crack event and development time
+  const firstCrackEvent = useMemo(() => {
+    if (!roast) return null;
+    return roast.events.find((e) => e.type === "FIRST_CRACK") ?? null;
+  }, [roast]);
+
+  const firstCrackTemp = useMemo(() => {
+    if (!firstCrackEvent || !roast?.curve_data?.bean_temp?.length) return null;
+    return findClosestReading(
+      roast.curve_data.bean_temp,
+      firstCrackEvent.timePassed
+    );
+  }, [firstCrackEvent, roast]);
+
+  const developmentTime = useMemo(() => {
+    if (!firstCrackEvent || !roast) return null;
+    return roast.duration - firstCrackEvent.timePassed;
+  }, [firstCrackEvent, roast]);
+
+  const developmentPct = useMemo(() => {
+    if (developmentTime === null || !roast || roast.duration === 0) return null;
+    return (developmentTime / roast.duration) * 100;
+  }, [developmentTime, roast]);
 
   const scoreStyle = useMemo(() => {
     return getScoreColor(roast?.cupping_score ?? null);
@@ -666,7 +418,7 @@ export default function RoastDetailScreen() {
           />
         }
       >
-        {/* Roast Curve Chart */}
+        {/* 1. Roast Curve Chart */}
         <View style={detailStyles.card}>
           <View style={detailStyles.cardHeader}>
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -684,6 +436,9 @@ export default function RoastDetailScreen() {
             <RoastCurveChart
               curveData={roast.curve_data}
               duration={roast.duration}
+              events={roast.events}
+              phases={roast.phases}
+              clipId="roast-plot-clip"
             />
           ) : (
             <View style={detailStyles.emptyCurve}>
@@ -706,10 +461,21 @@ export default function RoastDetailScreen() {
           )}
         </View>
 
-        {/* Key Metrics Row */}
+        {/* 2. Phase Bar */}
+        <PhaseBar phases={roast.phases} duration={roast.duration} />
+
+        {/* 3. Key Metrics Row 1: Start Bean Temp | End Bean Temp | End Air Temp */}
         <View style={detailStyles.metricsRow}>
           <StatCard
-            label="BEAN TEMP"
+            label="START BEAN"
+            value={
+              startBeanTemp !== null ? startBeanTemp.toFixed(0) : "-"
+            }
+            unit={startBeanTemp !== null ? "\u00B0" : ""}
+            color={Colors.sky}
+          />
+          <StatCard
+            label="END BEAN"
             value={
               endBeanTemp !== null ? endBeanTemp.toFixed(0) : "-"
             }
@@ -717,22 +483,53 @@ export default function RoastDetailScreen() {
             color={Colors.sky}
           />
           <StatCard
-            label="DURATION"
-            value={formatDuration(roast.duration)}
-            color={Colors.text}
-          />
-          <StatCard
-            label="LOSS"
+            label="END AIR"
             value={
-              roast.weight_change !== null
-                ? Math.abs(roast.weight_change).toFixed(1)
-                : "-"
+              endAirTemp !== null ? endAirTemp.toFixed(0) : "-"
             }
-            unit={roast.weight_change !== null ? "%" : ""}
+            unit={endAirTemp !== null ? "\u00B0" : ""}
             color={Colors.boven}
           />
         </View>
 
+        {/* 4. Key Metrics Row 2: First Crack | Development | Duration */}
+        <View style={detailStyles.metricsRow}>
+          {firstCrackEvent ? (
+            <>
+              <StatCard
+                label="FIRST CRACK"
+                value={formatDuration(Math.round(firstCrackEvent.timePassed))}
+                unit={
+                  firstCrackTemp !== null
+                    ? ` @ ${firstCrackTemp.toFixed(0)}\u00B0`
+                    : ""
+                }
+                color={Colors.traffic}
+              />
+              <StatCard
+                label="DEVELOPMENT"
+                value={
+                  developmentTime !== null
+                    ? formatDuration(Math.round(developmentTime))
+                    : "-"
+                }
+                unit={
+                  developmentPct !== null
+                    ? ` (${developmentPct.toFixed(0)}%)`
+                    : ""
+                }
+                color={Colors.grape}
+              />
+            </>
+          ) : null}
+          <StatCard
+            label="DURATION"
+            value={formatDuration(roast.duration)}
+            color={Colors.text}
+          />
+        </View>
+
+        {/* 5. Key Metrics Row 3: Start Weight | End Weight | Weight Loss */}
         <View style={detailStyles.metricsRow}>
           <StatCard
             label="START WEIGHT"
@@ -746,14 +543,26 @@ export default function RoastDetailScreen() {
           <StatCard
             label="END WEIGHT"
             value={
-              roast.end_weight !== null ? (roast.end_weight / 1000).toFixed(1) : "-"
+              roast.end_weight !== null
+                ? (roast.end_weight / 1000).toFixed(1)
+                : "-"
             }
             unit={roast.end_weight !== null ? " kg" : ""}
           />
+          <StatCard
+            label="LOSS"
+            value={
+              roast.weight_change !== null
+                ? Math.abs(roast.weight_change).toFixed(1)
+                : "-"
+            }
+            unit={roast.weight_change !== null ? "%" : ""}
+            color={Colors.boven}
+          />
         </View>
 
-        {/* Cupping Score */}
-        {roast.cupping_score !== null && (
+        {/* 6. Cupping Score */}
+        {roast.cupping_score !== null ? (
           <View style={detailStyles.card}>
             <View style={detailStyles.cardHeader}>
               <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -794,9 +603,88 @@ export default function RoastDetailScreen() {
               </Text>
             </View>
           </View>
-        )}
+        ) : null}
 
-        {/* Roast Details Card */}
+        {/* 7. Green Bean / Blend Card */}
+        {roast.inventory_selections.length > 0 ? (
+          <View style={detailStyles.card}>
+            <View style={detailStyles.cardHeader}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l5.7 3.2-3.1 3.1-.8-.3c-.4-.1-.8 0-1 .3l-.2.3c-.2.3-.1.7.1 1l1.7 1.7c.3.3.7.3 1 .1l.3-.2c.3-.2.4-.6.3-1l-.3-.8 3.1-3.1 3.2 5.7c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"
+                  stroke={Colors.leaf}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={detailStyles.cardTitle}>
+                {roast.inventory_selections.length === 1
+                  ? "Green Bean"
+                  : "Blend"}
+              </Text>
+            </View>
+            {roast.inventory_selections.map((sel, index) => (
+              <TouchableOpacity
+                key={sel.inventory_id}
+                activeOpacity={0.7}
+                onPress={() => router.push(`/inventory/${sel.inventory_id}`)}
+              >
+                {index > 0 ? (
+                  <View style={detailStyles.detailDivider} />
+                ) : null}
+                <View style={detailStyles.inventoryRow}>
+                  <View style={detailStyles.inventoryInfo}>
+                    <Text
+                      style={detailStyles.inventoryName}
+                      numberOfLines={1}
+                    >
+                      {sel.inventory_name}
+                    </Text>
+                    <Text style={detailStyles.inventoryNumber}>
+                      {sel.formatted_inventory_number}
+                    </Text>
+                  </View>
+                  <View style={detailStyles.inventoryRight}>
+                    <Text style={detailStyles.inventoryWeight}>
+                      {(sel.quantity_grams / 1000).toFixed(1)} kg
+                    </Text>
+                    <Svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <Path
+                        d="M9 18l6-6-6-6"
+                        stroke={Colors.textTertiary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </View>
+                </View>
+                <View style={detailStyles.inventoryBarBg}>
+                  <View
+                    style={[
+                      detailStyles.inventoryBarFill,
+                      {
+                        width: `${sel.percentage}%`,
+                        backgroundColor: Colors.leaf,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={detailStyles.inventoryPct}>
+                  {sel.percentage.toFixed(0)}%
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
+
+        {/* 8. Roast Info Card */}
         <View style={detailStyles.card}>
           <View style={detailStyles.cardHeader}>
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -859,7 +747,87 @@ export default function RoastDetailScreen() {
           ) : null}
         </View>
 
-        {/* Comment Card */}
+        {/* 9. Linked Cupping Sessions */}
+        {roast.cupping_samples.length > 0 ? (
+          <View style={detailStyles.card}>
+            <View style={detailStyles.cardHeader}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M17 8h1a4 4 0 110 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 2v4M10 2v4M14 2v4"
+                  stroke={Colors.grape}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={detailStyles.cardTitle}>Cupping Sessions</Text>
+              <Text style={detailStyles.cardCount}>
+                {roast.cupping_samples.length}
+              </Text>
+            </View>
+            {roast.cupping_samples.map((sample, index) => {
+              const sampleScore = getScoreColor(sample.average_score);
+              return (
+                <TouchableOpacity
+                  key={sample.id}
+                  activeOpacity={0.7}
+                  onPress={() => router.push(`/quality/${sample.session_id}`)}
+                >
+                  {index > 0 ? (
+                    <View style={detailStyles.cuppingDivider} />
+                  ) : null}
+                  <View style={detailStyles.cuppingRow}>
+                    <View style={detailStyles.cuppingLeft}>
+                      <Text
+                        style={detailStyles.cuppingSampleCode}
+                        numberOfLines={1}
+                      >
+                        {sample.sample_code}
+                      </Text>
+                    </View>
+                    <View style={detailStyles.cuppingRight}>
+                      {sample.average_score !== null ? (
+                        <View
+                          style={[
+                            detailStyles.cuppingScoreBadge,
+                            { backgroundColor: sampleScore.bg },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              detailStyles.cuppingScoreText,
+                              { color: sampleScore.color },
+                            ]}
+                          >
+                            {sample.average_score.toFixed(1)}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={detailStyles.cuppingNoScore}>-</Text>
+                      )}
+                      <Svg
+                        width={14}
+                        height={14}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <Path
+                          d="M9 18l6-6-6-6"
+                          stroke={Colors.textTertiary}
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : null}
+
+        {/* 10. Comment Card */}
         {roast.comment ? (
           <View style={detailStyles.card}>
             <View style={detailStyles.cardHeader}>
@@ -996,6 +964,12 @@ const detailStyles = StyleSheet.create({
     fontFamily: "DMSans-SemiBold",
     fontSize: 15,
     color: Colors.text,
+    flex: 1,
+  },
+  cardCount: {
+    fontFamily: "JetBrainsMono-Regular",
+    fontSize: 12,
+    color: Colors.textTertiary,
   },
 
   /* -- Empty Curve -- */
@@ -1029,7 +1003,7 @@ const detailStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     gap: 4,
   },
   statLabel: {
@@ -1128,5 +1102,94 @@ const detailStyles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text,
     lineHeight: 20,
+  },
+
+  /* -- Inventory / Blend -- */
+  inventoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+  inventoryInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  inventoryName: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 14,
+    color: Colors.text,
+  },
+  inventoryNumber: {
+    fontFamily: "JetBrainsMono-Regular",
+    fontSize: 11,
+    color: Colors.textTertiary,
+  },
+  inventoryRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  inventoryWeight: {
+    fontFamily: "JetBrainsMono-Medium",
+    fontSize: 13,
+    color: Colors.text,
+  },
+  inventoryBarBg: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.gravelLight,
+    marginTop: 8,
+  },
+  inventoryBarFill: {
+    height: 6,
+    borderRadius: 3,
+  },
+  inventoryPct: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 10,
+    color: Colors.textTertiary,
+    marginTop: 4,
+  },
+
+  /* -- Cupping Sessions -- */
+  cuppingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  cuppingLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  cuppingSampleCode: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 14,
+    color: Colors.text,
+  },
+  cuppingRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  cuppingScoreBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  cuppingScoreText: {
+    fontFamily: "JetBrainsMono-Bold",
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  cuppingNoScore: {
+    fontFamily: "JetBrainsMono-Regular",
+    fontSize: 13,
+    color: Colors.textTertiary,
+  },
+  cuppingDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
   },
 });

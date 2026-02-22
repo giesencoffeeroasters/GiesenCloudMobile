@@ -1,3 +1,42 @@
+/* ------------------------------------------------------------------ */
+/*  Shared roasting data types                                          */
+/* ------------------------------------------------------------------ */
+
+export interface CurvePoint {
+  time: number;
+  value: number;
+}
+
+export interface ExtendedCurveData {
+  bean_temp: CurvePoint[];
+  drum_temp: CurvePoint[];
+  ror: CurvePoint[];
+  power: CurvePoint[];
+  drum_speed: CurvePoint[];
+  pressure: CurvePoint[];
+}
+
+export interface RoastEvent {
+  type: string;
+  timePassed: number;
+}
+
+export interface RoastPhase {
+  name: string;
+  start_time: number;
+  end_time: number;
+  color: string;
+}
+
+export interface RoastSetpoint {
+  key: string;
+  value: number;
+}
+
+/* ------------------------------------------------------------------ */
+/*  API response wrappers                                               */
+/* ------------------------------------------------------------------ */
+
 export interface PaginatedResponse<T> {
   data: T[];
   meta: {
@@ -107,6 +146,55 @@ export interface InventoryItem {
   certificates: { id: number; name: string }[];
   received_at: string | null;
   created_at: string;
+
+  // Detail fields (only present on show endpoint)
+  country_of_origin?: string | null;
+  region_of_origin?: string | null;
+  production_year?: number | null;
+  size_grade?: string | null;
+  sku?: string | null;
+  lot_code?: string | null;
+  price_per_kg?: number | null;
+  currency?: string | null;
+  notes?: string | null;
+  processing_methods?: { id: number; name: string }[];
+  latest_physical_reading?: {
+    moisture_content: number | null;
+    water_activity: number | null;
+    density: number | null;
+    temperature: number | null;
+    humidity: number | null;
+    measured_at: string | null;
+  } | null;
+  latest_defect_analysis?: {
+    sample_weight_grams: number | null;
+    total_category_1_defects: number;
+    total_category_2_defects: number;
+    sca_grade: string | null;
+    analyzed_at: string | null;
+  } | null;
+  latest_screen_analysis?: {
+    sample_weight_grams: number | null;
+    analyzed_at: string | null;
+    results: {
+      screen_size: number;
+      weight_grams: number;
+      percentage: number;
+    }[];
+  } | null;
+  cupping_samples?: {
+    id: number;
+    sample_code: string;
+    average_score: number | null;
+    session_id: number;
+  }[];
+  assigned_profiles?: {
+    id: number;
+    name: string;
+    roaster_model: string | null;
+    duration: number | null;
+    is_main: boolean;
+  }[];
 }
 
 export interface InventorySummary {
@@ -238,12 +326,51 @@ export interface ProfilerProfileDetail {
   comment: string | null;
   roasts_count: number;
   created_at: string;
-  curve_data: {
-    bean_temp: { time: number; value: number }[];
-    drum_temp: { time: number; value: number }[];
-    ror: { time: number; value: number }[];
-  } | null;
+  curve_data: ExtendedCurveData | null;
+  events: RoastEvent[];
+  phases: RoastPhase[];
+  setpoints: RoastSetpoint[];
+  inventories: {
+    id: number;
+    name: string;
+    formatted_inventory_number: string;
+    is_main: boolean;
+  }[];
   recent_roasts: ProfileRecentRoast[];
+}
+
+export interface RoastDetail {
+  id: string;
+  profile_name: string;
+  device_name: string;
+  bean_type: string | null;
+  start_weight: number | null;
+  end_weight: number | null;
+  weight_change: number | null;
+  duration: number;
+  roasted_at: string;
+  is_favorite: boolean;
+  comment: string | null;
+  cupping_score: number | null;
+  beans: unknown[] | null;
+  profile: { id: string; name: string } | null;
+  curve_data: ExtendedCurveData | null;
+  events: RoastEvent[];
+  phases: RoastPhase[];
+  setpoints: RoastSetpoint[];
+  inventory_selections: {
+    inventory_id: number;
+    inventory_name: string;
+    formatted_inventory_number: string;
+    quantity_grams: number;
+    percentage: number;
+  }[];
+  cupping_samples: {
+    id: number;
+    sample_code: string;
+    average_score: number | null;
+    session_id: number;
+  }[];
 }
 
 export interface ProfilerRoast {
