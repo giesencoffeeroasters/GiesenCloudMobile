@@ -26,15 +26,20 @@ function getNavigationRoute(data: Record<string, any>): string | null {
   switch (type) {
     case "ticket_status_changed":
     case "ticket_new_message":
-      // Tickets don't have a mobile screen yet, go to notifications
-      return "/notifications";
+      if (innerData?.ticket_id) {
+        return `/support/${innerData.ticket_id}`;
+      }
+      return "/support";
     case "asset_added":
       if (innerData?.device_id) {
         return `/equipment/${innerData.device_id}`;
       }
       return "/notifications";
     case "service_appointment_status_changed":
-      return "/notifications";
+      if (innerData?.appointment_id) {
+        return `/service-appointments/${innerData.appointment_id}`;
+      }
+      return "/service-appointments";
     case "maintenance_task_due_soon":
     case "maintenance_task_overdue":
       if (innerData?.task_id) {

@@ -31,6 +31,7 @@ export interface RoastPhase {
 export interface RoastSetpoint {
   key: string;
   value: number;
+  timePassed?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -621,4 +622,163 @@ export interface TeamAsset {
   hubspot_id: string;
   name: string;
   model: string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Support Tickets                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface TicketPipelineStage {
+  id: number;
+  label: string;
+  customer_label: string;
+  display_order: number;
+}
+
+export interface TicketAttachment {
+  id: number;
+  name: string;
+  url: string;
+  size: number | null;
+}
+
+export interface TicketListItem {
+  id: number;
+  subject: string;
+  status: string;
+  status_id: number | null;
+  is_closed: boolean;
+  unread_count: number;
+  contact_email: string | null;
+  asset_name: string | null;
+  sync_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationMessage {
+  id: string;
+  content: string;
+  sender_type: "AGENT" | "VISITOR";
+  sender_name: string | null;
+  sender_email: string | null;
+  is_ai_agent: boolean;
+  created_at: string;
+  attachments: TicketAttachment[];
+  is_internal: boolean;
+  channel_id: string | null;
+}
+
+export interface TicketDetail extends TicketListItem {
+  content: string | null;
+  roaster_info: {
+    model: string | null;
+    serial_number: string | null;
+    roasting_hours: number | null;
+  } | null;
+  attachments: TicketAttachment[];
+  pipeline_stage: TicketPipelineStage | null;
+  conversations: ConversationMessage[];
+}
+
+export interface TicketAsset {
+  id: number;
+  name: string;
+  model: string | null;
+  serial_number: string | null;
+  roasting_hours: number | null;
+  type: "asset" | "device";
+}
+
+/* ------------------------------------------------------------------ */
+/*  Knowledge Base                                                      */
+/* ------------------------------------------------------------------ */
+
+export interface KBArticle {
+  articleId: string;
+  id: string;
+  category: string | null;
+  question: string;
+  answer: string | null;
+  roaster: string | null;
+  roasterSeries: string | null;
+  hs_body: string | null;
+  hs_body_highlighted?: string | null;
+}
+
+export interface KBCategoryStats {
+  category: string;
+  count: number;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Service Appointments                                                */
+/* ------------------------------------------------------------------ */
+
+export type ServiceAppointmentPlannedStatus =
+  | "requested"
+  | "proposal"
+  | "confirmed"
+  | "executed"
+  | "declined";
+
+export interface ServiceAppointmentListItem {
+  id: number;
+  machine_serial_number: string | null;
+  planned_status: ServiceAppointmentPlannedStatus;
+  work_status: string | null;
+  service_note: string | null;
+  work_date: string | null;
+  work_time: string | null;
+  display_cost: string | null;
+  display_cost_label: string | null;
+  destination: string | null;
+  work_type: {
+    id: number;
+    title: string;
+  } | null;
+  asset: {
+    id: number;
+    name: string;
+    model: string | null;
+  } | null;
+  sync_status: string | null;
+  created_at: string;
+}
+
+export interface ServiceAppointmentMaterial {
+  id: number;
+  name: string;
+  quantity: number | null;
+  price: string | null;
+}
+
+export interface ServiceAppointmentPhoto {
+  id: number;
+  url: string;
+  name: string | null;
+}
+
+export interface ServiceAppointmentDetail extends ServiceAppointmentListItem {
+  roasting_hours: number | null;
+  running_hours: number | null;
+  last_service_date: string | null;
+  decline_reason: string | null;
+  cost_change_info: string | null;
+  destination_line1: string | null;
+  destination_line2: string | null;
+  destination_city: string | null;
+  destination_state: string | null;
+  destination_postal_code: string | null;
+  destination_country: string | null;
+  materials: ServiceAppointmentMaterial[];
+  photos: ServiceAppointmentPhoto[];
+}
+
+export interface OutsmartWorkType {
+  id: number;
+  wrt_name: string;
+  title: string;
+  display_description: string | null;
+  wrt_default_minutes: number | null;
 }

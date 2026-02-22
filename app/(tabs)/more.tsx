@@ -303,35 +303,15 @@ export default function MoreScreen() {
   );
 
   function handleSupportContact() {
-    Alert.alert(
-      "Support & Contact",
-      "Email: support@giesen.eu\nPhone: +31 (0)55 320 0099\n\nWould you like to send an email?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Send Email",
-          onPress: () => Linking.openURL("mailto:support@giesen.eu"),
-        },
-      ]
-    );
+    router.push("/support" as any);
   }
 
   function handleKnowledgeBase() {
-    Linking.openURL("https://giesen.cloud/knowledge-base");
+    router.push("/knowledge-base" as any);
   }
 
   function handleServiceAppointments() {
-    Alert.alert(
-      "Service Appointments",
-      "Service appointment scheduling is managed through our support portal. Visit giesen.cloud on desktop or contact support@giesen.eu to schedule a service appointment.",
-      [
-        { text: "OK", style: "cancel" },
-        {
-          text: "Contact Support",
-          onPress: () => Linking.openURL("mailto:support@giesen.eu?subject=Service%20Appointment%20Request"),
-        },
-      ]
-    );
+    router.push("/service-appointments" as any);
   }
 
   function handleCompanySettings() {
