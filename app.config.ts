@@ -32,7 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
-  userInterfaceStyle: "light",
+  userInterfaceStyle: "automatic",
   newArchEnabled: true,
   scheme: "giesencloud",
   splash: {
@@ -43,6 +43,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: false,
     bundleIdentifier: "com.giesen.cloud",
+    icon: {
+      dark: "./assets/icon-dark.png",
+      tinted: "./assets/icon-tinted.png",
+    },
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
       ...(APP_ENV === "development" && {
