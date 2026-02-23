@@ -180,6 +180,20 @@ export default function TabLayout() {
         />
       ))}
 
+      {/* Support screens — hidden from tab bar but keep it visible */}
+      <Tabs.Screen
+        name="support"
+        options={{ href: null, title: "Support & Contact" }}
+      />
+      <Tabs.Screen
+        name="knowledge-base"
+        options={{ href: null, title: "Knowledge Base" }}
+      />
+      <Tabs.Screen
+        name="service-appointments"
+        options={{ href: null, title: "Service Appointments" }}
+      />
+
       {/* More tab — always last */}
       <Tabs.Screen
         name="more"

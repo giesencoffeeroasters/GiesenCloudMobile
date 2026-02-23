@@ -303,15 +303,15 @@ export default function MoreScreen() {
   );
 
   function handleSupportContact() {
-    router.push("/support" as any);
+    router.push("/(tabs)/support" as any);
   }
 
   function handleKnowledgeBase() {
-    router.push("/knowledge-base" as any);
+    router.push("/(tabs)/knowledge-base" as any);
   }
 
   function handleServiceAppointments() {
-    router.push("/service-appointments" as any);
+    router.push("/(tabs)/service-appointments" as any);
   }
 
   function handleCompanySettings() {

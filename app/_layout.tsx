@@ -165,7 +165,7 @@ export default function RootLayout() {
     if (!appReady) return;
 
     const inTabsGroup = segments[0] === "(tabs)";
-    const authenticatedRoutes = ["notifications", "roasts", "planning", "quality", "inventory", "equipment", "reports", "giesen-live", "profile", "profiles", "tab-settings", "support", "knowledge-base", "service-appointments"];
+    const authenticatedRoutes = ["notifications", "roasts", "planning", "quality", "inventory", "equipment", "reports", "giesen-live", "profile", "profiles", "tab-settings"];
     const inAuthenticatedRoute = inTabsGroup || authenticatedRoutes.includes(segments[0]);
 
     if (isAuthenticated && !inAuthenticatedRoute) {
