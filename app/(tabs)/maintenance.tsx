@@ -14,7 +14,7 @@ import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import { GiesenLogo } from "@/components/GiesenLogo";
+import { HamburgerButton } from "@/components/HamburgerButton";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import type {
@@ -576,9 +576,7 @@ export default function MaintenanceScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <View style={styles.headerLeft}>
-            <View style={styles.gLogo}>
-              <GiesenLogo size={18} color={Colors.text} />
-            </View>
+            <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>Maintenance</Text>
               <Text style={styles.headerSubtitle}>Tasks & Compliance</Text>
@@ -609,9 +607,7 @@ export default function MaintenanceScreen() {
       {/* Dark slate header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.gLogo}>
-            <GiesenLogo size={18} color={Colors.text} />
-          </View>
+          <HamburgerButton />
           <View>
             <Text style={styles.headerTitle}>Maintenance</Text>
             <Text style={styles.headerSubtitle}>Tasks & Compliance</Text>
@@ -829,14 +825,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  gLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.safety,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   headerTitle: {
     fontFamily: "DMSans-SemiBold",
     fontSize: 20,
@@ -945,7 +933,7 @@ const styles = StyleSheet.create({
     fontFamily: "JetBrainsMono-Bold",
     fontSize: 28,
     fontWeight: "600",
-    lineHeight: 28,
+    lineHeight: 34,
     letterSpacing: -1,
   },
   statLabel: {
@@ -1024,7 +1012,7 @@ const styles = StyleSheet.create({
     fontFamily: "JetBrainsMono-Bold",
     fontSize: 22,
     fontWeight: "600",
-    lineHeight: 24,
+    lineHeight: 28,
     letterSpacing: -0.5,
   },
   complianceBarTrack: {

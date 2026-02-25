@@ -335,7 +335,7 @@ export default function ServiceAppointmentDetailScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.back()}
+              onPress={() => router.navigate("/service-appointments" as any)}
             >
               <BackIcon />
             </TouchableOpacity>
@@ -379,7 +379,7 @@ export default function ServiceAppointmentDetailScreen() {
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.back()}
+            onPress={() => router.navigate("/service-appointments" as any)}
             activeOpacity={0.7}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>
@@ -568,7 +568,9 @@ export default function ServiceAppointmentDetailScreen() {
             </View>
             {appointment.cost_change_info ? (
               <Text style={styles.costChangeInfo}>
-                {appointment.cost_change_info}
+                {typeof appointment.cost_change_info === "string"
+                  ? appointment.cost_change_info
+                  : `${appointment.cost_change_info.increased ? "+" : ""}${appointment.cost_change_info.difference} (${appointment.cost_change_info.percentage})`}
               </Text>
             ) : null}
           </View>

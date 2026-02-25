@@ -11,6 +11,8 @@ import Svg, {
 import { Colors } from "@/constants/colors";
 import { ALL_TABS, type TabKey } from "@/constants/tabConfig";
 import { useTabStore } from "@/stores/tabStore";
+import { DrawerProvider } from "@/contexts/DrawerContext";
+import { AppDrawer } from "@/components/AppDrawer";
 
 type IconName = TabKey | "More";
 
@@ -142,69 +144,69 @@ export default function TabLayout() {
   const unselected = ALL_TABS.filter((t) => !selectedSet.has(t.key));
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.textSecondary,
-        tabBarInactiveTintColor: Colors.textTertiary,
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
-      }}
-    >
-      {/* Selected tabs in user's order */}
-      {tabOrder.map((key) => (
-        <Tabs.Screen
-          key={key}
-          name={TAB_KEY_TO_ROUTE[key]}
-          options={{
-            title: TAB_KEY_TO_TITLE[key],
-            tabBarIcon: ({ focused }) => (
-              <TabIcon name={key} focused={focused} />
-            ),
+    <DrawerProvider>
+      <View style={{ flex: 1 }}>
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarActiveTintColor: Colors.textSecondary,
+            tabBarInactiveTintColor: Colors.textTertiary,
+            tabBarStyle: styles.tabBar,
+            tabBarLabelStyle: styles.tabBarLabel,
           }}
-        />
-      ))}
+        >
+          {/* Selected tabs in user's order */}
+          {tabOrder.map((key) => (
+            <Tabs.Screen
+              key={key}
+              name={TAB_KEY_TO_ROUTE[key]}
+              options={{
+                title: TAB_KEY_TO_TITLE[key],
+                tabBarIcon: ({ focused }) => (
+                  <TabIcon name={key} focused={focused} />
+                ),
+              }}
+            />
+          ))}
 
-      {/* Unselected tabs — hidden from tab bar */}
-      {unselected.map((tab) => (
-        <Tabs.Screen
-          key={tab.key}
-          name={tab.route}
-          options={{
-            href: null,
-            title: tab.title,
-            tabBarIcon: ({ focused }) => (
-              <TabIcon name={tab.key} focused={focused} />
-            ),
-          }}
-        />
-      ))}
+          {/* Unselected tabs — hidden from tab bar */}
+          {unselected.map((tab) => (
+            <Tabs.Screen
+              key={tab.key}
+              name={tab.route}
+              options={{
+                href: null,
+                title: tab.title,
+                tabBarIcon: ({ focused }) => (
+                  <TabIcon name={tab.key} focused={focused} />
+                ),
+              }}
+            />
+          ))}
 
-      {/* Support screens — hidden from tab bar but keep it visible */}
-      <Tabs.Screen
-        name="support"
-        options={{ href: null, title: "Support & Contact" }}
-      />
-      <Tabs.Screen
-        name="knowledge-base"
-        options={{ href: null, title: "Knowledge Base" }}
-      />
-      <Tabs.Screen
-        name="service-appointments"
-        options={{ href: null, title: "Service Appointments" }}
-      />
+          {/* Support screens — hidden from tab bar but keep it visible */}
+          <Tabs.Screen
+            name="support"
+            options={{ href: null, title: "Support & Contact" }}
+          />
+          <Tabs.Screen
+            name="knowledge-base"
+            options={{ href: null, title: "Knowledge Base" }}
+          />
+          <Tabs.Screen
+            name="service-appointments"
+            options={{ href: null, title: "Service Appointments" }}
+          />
 
-      {/* More tab — always last */}
-      <Tabs.Screen
-        name="more"
-        options={{
-          title: "More",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name="More" focused={focused} />
-          ),
-        }}
-      />
-    </Tabs>
+          {/* More tab — hidden from tab bar (replaced by drawer) */}
+          <Tabs.Screen
+            name="more"
+            options={{ href: null, title: "More" }}
+          />
+        </Tabs>
+        <AppDrawer />
+      </View>
+    </DrawerProvider>
   );
 }
 

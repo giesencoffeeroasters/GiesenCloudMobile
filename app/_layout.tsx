@@ -2,9 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   Animated,
   ActivityIndicator,
+  LogBox,
 } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
@@ -12,7 +14,12 @@ import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "@/stores/authStore";
 import { useGiesenLive } from "@/hooks/useGiesenLive";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { GiesenLogo } from "@/components/GiesenLogo";
+
+// Suppress Expo Go push notification warnings (not applicable in dev builds)
+LogBox.ignoreLogs([
+  "expo-notifications: Android Push notifications",
+  "`expo-notifications` functionality is not fully supported",
+]);
 
 SplashScreen.preventAutoHideAsync();
 
@@ -59,9 +66,10 @@ function BrandedSplash() {
             { opacity: logoOpacity, transform: [{ scale: logoScale }] },
           ]}
         >
-          <View style={splashStyles.logoCircle}>
-            <GiesenLogo size={48} color="#383838" />
-          </View>
+          <Image
+            source={require("../assets/icon.png")}
+            style={splashStyles.logoImage}
+          />
         </Animated.View>
 
         <Animated.View style={{ opacity: textOpacity }}>
@@ -71,7 +79,7 @@ function BrandedSplash() {
       </View>
 
       <Animated.View style={[splashStyles.footer, { opacity: spinnerOpacity }]}>
-        <ActivityIndicator size="small" color="rgba(204,255,0,0.6)" />
+        <ActivityIndicator size="small" color="rgba(56,56,56,0.3)" />
       </Animated.View>
     </View>
   );
@@ -80,7 +88,7 @@ function BrandedSplash() {
 const splashStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#383838",
+    backgroundColor: "#F0F2F4",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -91,25 +99,22 @@ const splashStyles = StyleSheet.create({
   logoWrap: {
     alignItems: "center",
   },
-  logoCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    backgroundColor: "#ccff00",
-    alignItems: "center",
-    justifyContent: "center",
+  logoImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
   },
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#ffffff",
+    color: "#383838",
     textAlign: "center",
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
     fontWeight: "400",
-    color: "rgba(255,255,255,0.45)",
+    color: "rgba(56,56,56,0.45)",
     textAlign: "center",
     marginTop: 4,
   },

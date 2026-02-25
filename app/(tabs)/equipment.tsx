@@ -13,7 +13,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import { GiesenLogo } from "@/components/GiesenLogo";
+import { HamburgerButton } from "@/components/HamburgerButton";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import { ProfilerDevice } from "@/types/index";
@@ -205,9 +205,7 @@ export default function EquipmentScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <View style={styles.logoBox}>
-              <GiesenLogo size={18} color={Colors.text} />
-            </View>
+            <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>Equipment</Text>
               <Text style={styles.headerSubtitle}>
@@ -283,14 +281,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-  },
-  logoBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.safety,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerTitle: {
     fontFamily: "DMSans-SemiBold",

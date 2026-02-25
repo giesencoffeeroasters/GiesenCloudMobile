@@ -1,45 +1,11 @@
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import type { DashboardData } from "@/types";
+import type { DashboardData, ActivityType } from "@/types";
 
 interface RecentActivityWidgetProps {
   data: DashboardData | null;
 }
-
-type ActivityType = "roast_completed" | "order_received" | "stock_alert";
-
-interface ActivityItem {
-  id: string;
-  type: ActivityType;
-  title: string;
-  description: string;
-  created_at: string;
-}
-
-const MOCK_ACTIVITIES: ActivityItem[] = [
-  {
-    id: "1",
-    type: "roast_completed" as const,
-    title: "Roast completed",
-    description: "Ethiopia Yirgacheffe on W15A",
-    created_at: new Date(Date.now() - 32 * 60000).toISOString(),
-  },
-  {
-    id: "2",
-    type: "order_received" as const,
-    title: "Order received",
-    description: "PO-2024-0087 from supplier",
-    created_at: new Date(Date.now() - 60 * 60000).toISOString(),
-  },
-  {
-    id: "3",
-    type: "stock_alert" as const,
-    title: "Low stock alert",
-    description: "Brazil Santos below threshold",
-    created_at: new Date(Date.now() - 120 * 60000).toISOString(),
-  },
-];
 
 function formatRelativeTime(dateString: string): string {
   const now = Date.now();
@@ -58,12 +24,14 @@ const ACTIVITY_CONFIG: Record<
   { iconColor: string; iconBg: string }
 > = {
   roast_completed: { iconColor: Colors.leaf, iconBg: Colors.leafBg },
-  order_received: { iconColor: Colors.sky, iconBg: Colors.skyBg },
+  inventory_received: { iconColor: Colors.sky, iconBg: Colors.skyBg },
+  inventory_used: { iconColor: Colors.traffic, iconBg: Colors.trafficBg },
+  inventory_adjusted: { iconColor: Colors.textTertiary, iconBg: Colors.slate },
   stock_alert: { iconColor: Colors.traffic, iconBg: Colors.trafficBg },
 };
 
 function ActivityIcon({ type }: { type: ActivityType }) {
-  const config = ACTIVITY_CONFIG[type];
+  const config = ACTIVITY_CONFIG[type] ?? ACTIVITY_CONFIG.roast_completed;
 
   const icons: Record<ActivityType, React.ReactNode> = {
     roast_completed: (
@@ -77,10 +45,32 @@ function ActivityIcon({ type }: { type: ActivityType }) {
         />
       </Svg>
     ),
-    order_received: (
+    inventory_received: (
       <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
         <Path
-          d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+          d="M12 5v14M5 12l7 7 7-7"
+          stroke={config.iconColor}
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    ),
+    inventory_used: (
+      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M12 19V5M5 12l7-7 7 7"
+          stroke={config.iconColor}
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    ),
+    inventory_adjusted: (
+      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M12 20V10M18 20V4M6 20v-4"
           stroke={config.iconColor}
           strokeWidth={2.2}
           strokeLinecap="round"
@@ -108,40 +98,46 @@ function ActivityIcon({ type }: { type: ActivityType }) {
   );
 }
 
-interface ActivityRowProps {
-  activity: ActivityItem;
-  isLast: boolean;
-}
+export function RecentActivityWidget({ data }: RecentActivityWidgetProps) {
+  const activities = data?.recent_activity;
 
-function ActivityRow({ activity, isLast }: ActivityRowProps) {
-  return (
-    <View style={[styles.activityRow, !isLast && styles.activityRowBorder]}>
-      <ActivityIcon type={activity.type} />
-      <View style={styles.activityContent}>
-        <Text style={styles.activityDescription}>
-          {activity.description}
-        </Text>
-        <Text style={styles.activityTimestamp}>
-          {formatRelativeTime(activity.created_at)}
-        </Text>
+  if (!activities || activities.length === 0) {
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+        </View>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>No recent activity</Text>
+        </View>
       </View>
-    </View>
-  );
-}
+    );
+  }
 
-export function RecentActivityWidget({ data: _data }: RecentActivityWidgetProps) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent Activity</Text>
       </View>
       <View style={styles.activityCard}>
-        {MOCK_ACTIVITIES.map((activity, index) => (
-          <ActivityRow
+        {activities.map((activity, index) => (
+          <View
             key={activity.id}
-            activity={activity}
-            isLast={index === MOCK_ACTIVITIES.length - 1}
-          />
+            style={[
+              styles.activityRow,
+              index < activities.length - 1 && styles.activityRowBorder,
+            ]}
+          >
+            <ActivityIcon type={activity.type} />
+            <View style={styles.activityContent}>
+              <Text style={styles.activityDescription}>
+                {activity.description}
+              </Text>
+              <Text style={styles.activityTimestamp}>
+                {formatRelativeTime(activity.created_at)}
+              </Text>
+            </View>
+          </View>
         ))}
       </View>
     </View>
@@ -200,6 +196,19 @@ const styles = StyleSheet.create({
   activityTimestamp: {
     fontFamily: "DMSans-Regular",
     fontSize: 11,
+    color: Colors.textTertiary,
+  },
+  emptyCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 13,
     color: Colors.textTertiary,
   },
 });

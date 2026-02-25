@@ -396,10 +396,10 @@ export default function RoastDetailScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={detailStyles.headerTitle} numberOfLines={1}>
-                {roast.bean_type ?? roast.profile_name}
+                {roast.profile_name}
               </Text>
               <Text style={detailStyles.headerSubtitle}>
-                {formatDate(roast.roasted_at)}
+                {roast.bean_type ?? formatDate(roast.roasted_at)}
               </Text>
             </View>
           </View>

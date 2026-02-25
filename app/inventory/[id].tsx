@@ -15,7 +15,7 @@ import Svg, { Path, Rect as SvgRect } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
-import type { InventoryItem, ApiResponse } from "@/types/index";
+import type { InventoryItem, InventoryTransaction, ApiResponse } from "@/types/index";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -86,6 +86,39 @@ function getScoreColor(score: number | null): { color: string; bg: string } {
   if (score >= 85) return { color: Colors.sky, bg: Colors.skyBg };
   if (score >= 80) return { color: Colors.sun, bg: Colors.sunBg };
   return { color: Colors.boven, bg: Colors.bovenBg };
+}
+
+function getTransactionColor(direction: string | null): { color: string; bg: string } {
+  switch (direction) {
+    case "in":
+      return { color: Colors.leaf, bg: Colors.leafBg };
+    case "out":
+      return { color: Colors.traffic, bg: Colors.trafficBg };
+    default:
+      return { color: Colors.sun, bg: Colors.sunBg };
+  }
+}
+
+function getTransactionSign(direction: string | null): string {
+  switch (direction) {
+    case "in":
+      return "+";
+    case "out":
+      return "\u2212";
+    default:
+      return "";
+  }
+}
+
+function formatTransactionDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -628,6 +661,62 @@ export default function InventoryDetailScreen() {
                   <Text style={styles.cardTitle}>Notes</Text>
                 </View>
                 <Text style={styles.notesText}>{item.notes}</Text>
+              </View>
+            ) : null}
+
+            {/* Recent Transactions */}
+            {item.recent_transactions && item.recent_transactions.length > 0 ? (
+              <View style={styles.detailsCard}>
+                <View style={styles.cardHeader}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M12 8v4l3 3M3 12a9 9 0 1018 0 9 9 0 00-18 0z"
+                      stroke={Colors.sky}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={styles.cardTitle}>Recent Transactions</Text>
+                  <Text style={styles.cardCount}>{item.recent_transactions.length}</Text>
+                </View>
+                {item.recent_transactions.map((tx, index) => {
+                  const txColor = getTransactionColor(tx.direction);
+                  const txSign = getTransactionSign(tx.direction);
+                  const txKg = tx.quantity / 1000;
+                  return (
+                    <View key={tx.id}>
+                      <View style={styles.txRow}>
+                        <View style={styles.txLeft}>
+                          <View style={styles.txLabelRow}>
+                            <View style={[styles.txDirectionDot, { backgroundColor: txColor.color }]} />
+                            <Text style={styles.txTypeLabel}>{tx.type_label}</Text>
+                          </View>
+                          <Text style={styles.txMeta}>
+                            {formatTransactionDate(tx.created_at)}
+                            {tx.created_by ? ` \u00B7 ${tx.created_by}` : ""}
+                          </Text>
+                          {tx.remarks ? (
+                            <Text style={styles.txRemarks} numberOfLines={1}>
+                              {tx.remarks}
+                            </Text>
+                          ) : null}
+                        </View>
+                        <View style={styles.txRight}>
+                          <Text style={[styles.txQuantity, { color: txColor.color }]}>
+                            {txSign}{txKg.toFixed(1)} kg
+                          </Text>
+                          <Text style={styles.txBalance}>
+                            {(tx.new_quantity_grams / 1000).toFixed(1)} kg
+                          </Text>
+                        </View>
+                      </View>
+                      {index < item.recent_transactions!.length - 1 ? (
+                        <View style={styles.listDivider} />
+                      ) : null}
+                    </View>
+                  );
+                })}
               </View>
             ) : null}
           </>
@@ -1436,6 +1525,65 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     width: 40,
     textAlign: "right",
+  },
+
+  /* -- Transactions -- */
+  txRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingVertical: 12,
+    gap: 12,
+  },
+  txLeft: {
+    flex: 1,
+    gap: 3,
+  },
+  txLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  txDirectionDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  txTypeLabel: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 13,
+    lineHeight: 18,
+    color: Colors.text,
+  },
+  txMeta: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 11,
+    lineHeight: 16,
+    color: Colors.textTertiary,
+    marginLeft: 15,
+  },
+  txRemarks: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 11,
+    lineHeight: 16,
+    color: Colors.textSecondary,
+    fontStyle: "italic",
+    marginLeft: 15,
+  },
+  txRight: {
+    alignItems: "flex-end",
+    gap: 3,
+  },
+  txQuantity: {
+    fontFamily: "JetBrainsMono-Bold",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  txBalance: {
+    fontFamily: "JetBrainsMono-Regular",
+    fontSize: 10,
+    lineHeight: 14,
+    color: Colors.textTertiary,
   },
 
   /* -- Empty state -- */

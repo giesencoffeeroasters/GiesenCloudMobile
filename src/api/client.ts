@@ -14,6 +14,9 @@ apiClient.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync("auth_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else if (!config.url?.includes("/auth/login")) {
+    // Reject non-login requests when there's no token to prevent 401 cascades
+    return Promise.reject(new axios.Cancel("No auth token"));
   }
   return config;
 });

@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Rect, Line, Text as SvgText, G } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import { GiesenLogo } from "@/components/GiesenLogo";
+import { HamburgerButton } from "@/components/HamburgerButton";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 
@@ -418,9 +418,7 @@ export default function ReportsScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <View style={styles.logoBox}>
-              <GiesenLogo size={18} color={Colors.text} />
-            </View>
+            <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>Reports</Text>
               <Text style={styles.headerSubtitle}>Analytics & insights</Text>
@@ -753,14 +751,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-  },
-  logoBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.safety,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerTitle: {
     fontFamily: "DMSans-SemiBold",

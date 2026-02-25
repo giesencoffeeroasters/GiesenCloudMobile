@@ -140,10 +140,10 @@ function RecentRoastCard({ roast }: RecentRoastCardProps) {
     <View style={detailStyles.recentRoastCard}>
       <View style={detailStyles.recentRoastLeft}>
         <Text style={detailStyles.recentRoastName} numberOfLines={1}>
-          {roast.bean_type ?? roast.profile_name}
+          {roast.profile_name}
         </Text>
         <Text style={detailStyles.recentRoastMeta}>
-          {roast.device_name} {"\u00B7"} {formatRoastTime(roast.roasted_at)}
+          {roast.bean_type ? `${roast.bean_type} \u00B7 ` : ""}{roast.device_name} {"\u00B7"} {formatRoastTime(roast.roasted_at)}
         </Text>
       </View>
       <View style={detailStyles.recentRoastRight}>

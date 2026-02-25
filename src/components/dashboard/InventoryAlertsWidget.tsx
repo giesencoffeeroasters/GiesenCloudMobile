@@ -1,25 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
-import type { DashboardData } from "@/types";
+import type { DashboardData, InventoryAlert } from "@/types";
 
 interface InventoryAlertsWidgetProps {
   data: DashboardData | null;
 }
-
-interface AlertItem {
-  id: number;
-  name: string;
-  current_kg: number;
-  threshold_kg: number;
-  severity: "low" | "critical";
-}
-
-const MOCK_ALERTS: AlertItem[] = [
-  { id: 1, name: "Brazil Santos Natural", current_kg: 38, threshold_kg: 50, severity: "low" },
-  { id: 2, name: "Colombia Huila", current_kg: 12, threshold_kg: 40, severity: "critical" },
-  { id: 3, name: "Ethiopia Sidamo", current_kg: 22, threshold_kg: 30, severity: "low" },
-];
 
 function getSeverityStyle(severity: "low" | "critical"): {
   color: string;
@@ -40,11 +26,7 @@ function getSeverityStyle(severity: "low" | "critical"): {
   };
 }
 
-interface AlertCardProps {
-  item: AlertItem;
-}
-
-function AlertCard({ item }: AlertCardProps) {
+function AlertCard({ item }: { item: InventoryAlert }) {
   const severity = getSeverityStyle(item.severity);
 
   return (
@@ -71,8 +53,26 @@ function AlertCard({ item }: AlertCardProps) {
 }
 
 export function InventoryAlertsWidget({ data }: InventoryAlertsWidgetProps) {
-  const alerts = MOCK_ALERTS;
-  const hasNoAlerts = data?.low_stock_count === 0 && alerts.length === 0;
+  const alerts = data?.inventory_alerts;
+
+  if (!alerts || alerts.length === 0) {
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Inventory Alerts</Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push("/(tabs)/inventory")}
+          >
+            <Text style={styles.viewAllLink}>View All</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>All stock levels healthy</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.section}>
@@ -85,17 +85,11 @@ export function InventoryAlertsWidget({ data }: InventoryAlertsWidgetProps) {
           <Text style={styles.viewAllLink}>View All</Text>
         </TouchableOpacity>
       </View>
-      {hasNoAlerts ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>All stock levels healthy</Text>
-        </View>
-      ) : (
-        <View style={styles.alertList}>
-          {alerts.map((item) => (
-            <AlertCard key={item.id} item={item} />
-          ))}
-        </View>
-      )}
+      <View style={styles.alertList}>
+        {alerts.map((item) => (
+          <AlertCard key={item.id} item={item} />
+        ))}
+      </View>
     </View>
   );
 }

@@ -13,7 +13,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Line, Rect } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import { GiesenLogo } from "@/components/GiesenLogo";
+import { HamburgerButton } from "@/components/HamburgerButton";
 import apiClient from "@/api/client";
 import type {
   ServiceAppointmentListItem,
@@ -342,9 +342,7 @@ export default function ServiceAppointmentsScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <View style={styles.headerLeft}>
-            <View style={styles.gLogo}>
-              <GiesenLogo size={18} color={Colors.text} />
-            </View>
+            <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>Service Appointments</Text>
             </View>
@@ -369,9 +367,7 @@ export default function ServiceAppointmentsScreen() {
       {/* Dark slate header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.gLogo}>
-            <GiesenLogo size={18} color={Colors.text} />
-          </View>
+          <HamburgerButton />
           <View>
             <Text style={styles.headerTitle}>Service Appointments</Text>
           </View>
@@ -481,14 +477,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     flex: 1,
-  },
-  gLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.safety,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerTitle: {
     fontFamily: "DMSans-SemiBold",

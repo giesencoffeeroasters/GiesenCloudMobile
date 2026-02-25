@@ -16,7 +16,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import { GiesenLogo } from "@/components/GiesenLogo";
+import { HamburgerButton } from "@/components/HamburgerButton";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import type { ProfilerProfile, ProfileSummary } from "@/types";
@@ -324,7 +324,7 @@ function RoastCard({ roast }: RoastCardProps) {
       <View style={styles.roastBody}>
         <View style={styles.roastTop}>
           <Text style={styles.roastName} numberOfLines={1}>
-            {roast.bean_type ?? roast.profile_name}
+            {roast.profile_name}
           </Text>
           <View style={[styles.scoreBadge, { backgroundColor: tier.bg }]}>
             <Text style={[styles.scoreBadgeText, { color: tier.color }]}>
@@ -333,19 +333,22 @@ function RoastCard({ roast }: RoastCardProps) {
           </View>
         </View>
 
-        <View style={styles.roastProfile}>
-          <Svg width={13} height={13} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 20V10M18 20V4M6 20v-4"
-              stroke={Colors.grape}
-              strokeWidth={1.8}
-              strokeLinecap="round"
-            />
-          </Svg>
-          <Text style={styles.roastProfileText} numberOfLines={1}>
-            {roast.profile_name}
-          </Text>
-        </View>
+        {roast.bean_type ? (
+          <View style={styles.roastProfile}>
+            <Svg width={13} height={13} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l5.7 3.2-3.1 3.1-.8-.3c-.4-.1-.8 0-1 .3l-.2.3c-.2.3-.1.7.1 1l1.7 1.7c.3.3.7.3 1 .1l.3-.2c.3-.2.4-.6.3-1l-.3-.8 3.1-3.1 3.2 5.7c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"
+                stroke={Colors.leaf}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <Text style={styles.roastProfileText} numberOfLines={1}>
+              {roast.bean_type}
+            </Text>
+          </View>
+        ) : null}
 
         <View style={styles.roastMeta}>
           <View style={styles.roastMetaItem}>
@@ -921,9 +924,7 @@ export default function RoastsScreen() {
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
-              <View style={styles.logoBox}>
-                <GiesenLogo size={18} color={Colors.text} />
-              </View>
+              <HamburgerButton />
               <View>
                 <Text style={styles.headerTitle}>Roasts</Text>
                 <Text style={styles.headerSubtitle}>Roast History</Text>
@@ -951,9 +952,7 @@ export default function RoastsScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
-            <View style={styles.logoBox}>
-              <GiesenLogo size={18} color={Colors.text} />
-            </View>
+            <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>
                 {activeSegment === "roasts" ? "Roasts" : "Profiles"}
@@ -1342,14 +1341,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-  },
-  logoBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.safety,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerTitle: {
     fontFamily: "DMSans-SemiBold",

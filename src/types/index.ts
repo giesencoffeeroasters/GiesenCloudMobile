@@ -52,12 +52,37 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export type ActivityType =
+  | "roast_completed"
+  | "inventory_received"
+  | "inventory_used"
+  | "inventory_adjusted"
+  | "stock_alert";
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  title: string;
+  description: string;
+  created_at: string;
+}
+
+export interface InventoryAlert {
+  id: number;
+  name: string;
+  current_kg: number;
+  threshold_kg: number;
+  severity: "low" | "critical";
+}
+
 export interface DashboardData {
   today_roasts: number;
   active_roasters: number;
   low_stock_count: number;
+  inventory_alerts: InventoryAlert[];
   schedule: RoastPlan[];
   live_roasters: LiveRoaster[];
+  recent_activity: ActivityItem[];
 }
 
 export interface RoastPlan {
@@ -196,6 +221,21 @@ export interface InventoryItem {
     duration: number | null;
     is_main: boolean;
   }[];
+  recent_transactions?: InventoryTransaction[];
+}
+
+export interface InventoryTransaction {
+  id: string;
+  type_label: string;
+  type_code: string | null;
+  direction: "in" | "out" | "neutral" | null;
+  quantity: number;
+  old_quantity_grams: number | null;
+  new_quantity_grams: number;
+  remarks: string | null;
+  source: string | null;
+  created_by: string | null;
+  created_at: string;
 }
 
 export interface InventorySummary {
@@ -629,10 +669,9 @@ export interface TeamAsset {
 /* ------------------------------------------------------------------ */
 
 export interface TicketPipelineStage {
-  id: number;
+  id: string;
   label: string;
-  customer_label: string;
-  display_order: number;
+  is_closed: boolean;
 }
 
 export interface TicketAttachment {
@@ -764,7 +803,7 @@ export interface ServiceAppointmentDetail extends ServiceAppointmentListItem {
   running_hours: number | null;
   last_service_date: string | null;
   decline_reason: string | null;
-  cost_change_info: string | null;
+  cost_change_info: string | { increased: boolean; difference: string; percentage: string } | null;
   destination_line1: string | null;
   destination_line2: string | null;
   destination_city: string | null;

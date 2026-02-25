@@ -15,7 +15,7 @@ import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Line, Circle as SvgCircle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import { GiesenLogo } from "@/components/GiesenLogo";
+import { HamburgerButton } from "@/components/HamburgerButton";
 import apiClient from "@/api/client";
 import type { TicketListItem, TicketPipelineStage } from "@/types/index";
 
@@ -319,9 +319,7 @@ export default function SupportScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <View style={styles.headerLeft}>
-            <View style={styles.gLogo}>
-              <GiesenLogo size={18} color={Colors.text} />
-            </View>
+            <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>Support & Contact</Text>
               <Text style={styles.headerSubtitle}>Tickets</Text>
@@ -361,9 +359,7 @@ export default function SupportScreen() {
       {/* Dark slate header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.gLogo}>
-            <GiesenLogo size={18} color={Colors.text} />
-          </View>
+          <HamburgerButton />
           <View>
             <Text style={styles.headerTitle}>Support & Contact</Text>
             <Text style={styles.headerSubtitle}>Tickets</Text>
@@ -407,19 +403,19 @@ export default function SupportScreen() {
             key={status.id}
             style={[
               styles.filterChip,
-              activeFilter === status.customer_label && styles.filterChipActive,
+              activeFilter === status.label && styles.filterChipActive,
             ]}
             activeOpacity={0.7}
-            onPress={() => onFilterPress(status.customer_label)}
+            onPress={() => onFilterPress(status.label)}
           >
             <Text
               style={[
                 styles.filterChipText,
-                activeFilter === status.customer_label &&
+                activeFilter === status.label &&
                   styles.filterChipTextActive,
               ]}
             >
-              {status.customer_label}
+              {status.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -496,14 +492,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-  },
-  gLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.safety,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerTitle: {
     fontFamily: "DMSans-SemiBold",

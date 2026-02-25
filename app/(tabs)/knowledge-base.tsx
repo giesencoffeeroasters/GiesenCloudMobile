@@ -15,7 +15,7 @@ import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Circle as SvgCircle, Line } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import { GiesenLogo } from "@/components/GiesenLogo";
+import { HamburgerButton } from "@/components/HamburgerButton";
 import apiClient from "@/api/client";
 import type { KBArticle, KBCategoryStats } from "@/types/index";
 
@@ -244,9 +244,7 @@ export default function KnowledgeBaseScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <View style={styles.headerLeft}>
-            <View style={styles.gLogo}>
-              <GiesenLogo size={18} color={Colors.text} />
-            </View>
+            <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>Knowledge Base</Text>
               <Text style={styles.headerSubtitle}>Search Articles</Text>
@@ -265,9 +263,7 @@ export default function KnowledgeBaseScreen() {
       {/* Dark slate header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.gLogo}>
-            <GiesenLogo size={18} color={Colors.text} />
-          </View>
+          <HamburgerButton />
           <View>
             <Text style={styles.headerTitle}>Knowledge Base</Text>
             <Text style={styles.headerSubtitle}>Search Articles</Text>
@@ -393,14 +389,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  gLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.safety,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   headerTitle: {
     fontFamily: "DMSans-SemiBold",
     fontSize: 20,
@@ -457,6 +445,7 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontFamily: "DMSans-Medium",
     fontSize: 13,
+    lineHeight: 18,
     color: Colors.textSecondary,
   },
   filterChipTextActive: {
@@ -499,6 +488,7 @@ const styles = StyleSheet.create({
   categoryBadgeText: {
     fontFamily: "DMSans-SemiBold",
     fontSize: 11,
+    lineHeight: 16,
     color: Colors.sky,
   },
   roasterBadge: {
@@ -510,6 +500,7 @@ const styles = StyleSheet.create({
   roasterBadgeText: {
     fontFamily: "DMSans-SemiBold",
     fontSize: 11,
+    lineHeight: 16,
     color: Colors.sun,
   },
   articleAnswer: {

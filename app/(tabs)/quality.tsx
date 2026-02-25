@@ -13,7 +13,7 @@ import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Line, Circle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
-import { GiesenLogo } from "@/components/GiesenLogo";
+import { HamburgerButton } from "@/components/HamburgerButton";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 
@@ -371,9 +371,7 @@ export default function QualityScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <View style={styles.headerLeft}>
-            <View style={styles.gLogo}>
-              <GiesenLogo size={18} color={Colors.text} />
-            </View>
+            <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>Quality</Text>
               <Text style={styles.headerSubtitle}>Cupping Sessions</Text>
@@ -392,9 +390,7 @@ export default function QualityScreen() {
       {/* Dark slate header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.gLogo}>
-            <GiesenLogo size={18} color={Colors.text} />
-          </View>
+          <HamburgerButton />
           <View>
             <Text style={styles.headerTitle}>Quality</Text>
             <Text style={styles.headerSubtitle}>Cupping Sessions</Text>
@@ -653,14 +649,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-  },
-  gLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.safety,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerTitle: {
     fontFamily: "DMSans-SemiBold",

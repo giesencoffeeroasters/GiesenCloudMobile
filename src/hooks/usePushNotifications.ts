@@ -13,6 +13,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -62,7 +64,6 @@ function getNavigationRoute(data: Record<string, any>): string | null {
  */
 async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) {
-    console.log("Push notifications require a physical device");
     return null;
   }
 
@@ -122,8 +123,8 @@ async function sendTokenToBackend(token: string): Promise<void> {
 export function usePushNotifications() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
-  const notificationListener = useRef<Notifications.EventSubscription>();
-  const responseListener = useRef<Notifications.EventSubscription>();
+  const notificationListener = useRef<Notifications.EventSubscription>(undefined);
+  const responseListener = useRef<Notifications.EventSubscription>(undefined);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -164,16 +165,8 @@ export function usePushNotifications() {
     });
 
     return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(
-          notificationListener.current
-        );
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(
-          responseListener.current
-        );
-      }
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
     };
   }, [isAuthenticated]);
 
@@ -189,22 +182,5 @@ export function usePushNotifications() {
   }, []);
 }
 
-/**
- * Get the current Expo push token (for use during logout).
- */
-export async function getExpoPushToken(): Promise<string | null> {
-  try {
-    if (!Device.isDevice) return null;
-
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== "granted") return null;
-
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId,
-    });
-    return tokenData.data;
-  } catch {
-    return null;
-  }
-}
+// Re-export for convenience
+export { getExpoPushToken } from "@/utils/pushToken";

@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import * as Notifications from "expo-notifications";
 import apiClient, { setOnUnauthorized } from "@/api/client";
 import { disconnectPusher } from "@/services/pusher";
-import { getExpoPushToken } from "@/hooks/usePushNotifications";
+import { getExpoPushToken } from "@/utils/pushToken";
 
 interface User {
   id: number;
