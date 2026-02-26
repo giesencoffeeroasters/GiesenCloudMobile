@@ -23,6 +23,7 @@ import type { ProfilerProfile, ProfileSummary } from "@/types";
 
 interface Roast {
   id: string;
+  name: string;
   profile_name: string;
   device_name: string;
   bean_type: string | null;
@@ -324,7 +325,7 @@ function RoastCard({ roast }: RoastCardProps) {
       <View style={styles.roastBody}>
         <View style={styles.roastTop}>
           <Text style={styles.roastName} numberOfLines={1}>
-            {roast.profile_name}
+            {roast.name}
           </Text>
           <View style={[styles.scoreBadge, { backgroundColor: tier.bg }]}>
             <Text style={[styles.scoreBadgeText, { color: tier.color }]}>
@@ -871,7 +872,7 @@ export default function RoastsScreen() {
     if (searchQuery.trim().length > 0) {
       const q = searchQuery.toLowerCase();
       const matchesSearch =
-        r.profile_name.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
         (r.bean_type && r.bean_type.toLowerCase().includes(q)) ||
         r.device_name.toLowerCase().includes(q);
       if (!matchesSearch) return false;

@@ -235,7 +235,7 @@ export default function RoastDetailScreen() {
 
   useEffect(() => {
     fetchRoast();
-    getMeasurementsForRoast(Number(id)).then(setDifluidMeasurements).catch(() => {});
+    getMeasurementsForRoast(id).then(setDifluidMeasurements).catch(() => {});
   }, [fetchRoast, id]);
 
   const handleRefresh = useCallback(() => {
@@ -402,7 +402,7 @@ export default function RoastDetailScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={detailStyles.headerTitle} numberOfLines={1}>
-                {roast.profile_name}
+                {roast.name}
               </Text>
               <Text style={detailStyles.headerSubtitle}>
                 {roast.bean_type ?? formatDate(roast.roasted_at)}
@@ -865,7 +865,7 @@ export default function RoastDetailScreen() {
             onPress={() =>
               router.push({
                 pathname: "/difluid/measure",
-                params: { roastId: id, itemName: roast.profile_name },
+                params: { roastId: id, itemName: roast.name },
               })
             }
           >

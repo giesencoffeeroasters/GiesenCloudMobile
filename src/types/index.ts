@@ -385,6 +385,7 @@ export interface ProfilerProfileDetail {
 
 export interface RoastDetail {
   id: string;
+  name: string;
   profile_name: string;
   device_name: string;
   bean_type: string | null;

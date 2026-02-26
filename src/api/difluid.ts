@@ -59,7 +59,7 @@ export async function getMeasurementsForInventory(
 
 /** Fetch measurements for a roast */
 export async function getMeasurementsForRoast(
-  roastId: number
+  roastId: string | number
 ): Promise<DiFluidMeasurementFromApi[]> {
   const response = await apiClient.get<
     PaginatedResponse<DiFluidMeasurementFromApi>
