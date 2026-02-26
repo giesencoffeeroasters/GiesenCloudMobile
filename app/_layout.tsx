@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   LogBox,
 } from "react-native";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "@/stores/authStore";
@@ -183,7 +183,15 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      {appReady && <Slot />}
+      {appReady && (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
+        />
+      )}
       {!splashDone && (
         <Animated.View
           style={[StyleSheet.absoluteFill, { opacity: fadeOut, zIndex: 10 }]}
