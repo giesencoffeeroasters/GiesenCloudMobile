@@ -26,7 +26,8 @@ interface LinkPickerModalProps {
 
 interface SearchItem {
   id: number;
-  name: string;
+  name?: string;
+  profile_name?: string;
   created_at?: string;
   roasted_at?: string;
 }
@@ -110,8 +111,12 @@ export function LinkPickerModal({
     }
   }, [visible, tab]);
 
+  function getDisplayName(item: SearchItem): string {
+    return item.name ?? item.profile_name ?? `#${item.id}`;
+  }
+
   function handleSelect(item: SearchItem) {
-    onSelect({ type: tab, id: item.id, name: item.name });
+    onSelect({ type: tab, id: item.id, name: getDisplayName(item) });
   }
 
   function formatDate(item: SearchItem): string {
@@ -131,7 +136,7 @@ export function LinkPickerModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Link Measurement</Text>
@@ -212,7 +217,7 @@ export function LinkPickerModal({
               >
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName} numberOfLines={1}>
-                    {item.name}
+                    {getDisplayName(item)}
                   </Text>
                   <Text style={styles.itemMeta}>
                     ID: {item.id}
