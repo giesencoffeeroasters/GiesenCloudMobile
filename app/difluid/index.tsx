@@ -171,21 +171,14 @@ export default function DiFluidDeviceScreen() {
               </View>
             </View>
 
-            {/* Battery levels */}
+            {/* Battery level */}
             {deviceInfo.mainBattery !== undefined ? (
               <View style={styles.batteryRow}>
                 <View style={styles.batteryItem}>
                   <BatteryIcon level={deviceInfo.mainBattery} />
-                  <Text style={styles.batteryLabel}>Main Unit</Text>
+                  <Text style={styles.batteryLabel}>Battery</Text>
                   <Text style={styles.batteryValue}>{deviceInfo.mainBattery}%</Text>
                 </View>
-                {deviceInfo.baseBattery !== undefined ? (
-                  <View style={styles.batteryItem}>
-                    <BatteryIcon level={deviceInfo.baseBattery} />
-                    <Text style={styles.batteryLabel}>Sample Base</Text>
-                    <Text style={styles.batteryValue}>{deviceInfo.baseBattery}%</Text>
-                  </View>
-                ) : null}
               </View>
             ) : null}
 

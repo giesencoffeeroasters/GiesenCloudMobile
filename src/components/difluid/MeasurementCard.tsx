@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import type { DiFluidMeasurement, DiFluidMeasurementFromApi } from "@/types/index";
 
@@ -69,13 +70,58 @@ function StatCell({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Environment Icons                                                  */
+/* ------------------------------------------------------------------ */
+
+function ThermometerIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={Colors.textTertiary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z" />
+    </Svg>
+  );
+}
+
+function DropletIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={Colors.textTertiary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+    </Svg>
+  );
+}
+
+function GaugeIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={Colors.textTertiary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 2a10 10 0 100 20 10 10 0 000-20z" />
+      <Path d="M12 6v6l4 2" />
+    </Svg>
+  );
+}
+
+function MountainIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={Colors.textTertiary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M8 3l4 8 5-5 5 15H2L8 3z" />
+    </Svg>
+  );
+}
+
+const ENV_ICONS: Record<string, React.ReactNode> = {
+  Temperature: <ThermometerIcon />,
+  Humidity: <DropletIcon />,
+  Pressure: <GaugeIcon />,
+  Altitude: <MountainIcon />,
+};
+
+/* ------------------------------------------------------------------ */
 /*  Detail Row                                                         */
 /* ------------------------------------------------------------------ */
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
     <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}</Text>
+      {icon ? <View style={styles.detailIcon}>{icon}</View> : null}
+      <Text style={[styles.detailLabel, icon ? { flex: 1 } : undefined]}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
@@ -227,16 +273,16 @@ function ExpandedDetailFromApi({
         <View style={styles.detailGroup}>
           <Text style={styles.detailSectionTitle}>Environment</Text>
           {measurement.temperature !== null ? (
-            <DetailRow label="Temperature" value={`${Number(measurement.temperature).toFixed(1)}\u00B0C`} />
+            <DetailRow label="Temperature" value={`${Number(measurement.temperature).toFixed(1)}\u00B0C`} icon={ENV_ICONS.Temperature} />
           ) : null}
           {measurement.humidity !== null ? (
-            <DetailRow label="Humidity" value={`${Number(measurement.humidity).toFixed(0)}% RH`} />
+            <DetailRow label="Humidity" value={`${Number(measurement.humidity).toFixed(0)}% RH`} icon={ENV_ICONS.Humidity} />
           ) : null}
           {measurement.pressure !== null ? (
-            <DetailRow label="Pressure" value={`${Number(measurement.pressure).toFixed(0)} hPa`} />
+            <DetailRow label="Pressure" value={`${Number(measurement.pressure).toFixed(0)} hPa`} icon={ENV_ICONS.Pressure} />
           ) : null}
           {measurement.altitude !== null ? (
-            <DetailRow label="Altitude" value={`${measurement.altitude} m`} />
+            <DetailRow label="Altitude" value={`${measurement.altitude} m`} icon={ENV_ICONS.Altitude} />
           ) : null}
         </View>
       ) : null}
@@ -332,16 +378,16 @@ function ExpandedDetailLocal({
         <View style={styles.detailGroup}>
           <Text style={styles.detailSectionTitle}>Environment</Text>
           {measurement.temperature !== undefined ? (
-            <DetailRow label="Temperature" value={`${measurement.temperature.toFixed(1)}\u00B0C`} />
+            <DetailRow label="Temperature" value={`${measurement.temperature.toFixed(1)}\u00B0C`} icon={ENV_ICONS.Temperature} />
           ) : null}
           {measurement.humidity !== undefined ? (
-            <DetailRow label="Humidity" value={`${measurement.humidity.toFixed(0)}% RH`} />
+            <DetailRow label="Humidity" value={`${measurement.humidity.toFixed(0)}% RH`} icon={ENV_ICONS.Humidity} />
           ) : null}
           {measurement.pressure !== undefined ? (
-            <DetailRow label="Pressure" value={`${measurement.pressure.toFixed(0)} hPa`} />
+            <DetailRow label="Pressure" value={`${measurement.pressure.toFixed(0)} hPa`} icon={ENV_ICONS.Pressure} />
           ) : null}
           {measurement.altitude !== undefined ? (
-            <DetailRow label="Altitude" value={`${measurement.altitude} m`} />
+            <DetailRow label="Altitude" value={`${measurement.altitude} m`} icon={ENV_ICONS.Altitude} />
           ) : null}
         </View>
       ) : null}
@@ -703,6 +749,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     backgroundColor: Colors.bg,
     borderRadius: 6,
+  },
+  detailIcon: {
+    marginRight: 6,
   },
   detailLabel: {
     fontFamily: "DMSans-Regular",

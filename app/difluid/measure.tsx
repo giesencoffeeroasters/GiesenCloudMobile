@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Share,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -15,7 +14,6 @@ import Svg, { Path, Circle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import { useDiFluidStore } from "@/stores/difluidStore";
-import { getConnectionInfo, setDebugLogger, enumerateDevice } from "@/services/difluid/bleManager";
 import { ConnectionBadge } from "@/components/difluid/ConnectionBadge";
 import { CoffeeTypeSelector } from "@/components/difluid/CoffeeTypeSelector";
 import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
@@ -59,42 +57,20 @@ export default function DiFluidMeasureScreen() {
     clearCurrent,
   } = useDiFluidStore();
 
-  const [coffeeType, setCoffeeType] = useState<DiFluidCoffeeType>(
-    params.roastId ? "roasted" : "green"
-  );
+  const [coffeeType, setCoffeeType] = useState<DiFluidCoffeeType>("auto");
   const [apiMeasurements, setApiMeasurements] = useState<DiFluidMeasurementFromApi[]>([]);
 
   const isConnected = connectionStatus === "connected" || connectionStatus === "measuring";
   const isMeasuring = connectionStatus === "measuring";
 
-  // Debug log
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-  const [showDebug, setShowDebug] = useState(false);
-  const debugScrollRef = useRef<ScrollView>(null);
-
-  const addLog = useCallback((msg: string) => {
-    const ts = new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    setDebugLog((prev) => [...prev, `[${ts}] ${msg}`]);
-    setTimeout(() => debugScrollRef.current?.scrollToEnd({ animated: true }), 50);
-  }, []);
-
-  // Wire BLE debug logger to on-screen log
-  useEffect(() => {
-    setDebugLogger((msg) => addLog(`[BLE] ${msg}`));
-    return () => setDebugLogger(null);
-  }, [addLog]);
-
-  // Clear measurement on mount + log connection info + fetch recent
+  // Clear measurement on mount + fetch recent
   useEffect(() => {
     clearCurrent();
-    addLog("Screen mounted");
-    addLog(getConnectionInfo());
     getAllMeasurements().then(setApiMeasurements).catch(() => {});
   }, []);
 
   const handleMeasure = useCallback(async () => {
     if (!isConnected) {
-      addLog("Measure pressed but not connected");
       Alert.alert("Not Connected", "Please connect to a DiFluid device first.", [
         { text: "OK" },
         { text: "Go to Devices", onPress: () => router.push("/difluid") },
@@ -102,16 +78,13 @@ export default function DiFluidMeasureScreen() {
       return;
     }
 
-    addLog(`Preparing measurement — coffeeType=${coffeeType}`);
-    addLog(getConnectionInfo());
     try {
       await measure(coffeeType);
-      addLog("Ready — press the button on your DiFluid device");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Unknown error";
-      addLog(`measure() ERROR: ${msg}`);
+      Alert.alert("Measurement Error", msg);
     }
-  }, [isConnected, coffeeType, measure, addLog]);
+  }, [isConnected, coffeeType, measure]);
 
   const handleSave = useCallback(async () => {
     const linkedType = params.inventoryId
@@ -141,23 +114,6 @@ export default function DiFluidMeasureScreen() {
     }
   }, [params.inventoryId, params.roastId, saveMeasurement, clearCurrent]);
 
-  // Log measurement data as it arrives
-  useEffect(() => {
-    if (!currentMeasurement) return;
-    const parts: string[] = ["Data received:"];
-    if (currentMeasurement.moisture !== undefined) parts.push(`moisture=${currentMeasurement.moisture.toFixed(1)}%`);
-    if (currentMeasurement.waterActivity !== undefined) parts.push(`Aw=${currentMeasurement.waterActivity.toFixed(3)}`);
-    if (currentMeasurement.density !== undefined) parts.push(`density=${Math.round(currentMeasurement.density)}g/L`);
-    if (currentMeasurement.agtronNumber !== undefined) parts.push(`agtron=${currentMeasurement.agtronNumber.toFixed(1)}`);
-    if (currentMeasurement.temperature !== undefined) parts.push(`temp=${currentMeasurement.temperature.toFixed(1)}°C`);
-    if (currentMeasurement.humidity !== undefined) parts.push(`rh=${currentMeasurement.humidity}%`);
-    if (parts.length > 1) addLog(parts.join(" "));
-  }, [currentMeasurement]);
-
-  // Log when measurement completes
-  useEffect(() => {
-    if (measurementComplete) addLog("Measurement COMPLETE");
-  }, [measurementComplete]);
 
   return (
     <View style={styles.screen}>
@@ -442,70 +398,6 @@ export default function DiFluidMeasureScreen() {
           </>
         ) : null}
 
-        {/* Debug Log Panel */}
-        <TouchableOpacity
-          style={styles.debugToggle}
-          activeOpacity={0.7}
-          onPress={() => setShowDebug((v) => !v)}
-        >
-          <Text style={styles.debugToggleText}>
-            {showDebug ? "Hide Debug Log" : "Show Debug Log"}
-          </Text>
-          <Text style={styles.debugToggleCount}>{debugLog.length} entries</Text>
-        </TouchableOpacity>
-
-        {showDebug ? (
-          <View style={styles.debugCard}>
-            <View style={styles.debugHeader}>
-              <Text style={styles.debugTitle}>BLE Debug Log</Text>
-              <View style={styles.debugHeaderActions}>
-                <TouchableOpacity onPress={() => {
-                  Share.share({ message: debugLog.join("\n") });
-                }}>
-                  <Text style={styles.debugCopy}>Copy</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setDebugLog([])}>
-                  <Text style={styles.debugClear}>Clear</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <ScrollView
-              ref={debugScrollRef}
-              style={styles.debugScroll}
-              nestedScrollEnabled
-            >
-              {debugLog.length === 0 ? (
-                <Text style={styles.debugLine}>No log entries yet.</Text>
-              ) : (
-                debugLog.map((line, i) => (
-                  <Text key={i} style={styles.debugLine} selectable>
-                    {line}
-                  </Text>
-                ))
-              )}
-            </ScrollView>
-            <View style={styles.debugActions}>
-              <TouchableOpacity
-                style={styles.debugRefreshBtn}
-                activeOpacity={0.7}
-                onPress={() => addLog(getConnectionInfo())}
-              >
-                <Text style={styles.debugRefreshText}>Connection Info</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.debugRefreshBtn, { backgroundColor: "#3a2a4e" }]}
-                activeOpacity={0.7}
-                onPress={async () => {
-                  addLog("Enumerating all services/chars…");
-                  const result = await enumerateDevice();
-                  addLog(result);
-                }}
-              >
-                <Text style={styles.debugRefreshText}>Scan All Services</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : null}
       </ScrollView>
     </View>
   );
@@ -751,81 +643,4 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
 
-  /* Debug Log */
-  debugToggle: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    backgroundColor: Colors.gravelLight,
-    borderRadius: 8,
-  },
-  debugToggleText: {
-    fontFamily: "JetBrainsMono-Medium",
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  debugToggleCount: {
-    fontFamily: "JetBrainsMono-Regular",
-    fontSize: 10,
-    color: Colors.textTertiary,
-  },
-  debugCard: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#2a2a3e",
-    padding: 12,
-    gap: 8,
-  },
-  debugHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  debugHeaderActions: {
-    flexDirection: "row",
-    gap: 14,
-  },
-  debugCopy: {
-    fontFamily: "JetBrainsMono-Regular",
-    fontSize: 10,
-    color: "#7fdbca",
-  },
-  debugTitle: {
-    fontFamily: "JetBrainsMono-Bold",
-    fontSize: 11,
-    color: "#7fdbca",
-  },
-  debugClear: {
-    fontFamily: "JetBrainsMono-Regular",
-    fontSize: 10,
-    color: Colors.traffic,
-  },
-  debugScroll: {
-    maxHeight: 240,
-  },
-  debugLine: {
-    fontFamily: "JetBrainsMono-Regular",
-    fontSize: 10,
-    color: "#c3cee3",
-    lineHeight: 16,
-  },
-  debugActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  debugRefreshBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-    backgroundColor: "#2a2a3e",
-    borderRadius: 6,
-  },
-  debugRefreshText: {
-    fontFamily: "JetBrainsMono-Medium",
-    fontSize: 10,
-    color: "#7fdbca",
-  },
 });
