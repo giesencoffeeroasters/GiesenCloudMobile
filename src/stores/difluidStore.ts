@@ -23,6 +23,7 @@ import type { DiFluidEvent } from "@/services/difluid/notificationRouter";
 import {
   storeMeasurement,
   batchStoreMeasurements,
+  linkMeasurement as linkMeasurementApi,
 } from "@/api/difluid";
 
 const LAST_DEVICE_KEY = "difluid_last_device";
@@ -66,6 +67,11 @@ interface DiFluidState {
     linkedId?: number
   ) => Promise<void>;
   syncPending: () => Promise<void>;
+  linkMeasurement: (
+    measurementId: number,
+    type: "inventory" | "roast",
+    measurableId: number
+  ) => Promise<void>;
   clearCurrent: () => void;
 }
 
@@ -379,51 +385,49 @@ export const useDiFluidStore = create<DiFluidState>((set, get) => ({
     }));
 
     // Try to sync immediately
-    if (linkedType && linkedId) {
-      try {
-        await storeMeasurement({
-          measurable_type: linkedType,
-          measurable_id: linkedId,
-          coffee_type: measurement.coffeeType,
-          moisture: measurement.moisture,
-          water_activity: measurement.waterActivity,
-          density: measurement.density,
-          bulk_density: measurement.bulkDensity,
-          agtron_number: measurement.agtronNumber,
-          sca_color_value: measurement.scaColorValue,
-          variance: measurement.variance,
-          roast_standard: measurement.roastStandard,
-          bar_chart_31: measurement.barChart31,
-          pie_chart_8: measurement.pieChart8,
-          screen_size_grade: measurement.screenSizeGrade,
-          screen_size_diameter: measurement.screenSizeDiameter,
-          weight: measurement.weight,
-          mirror_temperature: measurement.mirrorTemperature,
-          bean_temperature: measurement.beanTemperature,
-          temperature: measurement.temperature,
-          humidity: measurement.humidity,
-          pressure: measurement.pressure,
-          altitude: measurement.altitude,
-          device_identifier: measurement.deviceIdentifier,
-          measured_at: measurement.measuredAt,
-        });
+    try {
+      const payload: Record<string, unknown> = {
+        coffee_type: measurement.coffeeType,
+        moisture: measurement.moisture,
+        water_activity: measurement.waterActivity,
+        density: measurement.density,
+        bulk_density: measurement.bulkDensity,
+        agtron_number: measurement.agtronNumber,
+        sca_color_value: measurement.scaColorValue,
+        variance: measurement.variance,
+        roast_standard: measurement.roastStandard,
+        bar_chart_31: measurement.barChart31,
+        pie_chart_8: measurement.pieChart8,
+        screen_size_grade: measurement.screenSizeGrade,
+        screen_size_diameter: measurement.screenSizeDiameter,
+        weight: measurement.weight,
+        mirror_temperature: measurement.mirrorTemperature,
+        bean_temperature: measurement.beanTemperature,
+        temperature: measurement.temperature,
+        humidity: measurement.humidity,
+        pressure: measurement.pressure,
+        altitude: measurement.altitude,
+        device_identifier: measurement.deviceIdentifier,
+        measured_at: measurement.measuredAt,
+      };
 
-        // Mark as synced
-        set((state) => ({
-          measurements: state.measurements.map((m) =>
-            m.id === measurement.id
-              ? { ...m, syncedAt: new Date().toISOString() }
-              : m
-          ),
-        }));
-      } catch {
-        // Failed to sync — add to pending queue
-        set((state) => ({
-          pendingSync: [...state.pendingSync, measurement],
-        }));
+      if (linkedType && linkedId) {
+        payload.measurable_type = linkedType;
+        payload.measurable_id = linkedId;
       }
-    } else {
-      // No link — add to pending queue for later sync
+
+      await storeMeasurement(payload as any);
+
+      // Mark as synced
+      set((state) => ({
+        measurements: state.measurements.map((m) =>
+          m.id === measurement.id
+            ? { ...m, syncedAt: new Date().toISOString() }
+            : m
+        ),
+      }));
+    } catch {
+      // Failed to sync — add to pending queue
       set((state) => ({
         pendingSync: [...state.pendingSync, measurement],
       }));
@@ -434,43 +438,47 @@ export const useDiFluidStore = create<DiFluidState>((set, get) => ({
     const { pendingSync } = get();
     if (pendingSync.length === 0) return;
 
-    // Only sync measurements that have a link
-    const syncable = pendingSync.filter(
-      (m) => m.linkedInventoryId || m.linkedRoastId
-    );
-    if (syncable.length === 0) return;
-
     try {
       await batchStoreMeasurements(
-        syncable.map((m) => ({
-          measurable_type: m.linkedInventoryId ? "inventory" : "roast",
-          measurable_id: (m.linkedInventoryId ?? m.linkedRoastId)!,
-          coffee_type: m.coffeeType,
-          moisture: m.moisture,
-          water_activity: m.waterActivity,
-          density: m.density,
-          bulk_density: m.bulkDensity,
-          agtron_number: m.agtronNumber,
-          sca_color_value: m.scaColorValue,
-          variance: m.variance,
-          roast_standard: m.roastStandard,
-          bar_chart_31: m.barChart31,
-          pie_chart_8: m.pieChart8,
-          screen_size_grade: m.screenSizeGrade,
-          screen_size_diameter: m.screenSizeDiameter,
-          weight: m.weight,
-          mirror_temperature: m.mirrorTemperature,
-          bean_temperature: m.beanTemperature,
-          temperature: m.temperature,
-          humidity: m.humidity,
-          pressure: m.pressure,
-          altitude: m.altitude,
-          device_identifier: m.deviceIdentifier,
-          measured_at: m.measuredAt,
-        }))
+        pendingSync.map((m) => {
+          const payload: Record<string, unknown> = {
+            coffee_type: m.coffeeType,
+            moisture: m.moisture,
+            water_activity: m.waterActivity,
+            density: m.density,
+            bulk_density: m.bulkDensity,
+            agtron_number: m.agtronNumber,
+            sca_color_value: m.scaColorValue,
+            variance: m.variance,
+            roast_standard: m.roastStandard,
+            bar_chart_31: m.barChart31,
+            pie_chart_8: m.pieChart8,
+            screen_size_grade: m.screenSizeGrade,
+            screen_size_diameter: m.screenSizeDiameter,
+            weight: m.weight,
+            mirror_temperature: m.mirrorTemperature,
+            bean_temperature: m.beanTemperature,
+            temperature: m.temperature,
+            humidity: m.humidity,
+            pressure: m.pressure,
+            altitude: m.altitude,
+            device_identifier: m.deviceIdentifier,
+            measured_at: m.measuredAt,
+          };
+
+          if (m.linkedInventoryId) {
+            payload.measurable_type = "inventory";
+            payload.measurable_id = m.linkedInventoryId;
+          } else if (m.linkedRoastId) {
+            payload.measurable_type = "roast";
+            payload.measurable_id = m.linkedRoastId;
+          }
+
+          return payload;
+        }) as any
       );
 
-      const syncedIds = new Set(syncable.map((m) => m.id));
+      const syncedIds = new Set(pendingSync.map((m) => m.id));
       const now = new Date().toISOString();
       set((state) => ({
         pendingSync: state.pendingSync.filter((m) => !syncedIds.has(m.id)),
@@ -481,6 +489,10 @@ export const useDiFluidStore = create<DiFluidState>((set, get) => ({
     } catch {
       // Sync failed — keep in pending queue
     }
+  },
+
+  linkMeasurement: async (measurementId, type, measurableId) => {
+    await linkMeasurementApi(measurementId, type, measurableId);
   },
 
   clearCurrent: () => {

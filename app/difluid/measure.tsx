@@ -86,6 +86,8 @@ export default function DiFluidMeasureScreen() {
     }
   }, [isConnected, coffeeType, measure]);
 
+  const isLinked = !!(params.inventoryId || params.roastId);
+
   const handleSave = useCallback(async () => {
     const linkedType = params.inventoryId
       ? "inventory"
@@ -100,7 +102,10 @@ export default function DiFluidMeasureScreen() {
 
     try {
       await saveMeasurement(linkedType, linkedId);
-      Alert.alert("Saved", "Measurement saved successfully.", [
+      const message = linkedType
+        ? "Measurement saved successfully."
+        : "Measurement saved. You can link it to a roast or inventory item from the Measurements screen.";
+      Alert.alert("Saved", message, [
         {
           text: "OK",
           onPress: () => {
@@ -362,7 +367,7 @@ export default function DiFluidMeasureScreen() {
                   <Path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
                   <Path d="M17 21v-8H7v8M7 3v5h8" />
                 </Svg>
-                <Text style={styles.saveButtonText}>Save & Sync</Text>
+                <Text style={styles.saveButtonText}>{isLinked ? "Save & Sync" : "Save"}</Text>
               </TouchableOpacity>
             ) : null}
           </View>

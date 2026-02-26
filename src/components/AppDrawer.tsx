@@ -518,6 +518,19 @@ export function AppDrawer() {
             })}
           </View>
 
+          {/* Quality */}
+          <SectionHeader title="Quality" />
+          <View style={styles.menuSection}>
+            <MenuRow
+              icon={<QualityIcon color={Colors.sky} />}
+              iconBg={Colors.skyBg}
+              label="Measurements"
+              onPress={() => navigateTo("/quality/measurements")}
+              isLast
+              isActive={isCurrentRoute("/quality/measurements")}
+            />
+          </View>
+
           {/* Devices */}
           <SectionHeader title="Devices" />
           <View style={styles.menuSection}>

@@ -898,6 +898,8 @@ export interface DiFluidMeasurementFromApi {
   pressure: number | null;
   altitude: number | null;
   device_identifier: string | null;
+  measurable_type_short: 'inventory' | 'roast' | null;
+  measurable_id: number | null;
   measured_at: string;
   created_at: string;
 }

@@ -10,8 +10,8 @@ import type {
 } from "@/types/index";
 
 interface StoreMeasurementPayload {
-  measurable_type: "inventory" | "roast";
-  measurable_id: number;
+  measurable_type?: "inventory" | "roast";
+  measurable_id?: number;
   coffee_type: string;
   moisture?: number;
   water_activity?: number;
@@ -86,5 +86,20 @@ export async function batchStoreMeasurements(
   const response = await apiClient.post<
     ApiResponse<DiFluidMeasurementFromApi[]>
   >("/difluid/measurements/batch", { measurements });
+  return response.data.data;
+}
+
+/** Link an unlinked measurement to a roast or inventory item */
+export async function linkMeasurement(
+  id: number,
+  measurableType: "inventory" | "roast",
+  measurableId: number
+): Promise<DiFluidMeasurementFromApi> {
+  const response = await apiClient.patch<
+    ApiResponse<DiFluidMeasurementFromApi>
+  >(`/difluid/measurements/${id}`, {
+    measurable_type: measurableType,
+    measurable_id: measurableId,
+  });
   return response.data.data;
 }

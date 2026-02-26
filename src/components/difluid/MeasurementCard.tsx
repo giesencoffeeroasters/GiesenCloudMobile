@@ -522,8 +522,10 @@ export function MeasurementCard({ measurement, compact }: Props) {
 
 export function MeasurementCardFromApi({
   measurement,
+  onLinkPress,
 }: {
   measurement: DiFluidMeasurementFromApi;
+  onLinkPress?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -545,6 +547,17 @@ export function MeasurementCardFromApi({
               measurement.coffee_type.slice(1)}
           </Text>
         </View>
+        {measurement.measurable_type_short ? (
+          <View style={styles.linkedBadge}>
+            <Text style={styles.linkedBadgeText}>
+              {measurement.measurable_type_short === "inventory" ? "Inventory" : "Roast"}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.unlinkedBadge}>
+            <Text style={styles.unlinkedBadgeText}>Unlinked</Text>
+          </View>
+        )}
         <View style={{ flex: 1 }} />
         <Text style={styles.timestamp}>
           {new Date(measurement.measured_at).toLocaleString("en-GB", {
@@ -605,6 +618,21 @@ export function MeasurementCardFromApi({
             />
           ) : null}
         </View>
+      ) : null}
+
+      {/* Link button for unlinked measurements */}
+      {onLinkPress ? (
+        <TouchableOpacity
+          style={styles.linkButton}
+          activeOpacity={0.7}
+          onPress={onLinkPress}
+        >
+          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={Colors.sky} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+            <Path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+          </Svg>
+          <Text style={styles.linkButtonText}>Link to...</Text>
+        </TouchableOpacity>
       ) : null}
 
       {/* View Details toggle */}
@@ -817,6 +845,46 @@ const styles = StyleSheet.create({
     fontFamily: "JetBrainsMono-Regular",
     fontSize: 10,
     color: Colors.text,
+  },
+
+  /* Link button */
+  linkButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: Colors.skyBg,
+    borderRadius: 8,
+    paddingVertical: 10,
+  },
+  linkButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 13,
+    color: Colors.sky,
+  },
+
+  /* Linked/Unlinked badges */
+  linkedBadge: {
+    backgroundColor: Colors.leafBg,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  linkedBadgeText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 10,
+    color: Colors.leaf,
+  },
+  unlinkedBadge: {
+    backgroundColor: Colors.sunBg,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  unlinkedBadgeText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 10,
+    color: Colors.sun,
   },
 
   /* Legacy — kept for backwards compat if used elsewhere */
