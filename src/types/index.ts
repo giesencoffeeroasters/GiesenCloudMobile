@@ -191,6 +191,9 @@ export interface InventoryItem {
     temperature: number | null;
     humidity: number | null;
     measured_at: string | null;
+    agtron_number: number | null;
+    source: string | null;
+    device_identifier: string | null;
   } | null;
   latest_defect_analysis?: {
     sample_weight_grams: number | null;
@@ -412,6 +415,7 @@ export interface RoastDetail {
     average_score: number | null;
     session_id: number;
   }[];
+  difluid_measurements?: DiFluidMeasurementFromApi[];
 }
 
 export interface ProfilerRoast {
@@ -820,4 +824,80 @@ export interface OutsmartWorkType {
   title: string;
   display_description: string | null;
   wrt_default_minutes: number | null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  DiFluid Omix                                                       */
+/* ------------------------------------------------------------------ */
+
+export interface DiFluidDevice {
+  id: string;
+  name: string;
+  rssi: number;
+}
+
+export type DiFluidConnectionStatus =
+  | "disconnected"
+  | "scanning"
+  | "connecting"
+  | "connected"
+  | "measuring";
+
+export type DiFluidCoffeeType = "green" | "roasted" | "ground" | "auto";
+
+export interface DiFluidMeasurement {
+  id: string;
+  coffeeType: DiFluidCoffeeType;
+  moisture?: number;
+  waterActivity?: number;
+  density?: number;
+  bulkDensity?: number;
+  agtronNumber?: number;
+  scaColorValue?: number;
+  variance?: number;
+  roastStandard?: number;
+  barChart31?: number[];
+  pieChart8?: number[];
+  screenSizeGrade?: number;
+  screenSizeDiameter?: number;
+  weight?: number;
+  mirrorTemperature?: number;
+  beanTemperature?: number;
+  temperature?: number;
+  humidity?: number;
+  pressure?: number;
+  altitude?: number;
+  beanType?: number;
+  linkedInventoryId?: number;
+  linkedRoastId?: number;
+  deviceIdentifier?: string;
+  measuredAt: string;
+  syncedAt?: string;
+}
+
+export interface DiFluidMeasurementFromApi {
+  id: number;
+  coffee_type: DiFluidCoffeeType;
+  moisture: number | null;
+  water_activity: number | null;
+  density: number | null;
+  bulk_density: number | null;
+  agtron_number: number | null;
+  sca_color_value: number | null;
+  variance: number | null;
+  roast_standard: number | null;
+  bar_chart_31: number[] | null;
+  pie_chart_8: number[] | null;
+  screen_size_grade: number | null;
+  screen_size_diameter: number | null;
+  weight: number | null;
+  mirror_temperature: number | null;
+  bean_temperature: number | null;
+  temperature: number | null;
+  humidity: number | null;
+  pressure: number | null;
+  altitude: number | null;
+  device_identifier: string | null;
+  measured_at: string;
+  created_at: string;
 }

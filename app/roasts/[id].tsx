@@ -15,7 +15,10 @@ import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import { RoastCurveChart } from "@/components/charts/RoastCurveChart";
 import apiClient from "@/api/client";
-import type { RoastDetail, RoastPhase, CurvePoint } from "@/types";
+import type { RoastDetail, RoastPhase, CurvePoint, DiFluidMeasurementFromApi } from "@/types";
+import { getMeasurementsForRoast } from "@/api/difluid";
+import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
+import { useDiFluidStore } from "@/stores/difluidStore";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -211,6 +214,8 @@ export default function RoastDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [difluidMeasurements, setDifluidMeasurements] = useState<DiFluidMeasurementFromApi[]>([]);
+  const difluidConnected = useDiFluidStore((s) => s.connectionStatus === "connected" || s.connectionStatus === "measuring");
 
   const fetchRoast = useCallback(async () => {
     try {
@@ -230,7 +235,8 @@ export default function RoastDetailScreen() {
 
   useEffect(() => {
     fetchRoast();
-  }, [fetchRoast]);
+    getMeasurementsForRoast(Number(id)).then(setDifluidMeasurements).catch(() => {});
+  }, [fetchRoast, id]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -827,6 +833,49 @@ export default function RoastDetailScreen() {
           </View>
         ) : null}
 
+        {/* 9.5. DiFluid Measurements */}
+        {difluidMeasurements.length > 0 ? (
+          <View style={detailStyles.card}>
+            <View style={detailStyles.cardHeader}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"
+                  stroke={Colors.sky}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={detailStyles.cardTitle}>DiFluid Measurements</Text>
+              <Text style={detailStyles.cardCount}>{difluidMeasurements.length}</Text>
+            </View>
+            <View style={{ gap: 10 }}>
+              {difluidMeasurements.map((m) => (
+                <MeasurementCardFromApi key={m.id} measurement={m} />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {/* Take Measurement Button */}
+        {difluidConnected ? (
+          <TouchableOpacity
+            style={detailStyles.difluidButton}
+            activeOpacity={0.7}
+            onPress={() =>
+              router.push({
+                pathname: "/difluid/measure",
+                params: { roastId: id, itemName: roast.profile_name },
+              })
+            }
+          >
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <Path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11" />
+            </Svg>
+            <Text style={detailStyles.difluidButtonText}>Take DiFluid Measurement</Text>
+          </TouchableOpacity>
+        ) : null}
+
         {/* 10. Comment Card */}
         {roast.comment ? (
           <View style={detailStyles.card}>
@@ -1094,6 +1143,22 @@ const detailStyles = StyleSheet.create({
     fontFamily: "DMSans-Medium",
     fontSize: 12,
     color: Colors.sun,
+  },
+
+  /* -- DiFluid button -- */
+  difluidButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: Colors.sky,
+    borderRadius: 10,
+    paddingVertical: 14,
+  },
+  difluidButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 14,
+    color: "#ffffff",
   },
 
   /* -- Comment -- */

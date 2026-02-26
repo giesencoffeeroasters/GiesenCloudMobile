@@ -38,6 +38,7 @@ React Native (Expo) mobile app for GiesenCloud coffee roasting platform.
 - `/tickets`, `/tickets/{id}`, `/tickets/{id}/message`, `/tickets/{id}/close`, `/tickets/assets`, `/tickets/statuses`, `/tickets/upload-url`
 - `/knowledge-base/questions`, `/knowledge-base/categories`, `/knowledge-base/roaster-models`, `/knowledge-base/category-stats`
 - `/service-appointments`, `/service-appointments/{id}`, `/service-appointments/{id}/confirm`, `/service-appointments/{id}/decline`, `/service-appointments/{id}/reschedule`, `/service-appointments/assets`, `/service-appointments/work-types`
+- `/difluid/measurements` (GET: list filtered by inventory_id/roast_id, POST: store single), `/difluid/measurements/batch` (POST: batch sync)
 
 ## Backend Routes
 - Backend mobile routes defined in: `GiesenCloud/routes/api_mobile.php`

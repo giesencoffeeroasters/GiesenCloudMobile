@@ -49,6 +49,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
+      NSBluetoothAlwaysUsageDescription:
+        "GiesenCloud uses Bluetooth to connect to DiFluid Omix devices for coffee quality measurements.",
       ...(APP_ENV === "development" && {
         NSAppTransportSecurity: {
           NSAllowsArbitraryLoads: false,
@@ -69,6 +71,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     edgeToEdgeEnabled: true,
     package: "com.giesen.cloud",
+    permissions: [
+      "android.permission.BLUETOOTH_SCAN",
+      "android.permission.BLUETOOTH_CONNECT",
+      "android.permission.ACCESS_FINE_LOCATION",
+    ],
   },
   plugins: [
     "expo-router",
@@ -79,6 +86,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         sounds: [],
       },
     ],
+    "react-native-ble-plx",
   ],
   extra: {
     appEnv: APP_ENV,

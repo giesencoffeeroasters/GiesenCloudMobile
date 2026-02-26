@@ -15,7 +15,10 @@ import Svg, { Path, Rect as SvgRect } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
-import type { InventoryItem, InventoryTransaction, ApiResponse } from "@/types/index";
+import type { InventoryItem, InventoryTransaction, ApiResponse, DiFluidMeasurementFromApi } from "@/types/index";
+import { getMeasurementsForInventory } from "@/api/difluid";
+import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
+import { useDiFluidStore } from "@/stores/difluidStore";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -139,6 +142,8 @@ export default function InventoryDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("details");
+  const [difluidMeasurements, setDifluidMeasurements] = useState<DiFluidMeasurementFromApi[]>([]);
+  const difluidConnected = useDiFluidStore((s) => s.connectionStatus === "connected" || s.connectionStatus === "measuring");
 
   const fetchItem = useCallback(async () => {
     try {
@@ -158,7 +163,10 @@ export default function InventoryDetailScreen() {
 
   useEffect(() => {
     fetchItem();
-  }, [fetchItem]);
+    getMeasurementsForInventory(Number(id))
+      .then(setDifluidMeasurements)
+      .catch(() => {});
+  }, [fetchItem, id]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -171,9 +179,11 @@ export default function InventoryDetailScreen() {
       item.latest_physical_reading ||
       item.latest_defect_analysis ||
       item.latest_screen_analysis ||
-      (item.cupping_samples && item.cupping_samples.length > 0)
+      (item.cupping_samples && item.cupping_samples.length > 0) ||
+      difluidMeasurements.length > 0 ||
+      difluidConnected
     );
-  }, [item]);
+  }, [item, difluidMeasurements, difluidConnected]);
 
   /* -- Loading State -- */
   if (loading) {
@@ -779,6 +789,19 @@ export default function InventoryDetailScreen() {
                   ) : null}
                 </View>
 
+                {/* Agtron */}
+                {item.latest_physical_reading.agtron_number !== null ? (
+                  <View style={styles.qualityStatsRow}>
+                    <View style={styles.qualityStat}>
+                      <Text style={styles.qualityStatLabel}>Agtron</Text>
+                      <Text style={styles.qualityStatValue}>
+                        {Number(item.latest_physical_reading.agtron_number).toFixed(1)}
+                      </Text>
+                      <Text style={styles.qualityStatUnit}>color</Text>
+                    </View>
+                  </View>
+                ) : null}
+
                 {/* Secondary readings */}
                 {(item.latest_physical_reading.temperature !== null ||
                   item.latest_physical_reading.humidity !== null) ? (
@@ -802,11 +825,22 @@ export default function InventoryDetailScreen() {
                   </View>
                 ) : null}
 
-                {/* Measured at */}
+                {/* Measured at + source */}
                 {item.latest_physical_reading.measured_at ? (
-                  <Text style={styles.measuredAt}>
-                    Measured {formatDate(item.latest_physical_reading.measured_at)}
-                  </Text>
+                  <View style={styles.measuredAtRow}>
+                    <Text style={styles.measuredAt}>
+                      Measured {formatDate(item.latest_physical_reading.measured_at)}
+                    </Text>
+                    {item.latest_physical_reading.source === "difluid" ? (
+                      <View style={styles.sourceBadge}>
+                        <Text style={styles.sourceBadgeText}>DiFluid</Text>
+                      </View>
+                    ) : item.latest_physical_reading.source === "manual" ? (
+                      <View style={[styles.sourceBadge, styles.sourceBadgeManual]}>
+                        <Text style={[styles.sourceBadgeText, styles.sourceBadgeManualText]}>Manual</Text>
+                      </View>
+                    ) : null}
+                  </View>
                 ) : null}
               </View>
             ) : null}
@@ -864,7 +898,7 @@ export default function InventoryDetailScreen() {
                 </View>
 
                 {item.latest_defect_analysis.sample_weight_grams ? (
-                  <Text style={styles.measuredAt}>
+                  <Text style={[styles.measuredAt, { marginTop: 8 }]}>
                     Sample weight: {(Number(item.latest_defect_analysis.sample_weight_grams) / 1000).toFixed(1)} kg
                     {item.latest_defect_analysis.analyzed_at
                       ? ` \u00B7 ${formatDate(item.latest_defect_analysis.analyzed_at)}`
@@ -922,7 +956,7 @@ export default function InventoryDetailScreen() {
                 </View>
 
                 {item.latest_screen_analysis.analyzed_at ? (
-                  <Text style={styles.measuredAt}>
+                  <Text style={[styles.measuredAt, { marginTop: 8 }]}>
                     Analyzed {formatDate(item.latest_screen_analysis.analyzed_at)}
                   </Text>
                 ) : null}
@@ -997,11 +1031,55 @@ export default function InventoryDetailScreen() {
               </View>
             ) : null}
 
+            {/* DiFluid Measurements */}
+            {difluidMeasurements.length > 0 ? (
+              <View style={styles.detailsCard}>
+                <View style={styles.cardHeader}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"
+                      stroke={Colors.sky}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={styles.cardTitle}>DiFluid Measurements</Text>
+                  <Text style={styles.cardCount}>{difluidMeasurements.length}</Text>
+                </View>
+                <View style={{ gap: 10 }}>
+                  {difluidMeasurements.map((m) => (
+                    <MeasurementCardFromApi key={m.id} measurement={m} />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            {/* Take Measurement Button */}
+            {difluidConnected ? (
+              <TouchableOpacity
+                style={styles.difluidButton}
+                activeOpacity={0.7}
+                onPress={() =>
+                  router.push({
+                    pathname: "/difluid/measure",
+                    params: { inventoryId: id, itemName: item.name },
+                  })
+                }
+              >
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11" />
+                </Svg>
+                <Text style={styles.difluidButtonText}>Take DiFluid Measurement</Text>
+              </TouchableOpacity>
+            ) : null}
+
             {/* No quality data message */}
             {!item.latest_physical_reading &&
               !item.latest_defect_analysis &&
               !item.latest_screen_analysis &&
-              (!item.cupping_samples || item.cupping_samples.length === 0) ? (
+              (!item.cupping_samples || item.cupping_samples.length === 0) &&
+              difluidMeasurements.length === 0 ? (
               <View style={styles.emptyState}>
                 <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -1445,11 +1523,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
   },
+  measuredAtRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
   measuredAt: {
     fontFamily: "DMSans-Regular",
     fontSize: 11,
     color: Colors.textTertiary,
-    marginTop: 8,
+  },
+  sourceBadge: {
+    backgroundColor: Colors.skyBg,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  sourceBadgeText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 9,
+    color: Colors.sky,
+  },
+  sourceBadgeManual: {
+    backgroundColor: Colors.gravelLight,
+  },
+  sourceBadgeManualText: {
+    color: Colors.textSecondary,
   },
 
   /* -- Defect Analysis -- */
@@ -1584,6 +1684,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
     color: Colors.textTertiary,
+  },
+
+  /* -- DiFluid button -- */
+  difluidButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: Colors.sky,
+    borderRadius: 8,
+    paddingVertical: 14,
+  },
+  difluidButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 14,
+    color: "#ffffff",
   },
 
   /* -- Empty state -- */

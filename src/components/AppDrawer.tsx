@@ -146,6 +146,14 @@ function ServiceIcon({ color }: { color: string }) {
   );
 }
 
+function BluetoothIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11" />
+    </Svg>
+  );
+}
+
 function ProfileIcon({ color }: { color: string }) {
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -508,6 +516,19 @@ export function AppDrawer() {
                 />
               );
             })}
+          </View>
+
+          {/* Devices */}
+          <SectionHeader title="Devices" />
+          <View style={styles.menuSection}>
+            <MenuRow
+              icon={<BluetoothIcon color={Colors.sky} />}
+              iconBg={Colors.skyBg}
+              label="DiFluid Omix"
+              onPress={() => navigateTo("/difluid")}
+              isLast
+              isActive={isCurrentRoute("/difluid")}
+            />
           </View>
 
           {/* Support */}
