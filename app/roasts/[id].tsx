@@ -1,4 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+
+/* ------------------------------------------------------------------ */
+/*  Tab type                                                            */
+/* ------------------------------------------------------------------ */
+
+type TabKey = "details" | "quality";
 import {
   View,
   Text,
@@ -214,6 +220,7 @@ export default function RoastDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>("details");
   const [difluidMeasurements, setDifluidMeasurements] = useState<DiFluidMeasurementFromApi[]>([]);
   const difluidConnected = useDiFluidStore((s) => s.connectionStatus === "connected" || s.connectionStatus === "measuring");
 
@@ -288,6 +295,16 @@ export default function RoastDetailScreen() {
   const scoreStyle = useMemo(() => {
     return getScoreColor(roast?.cupping_score ?? null);
   }, [roast?.cupping_score]);
+
+  const hasQualityData = useMemo(() => {
+    if (!roast) return false;
+    return !!(
+      roast.cupping_score !== null ||
+      (roast.cupping_samples && roast.cupping_samples.length > 0) ||
+      difluidMeasurements.length > 0 ||
+      difluidConnected
+    );
+  }, [roast, difluidMeasurements, difluidConnected]);
 
   /* -- Loading State -- */
   if (loading) {
@@ -424,475 +441,542 @@ export default function RoastDetailScreen() {
           />
         }
       >
-        {/* 1. Roast Curve Chart */}
-        <View style={detailStyles.card}>
-          <View style={detailStyles.cardHeader}>
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M22 12h-4l-3 9L9 3l-3 9H2"
-                stroke={Colors.sky}
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-            <Text style={detailStyles.cardTitle}>Roast Curve</Text>
-          </View>
-          {roast.curve_data ? (
-            <RoastCurveChart
-              curveData={roast.curve_data}
-              duration={roast.duration}
-              events={roast.events}
-              phases={roast.phases}
-              clipId="roast-plot-clip"
-            />
-          ) : (
-            <View style={detailStyles.emptyCurve}>
-              <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+        {/* Tab Bar */}
+        {hasQualityData ? (
+          <View style={detailStyles.tabBar}>
+            <TouchableOpacity
+              style={[detailStyles.tab, activeTab === "details" && detailStyles.tabActive]}
+              onPress={() => setActiveTab("details")}
+              activeOpacity={0.7}
+            >
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
                 <Path
-                  d="M22 12h-4l-3 9L9 3l-3 9H2"
-                  stroke={Colors.textTertiary}
-                  strokeWidth={1.5}
+                  d="M12 20V10M18 20V4M6 20v-4"
+                  stroke={activeTab === "details" ? Colors.slate : Colors.textTertiary}
+                  strokeWidth={1.8}
                   strokeLinecap="round"
-                  strokeLinejoin="round"
                 />
               </Svg>
-              <Text style={detailStyles.emptyCurveText}>
-                No curve data available
+              <Text style={[detailStyles.tabText, activeTab === "details" && detailStyles.tabTextActive]}>
+                Details
               </Text>
-              <Text style={detailStyles.emptyCurveSubtext}>
-                This roast does not have recorded curve data.
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* 2. Phase Bar */}
-        <PhaseBar phases={roast.phases} duration={roast.duration} />
-
-        {/* 3. Key Metrics Row 1: Start Bean Temp | End Bean Temp | End Air Temp */}
-        <View style={detailStyles.metricsRow}>
-          <StatCard
-            label="START BEAN"
-            value={
-              startBeanTemp !== null ? startBeanTemp.toFixed(0) : "-"
-            }
-            unit={startBeanTemp !== null ? "\u00B0" : ""}
-            color={Colors.sky}
-          />
-          <StatCard
-            label="END BEAN"
-            value={
-              endBeanTemp !== null ? endBeanTemp.toFixed(0) : "-"
-            }
-            unit={endBeanTemp !== null ? "\u00B0" : ""}
-            color={Colors.sky}
-          />
-          <StatCard
-            label="END AIR"
-            value={
-              endAirTemp !== null ? endAirTemp.toFixed(0) : "-"
-            }
-            unit={endAirTemp !== null ? "\u00B0" : ""}
-            color={Colors.boven}
-          />
-        </View>
-
-        {/* 4. Key Metrics Row 2: First Crack | Development | Duration */}
-        <View style={detailStyles.metricsRow}>
-          {firstCrackEvent ? (
-            <>
-              <StatCard
-                label="FIRST CRACK"
-                value={formatDuration(Math.round(firstCrackEvent.timePassed))}
-                unit={
-                  firstCrackTemp !== null
-                    ? ` @ ${firstCrackTemp.toFixed(0)}\u00B0`
-                    : ""
-                }
-                color={Colors.traffic}
-              />
-              <StatCard
-                label="DEVELOPMENT"
-                value={
-                  developmentTime !== null
-                    ? formatDuration(Math.round(developmentTime))
-                    : "-"
-                }
-                unit={
-                  developmentPct !== null
-                    ? ` (${developmentPct.toFixed(0)}%)`
-                    : ""
-                }
-                color={Colors.grape}
-              />
-            </>
-          ) : null}
-          <StatCard
-            label="DURATION"
-            value={formatDuration(roast.duration)}
-            color={Colors.text}
-          />
-        </View>
-
-        {/* 5. Key Metrics Row 3: Start Weight | End Weight | Weight Loss */}
-        <View style={detailStyles.metricsRow}>
-          <StatCard
-            label="START WEIGHT"
-            value={
-              roast.start_weight !== null
-                ? (roast.start_weight / 1000).toFixed(1)
-                : "-"
-            }
-            unit={roast.start_weight !== null ? " kg" : ""}
-          />
-          <StatCard
-            label="END WEIGHT"
-            value={
-              roast.end_weight !== null
-                ? (roast.end_weight / 1000).toFixed(1)
-                : "-"
-            }
-            unit={roast.end_weight !== null ? " kg" : ""}
-          />
-          <StatCard
-            label="LOSS"
-            value={
-              roast.weight_change !== null
-                ? Math.abs(roast.weight_change).toFixed(1)
-                : "-"
-            }
-            unit={roast.weight_change !== null ? "%" : ""}
-            color={Colors.boven}
-          />
-        </View>
-
-        {/* 6. Cupping Score */}
-        {roast.cupping_score !== null ? (
-          <View style={detailStyles.card}>
-            <View style={detailStyles.cardHeader}>
-              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[detailStyles.tab, activeTab === "quality" && detailStyles.tabActive]}
+              onPress={() => setActiveTab("quality")}
+              activeOpacity={0.7}
+            >
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
                 <Path
                   d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                  stroke={scoreStyle.color}
+                  stroke={activeTab === "quality" ? Colors.slate : Colors.textTertiary}
                   strokeWidth={1.8}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </Svg>
-              <Text style={detailStyles.cardTitle}>Cupping Score</Text>
-            </View>
-            <View style={detailStyles.scoreContainer}>
-              <View
-                style={[
-                  detailStyles.scoreBadgeLarge,
-                  { backgroundColor: scoreStyle.bg },
-                ]}
-              >
-                <Text
-                  style={[
-                    detailStyles.scoreValueLarge,
-                    { color: scoreStyle.color },
-                  ]}
-                >
-                  {roast.cupping_score.toFixed(1)}
-                </Text>
-              </View>
-              <Text style={detailStyles.scoreLabel}>
-                {roast.cupping_score >= 90
-                  ? "Outstanding"
-                  : roast.cupping_score >= 85
-                    ? "Excellent"
-                    : roast.cupping_score >= 80
-                      ? "Very Good"
-                      : "Good"}
+              <Text style={[detailStyles.tabText, activeTab === "quality" && detailStyles.tabTextActive]}>
+                Quality
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
         ) : null}
 
-        {/* 7. Green Bean / Blend Card */}
-        {roast.inventory_selections.length > 0 ? (
-          <View style={detailStyles.card}>
-            <View style={detailStyles.cardHeader}>
-              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l5.7 3.2-3.1 3.1-.8-.3c-.4-.1-.8 0-1 .3l-.2.3c-.2.3-.1.7.1 1l1.7 1.7c.3.3.7.3 1 .1l.3-.2c.3-.2.4-.6.3-1l-.3-.8 3.1-3.1 3.2 5.7c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"
-                  stroke={Colors.leaf}
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+        {/* ============ DETAILS TAB ============ */}
+        {activeTab === "details" ? (
+          <>
+            {/* 1. Roast Curve Chart */}
+            <View style={detailStyles.card}>
+              <View style={detailStyles.cardHeader}>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M22 12h-4l-3 9L9 3l-3 9H2"
+                    stroke={Colors.sky}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+                <Text style={detailStyles.cardTitle}>Roast Curve</Text>
+              </View>
+              {roast.curve_data ? (
+                <RoastCurveChart
+                  curveData={roast.curve_data}
+                  duration={roast.duration}
+                  events={roast.events}
+                  phases={roast.phases}
+                  clipId="roast-plot-clip"
                 />
-              </Svg>
-              <Text style={detailStyles.cardTitle}>
-                {roast.inventory_selections.length === 1
-                  ? "Green Bean"
-                  : "Blend"}
-              </Text>
-            </View>
-            {roast.inventory_selections.map((sel, index) => (
-              <TouchableOpacity
-                key={sel.inventory_id}
-                activeOpacity={0.7}
-                onPress={() => router.push(`/inventory/${sel.inventory_id}`)}
-              >
-                {index > 0 ? (
-                  <View style={detailStyles.detailDivider} />
-                ) : null}
-                <View style={detailStyles.inventoryRow}>
-                  <View style={detailStyles.inventoryInfo}>
-                    <Text
-                      style={detailStyles.inventoryName}
-                      numberOfLines={1}
-                    >
-                      {sel.inventory_name}
-                    </Text>
-                    <Text style={detailStyles.inventoryNumber}>
-                      {sel.formatted_inventory_number}
-                    </Text>
-                  </View>
-                  <View style={detailStyles.inventoryRight}>
-                    <Text style={detailStyles.inventoryWeight}>
-                      {(sel.quantity_grams / 1000).toFixed(1)} kg
-                    </Text>
-                    <Svg
-                      width={14}
-                      height={14}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <Path
-                        d="M9 18l6-6-6-6"
-                        stroke={Colors.textTertiary}
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </Svg>
-                  </View>
+              ) : (
+                <View style={detailStyles.emptyCurve}>
+                  <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M22 12h-4l-3 9L9 3l-3 9H2"
+                      stroke={Colors.textTertiary}
+                      strokeWidth={1.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={detailStyles.emptyCurveText}>
+                    No curve data available
+                  </Text>
+                  <Text style={detailStyles.emptyCurveSubtext}>
+                    This roast does not have recorded curve data.
+                  </Text>
                 </View>
-                <View style={detailStyles.inventoryBarBg}>
+              )}
+            </View>
+
+            {/* 2. Phase Bar */}
+            <PhaseBar phases={roast.phases} duration={roast.duration} />
+
+            {/* 3. Key Metrics Row 1: Start Bean Temp | End Bean Temp | End Air Temp */}
+            <View style={detailStyles.metricsRow}>
+              <StatCard
+                label="START BEAN"
+                value={
+                  startBeanTemp !== null ? startBeanTemp.toFixed(0) : "-"
+                }
+                unit={startBeanTemp !== null ? "\u00B0" : ""}
+                color={Colors.sky}
+              />
+              <StatCard
+                label="END BEAN"
+                value={
+                  endBeanTemp !== null ? endBeanTemp.toFixed(0) : "-"
+                }
+                unit={endBeanTemp !== null ? "\u00B0" : ""}
+                color={Colors.sky}
+              />
+              <StatCard
+                label="END AIR"
+                value={
+                  endAirTemp !== null ? endAirTemp.toFixed(0) : "-"
+                }
+                unit={endAirTemp !== null ? "\u00B0" : ""}
+                color={Colors.boven}
+              />
+            </View>
+
+            {/* 4. Key Metrics Row 2: First Crack | Development | Duration */}
+            <View style={detailStyles.metricsRow}>
+              {firstCrackEvent ? (
+                <>
+                  <StatCard
+                    label="FIRST CRACK"
+                    value={formatDuration(Math.round(firstCrackEvent.timePassed))}
+                    unit={
+                      firstCrackTemp !== null
+                        ? ` @ ${firstCrackTemp.toFixed(0)}\u00B0`
+                        : ""
+                    }
+                    color={Colors.traffic}
+                  />
+                  <StatCard
+                    label="DEVELOPMENT"
+                    value={
+                      developmentTime !== null
+                        ? formatDuration(Math.round(developmentTime))
+                        : "-"
+                    }
+                    unit={
+                      developmentPct !== null
+                        ? ` (${developmentPct.toFixed(0)}%)`
+                        : ""
+                    }
+                    color={Colors.grape}
+                  />
+                </>
+              ) : null}
+              <StatCard
+                label="DURATION"
+                value={formatDuration(roast.duration)}
+                color={Colors.text}
+              />
+            </View>
+
+            {/* 5. Key Metrics Row 3: Start Weight | End Weight | Weight Loss */}
+            <View style={detailStyles.metricsRow}>
+              <StatCard
+                label="START WEIGHT"
+                value={
+                  roast.start_weight !== null
+                    ? (roast.start_weight / 1000).toFixed(1)
+                    : "-"
+                }
+                unit={roast.start_weight !== null ? " kg" : ""}
+              />
+              <StatCard
+                label="END WEIGHT"
+                value={
+                  roast.end_weight !== null
+                    ? (roast.end_weight / 1000).toFixed(1)
+                    : "-"
+                }
+                unit={roast.end_weight !== null ? " kg" : ""}
+              />
+              <StatCard
+                label="LOSS"
+                value={
+                  roast.weight_change !== null
+                    ? Math.abs(roast.weight_change).toFixed(1)
+                    : "-"
+                }
+                unit={roast.weight_change !== null ? "%" : ""}
+                color={Colors.boven}
+              />
+            </View>
+
+            {/* 6. Green Bean / Blend Card */}
+            {roast.inventory_selections.length > 0 ? (
+              <View style={detailStyles.card}>
+                <View style={detailStyles.cardHeader}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l5.7 3.2-3.1 3.1-.8-.3c-.4-.1-.8 0-1 .3l-.2.3c-.2.3-.1.7.1 1l1.7 1.7c.3.3.7.3 1 .1l.3-.2c.3-.2.4-.6.3-1l-.3-.8 3.1-3.1 3.2 5.7c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"
+                      stroke={Colors.leaf}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={detailStyles.cardTitle}>
+                    {roast.inventory_selections.length === 1
+                      ? "Green Bean"
+                      : "Blend"}
+                  </Text>
+                </View>
+                {roast.inventory_selections.map((sel, index) => (
+                  <TouchableOpacity
+                    key={sel.inventory_id}
+                    activeOpacity={0.7}
+                    onPress={() => router.push(`/inventory/${sel.inventory_id}`)}
+                  >
+                    {index > 0 ? (
+                      <View style={detailStyles.detailDivider} />
+                    ) : null}
+                    <View style={detailStyles.inventoryRow}>
+                      <View style={detailStyles.inventoryInfo}>
+                        <Text
+                          style={detailStyles.inventoryName}
+                          numberOfLines={1}
+                        >
+                          {sel.inventory_name}
+                        </Text>
+                        <Text style={detailStyles.inventoryNumber}>
+                          {sel.formatted_inventory_number}
+                        </Text>
+                      </View>
+                      <View style={detailStyles.inventoryRight}>
+                        <Text style={detailStyles.inventoryWeight}>
+                          {(sel.quantity_grams / 1000).toFixed(1)} kg
+                        </Text>
+                        <Svg
+                          width={14}
+                          height={14}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <Path
+                            d="M9 18l6-6-6-6"
+                            stroke={Colors.textTertiary}
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </Svg>
+                      </View>
+                    </View>
+                    <View style={detailStyles.inventoryBarBg}>
+                      <View
+                        style={[
+                          detailStyles.inventoryBarFill,
+                          {
+                            width: `${sel.percentage}%`,
+                            backgroundColor: Colors.leaf,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={detailStyles.inventoryPct}>
+                      {sel.percentage.toFixed(0)}%
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+
+            {/* 7. Roast Info Card */}
+            <View style={detailStyles.card}>
+              <View style={detailStyles.cardHeader}>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M12 20V10M18 20V4M6 20v-4"
+                    stroke={Colors.grape}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+                <Text style={detailStyles.cardTitle}>Roast Info</Text>
+              </View>
+
+              <View style={detailStyles.detailRow}>
+                <Text style={detailStyles.detailLabel}>Profile</Text>
+                <Text style={detailStyles.detailValue}>
+                  {roast.profile?.name ?? roast.profile_name}
+                </Text>
+              </View>
+
+              <View style={detailStyles.detailDivider} />
+
+              <View style={detailStyles.detailRow}>
+                <Text style={detailStyles.detailLabel}>Device</Text>
+                <Text style={detailStyles.detailValue}>{roast.device_name}</Text>
+              </View>
+
+              {roast.bean_type ? (
+                <>
+                  <View style={detailStyles.detailDivider} />
+                  <View style={detailStyles.detailRow}>
+                    <Text style={detailStyles.detailLabel}>Bean Type</Text>
+                    <Text style={detailStyles.detailValue}>
+                      {roast.bean_type}
+                    </Text>
+                  </View>
+                </>
+              ) : null}
+
+              <View style={detailStyles.detailDivider} />
+
+              <View style={detailStyles.detailRow}>
+                <Text style={detailStyles.detailLabel}>Date</Text>
+                <Text style={detailStyles.detailValue}>
+                  {formatDate(roast.roasted_at)}
+                </Text>
+              </View>
+
+              {roast.is_favorite ? (
+                <>
+                  <View style={detailStyles.detailDivider} />
+                  <View style={detailStyles.detailRow}>
+                    <Text style={detailStyles.detailLabel}>Favorite</Text>
+                    <View style={detailStyles.favBadge}>
+                      <Text style={detailStyles.favStar}>{"\u2605"}</Text>
+                      <Text style={detailStyles.favText}>Yes</Text>
+                    </View>
+                  </View>
+                </>
+              ) : null}
+            </View>
+
+            {/* 8. Comment Card */}
+            {roast.comment ? (
+              <View style={detailStyles.card}>
+                <View style={detailStyles.cardHeader}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+                      stroke={Colors.textSecondary}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={detailStyles.cardTitle}>Comment</Text>
+                </View>
+                <Text style={detailStyles.commentText}>{roast.comment}</Text>
+              </View>
+            ) : null}
+          </>
+        ) : null}
+
+        {/* ============ QUALITY TAB ============ */}
+        {activeTab === "quality" ? (
+          <>
+            {/* Cupping Score */}
+            {roast.cupping_score !== null ? (
+              <View style={detailStyles.card}>
+                <View style={detailStyles.cardHeader}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                      stroke={scoreStyle.color}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={detailStyles.cardTitle}>Cupping Score</Text>
+                </View>
+                <View style={detailStyles.scoreContainer}>
                   <View
                     style={[
-                      detailStyles.inventoryBarFill,
-                      {
-                        width: `${sel.percentage}%`,
-                        backgroundColor: Colors.leaf,
-                      },
+                      detailStyles.scoreBadgeLarge,
+                      { backgroundColor: scoreStyle.bg },
                     ]}
-                  />
-                </View>
-                <Text style={detailStyles.inventoryPct}>
-                  {sel.percentage.toFixed(0)}%
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : null}
-
-        {/* 8. Roast Info Card */}
-        <View style={detailStyles.card}>
-          <View style={detailStyles.cardHeader}>
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 20V10M18 20V4M6 20v-4"
-                stroke={Colors.grape}
-                strokeWidth={1.8}
-                strokeLinecap="round"
-              />
-            </Svg>
-            <Text style={detailStyles.cardTitle}>Roast Info</Text>
-          </View>
-
-          <View style={detailStyles.detailRow}>
-            <Text style={detailStyles.detailLabel}>Profile</Text>
-            <Text style={detailStyles.detailValue}>
-              {roast.profile?.name ?? roast.profile_name}
-            </Text>
-          </View>
-
-          <View style={detailStyles.detailDivider} />
-
-          <View style={detailStyles.detailRow}>
-            <Text style={detailStyles.detailLabel}>Device</Text>
-            <Text style={detailStyles.detailValue}>{roast.device_name}</Text>
-          </View>
-
-          {roast.bean_type ? (
-            <>
-              <View style={detailStyles.detailDivider} />
-              <View style={detailStyles.detailRow}>
-                <Text style={detailStyles.detailLabel}>Bean Type</Text>
-                <Text style={detailStyles.detailValue}>
-                  {roast.bean_type}
-                </Text>
-              </View>
-            </>
-          ) : null}
-
-          <View style={detailStyles.detailDivider} />
-
-          <View style={detailStyles.detailRow}>
-            <Text style={detailStyles.detailLabel}>Date</Text>
-            <Text style={detailStyles.detailValue}>
-              {formatDate(roast.roasted_at)}
-            </Text>
-          </View>
-
-          {roast.is_favorite ? (
-            <>
-              <View style={detailStyles.detailDivider} />
-              <View style={detailStyles.detailRow}>
-                <Text style={detailStyles.detailLabel}>Favorite</Text>
-                <View style={detailStyles.favBadge}>
-                  <Text style={detailStyles.favStar}>{"\u2605"}</Text>
-                  <Text style={detailStyles.favText}>Yes</Text>
+                  >
+                    <Text
+                      style={[
+                        detailStyles.scoreValueLarge,
+                        { color: scoreStyle.color },
+                      ]}
+                    >
+                      {roast.cupping_score.toFixed(1)}
+                    </Text>
+                  </View>
+                  <Text style={detailStyles.scoreLabel}>
+                    {roast.cupping_score >= 90
+                      ? "Outstanding"
+                      : roast.cupping_score >= 85
+                        ? "Excellent"
+                        : roast.cupping_score >= 80
+                          ? "Very Good"
+                          : "Good"}
+                  </Text>
                 </View>
               </View>
-            </>
-          ) : null}
-        </View>
+            ) : null}
 
-        {/* 9. Linked Cupping Sessions */}
-        {roast.cupping_samples.length > 0 ? (
-          <View style={detailStyles.card}>
-            <View style={detailStyles.cardHeader}>
-              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M17 8h1a4 4 0 110 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 2v4M10 2v4M14 2v4"
-                  stroke={Colors.grape}
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-              <Text style={detailStyles.cardTitle}>Cupping Sessions</Text>
-              <Text style={detailStyles.cardCount}>
-                {roast.cupping_samples.length}
-              </Text>
-            </View>
-            {roast.cupping_samples.map((sample, index) => {
-              const sampleScore = getScoreColor(sample.average_score);
-              return (
-                <TouchableOpacity
-                  key={sample.id}
-                  activeOpacity={0.7}
-                  onPress={() => router.push(`/quality/${sample.session_id}`)}
-                >
-                  {index > 0 ? (
-                    <View style={detailStyles.cuppingDivider} />
-                  ) : null}
-                  <View style={detailStyles.cuppingRow}>
-                    <View style={detailStyles.cuppingLeft}>
-                      <Text
-                        style={detailStyles.cuppingSampleCode}
-                        numberOfLines={1}
-                      >
-                        {sample.sample_code}
-                      </Text>
-                    </View>
-                    <View style={detailStyles.cuppingRight}>
-                      {sample.average_score !== null ? (
-                        <View
-                          style={[
-                            detailStyles.cuppingScoreBadge,
-                            { backgroundColor: sampleScore.bg },
-                          ]}
-                        >
+            {/* Linked Cupping Sessions */}
+            {roast.cupping_samples.length > 0 ? (
+              <View style={detailStyles.card}>
+                <View style={detailStyles.cardHeader}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M17 8h1a4 4 0 110 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 2v4M10 2v4M14 2v4"
+                      stroke={Colors.grape}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={detailStyles.cardTitle}>Cupping Sessions</Text>
+                  <Text style={detailStyles.cardCount}>
+                    {roast.cupping_samples.length}
+                  </Text>
+                </View>
+                {roast.cupping_samples.map((sample, index) => {
+                  const sampleScore = getScoreColor(sample.average_score);
+                  return (
+                    <TouchableOpacity
+                      key={sample.id}
+                      activeOpacity={0.7}
+                      onPress={() => router.push(`/quality/${sample.session_id}`)}
+                    >
+                      {index > 0 ? (
+                        <View style={detailStyles.cuppingDivider} />
+                      ) : null}
+                      <View style={detailStyles.cuppingRow}>
+                        <View style={detailStyles.cuppingLeft}>
                           <Text
-                            style={[
-                              detailStyles.cuppingScoreText,
-                              { color: sampleScore.color },
-                            ]}
+                            style={detailStyles.cuppingSampleCode}
+                            numberOfLines={1}
                           >
-                            {sample.average_score.toFixed(1)}
+                            {sample.sample_code}
                           </Text>
                         </View>
-                      ) : (
-                        <Text style={detailStyles.cuppingNoScore}>-</Text>
-                      )}
-                      <Svg
-                        width={14}
-                        height={14}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <Path
-                          d="M9 18l6-6-6-6"
-                          stroke={Colors.textTertiary}
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </Svg>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ) : null}
+                        <View style={detailStyles.cuppingRight}>
+                          {sample.average_score !== null ? (
+                            <View
+                              style={[
+                                detailStyles.cuppingScoreBadge,
+                                { backgroundColor: sampleScore.bg },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  detailStyles.cuppingScoreText,
+                                  { color: sampleScore.color },
+                                ]}
+                              >
+                                {sample.average_score.toFixed(1)}
+                              </Text>
+                            </View>
+                          ) : (
+                            <Text style={detailStyles.cuppingNoScore}>-</Text>
+                          )}
+                          <Svg
+                            width={14}
+                            height={14}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <Path
+                              d="M9 18l6-6-6-6"
+                              stroke={Colors.textTertiary}
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </Svg>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : null}
 
-        {/* 9.5. DiFluid Measurements */}
-        {difluidMeasurements.length > 0 ? (
-          <View style={detailStyles.card}>
-            <View style={detailStyles.cardHeader}>
-              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"
-                  stroke={Colors.sky}
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-              <Text style={detailStyles.cardTitle}>DiFluid Measurements</Text>
-              <Text style={detailStyles.cardCount}>{difluidMeasurements.length}</Text>
-            </View>
-            <View style={{ gap: 10 }}>
-              {difluidMeasurements.map((m) => (
-                <MeasurementCardFromApi key={m.id} measurement={m} />
-              ))}
-            </View>
-          </View>
-        ) : null}
+            {/* DiFluid Measurements */}
+            {difluidMeasurements.length > 0 ? (
+              <View style={detailStyles.card}>
+                <View style={detailStyles.cardHeader}>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"
+                      stroke={Colors.sky}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                  <Text style={detailStyles.cardTitle}>Measurements</Text>
+                  <Text style={detailStyles.cardCount}>{difluidMeasurements.length}</Text>
+                </View>
+                <View style={{ gap: 10 }}>
+                  {difluidMeasurements.map((m) => (
+                    <MeasurementCardFromApi key={m.id} measurement={m} />
+                  ))}
+                </View>
+              </View>
+            ) : null}
 
-        {/* Take Measurement Button */}
-        {difluidConnected ? (
-          <TouchableOpacity
-            style={detailStyles.difluidButton}
-            activeOpacity={0.7}
-            onPress={() =>
-              router.push({
-                pathname: "/difluid/measure",
-                params: { roastId: id, itemName: roast.name },
-              })
-            }
-          >
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11" />
-            </Svg>
-            <Text style={detailStyles.difluidButtonText}>Take DiFluid Measurement</Text>
-          </TouchableOpacity>
-        ) : null}
+            {/* Take Measurement Button */}
+            {difluidConnected ? (
+              <TouchableOpacity
+                style={detailStyles.difluidButton}
+                activeOpacity={0.7}
+                onPress={() =>
+                  router.push({
+                    pathname: "/difluid/measure",
+                    params: { roastId: id, itemName: roast.name },
+                  })
+                }
+              >
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11" />
+                </Svg>
+                <Text style={detailStyles.difluidButtonText}>Take DiFluid Measurement</Text>
+              </TouchableOpacity>
+            ) : null}
 
-        {/* 10. Comment Card */}
-        {roast.comment ? (
-          <View style={detailStyles.card}>
-            <View style={detailStyles.cardHeader}>
-              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-                  stroke={Colors.textSecondary}
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-              <Text style={detailStyles.cardTitle}>Comment</Text>
-            </View>
-            <Text style={detailStyles.commentText}>{roast.comment}</Text>
-          </View>
+            {/* Empty state when no quality data cards shown */}
+            {roast.cupping_score === null &&
+              roast.cupping_samples.length === 0 &&
+              difluidMeasurements.length === 0 &&
+              !difluidConnected ? (
+              <View style={detailStyles.emptyQuality}>
+                <Svg width={48} height={48} viewBox="0 0 24 24" fill="none" stroke={Colors.textTertiary} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </Svg>
+                <Text style={detailStyles.emptyQualityText}>No quality data yet</Text>
+                <Text style={detailStyles.emptyQualitySubtext}>
+                  Connect a DiFluid device or add cupping scores to see quality data here.
+                </Text>
+              </View>
+            ) : null}
+          </>
         ) : null}
       </ScrollView>
     </View>
@@ -1143,6 +1227,56 @@ const detailStyles = StyleSheet.create({
     fontFamily: "DMSans-Medium",
     fontSize: 12,
     color: Colors.sun,
+  },
+
+  /* -- Tab Bar -- */
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: Colors.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  tabActive: {
+    backgroundColor: Colors.bg,
+  },
+  tabText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 13,
+    color: Colors.textTertiary,
+  },
+  tabTextActive: {
+    color: Colors.slate,
+  },
+
+  /* -- Empty Quality -- */
+  emptyQuality: {
+    alignItems: "center",
+    paddingTop: 40,
+    gap: 8,
+  },
+  emptyQualityText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 16,
+    color: Colors.text,
+    marginTop: 8,
+  },
+  emptyQualitySubtext: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 13,
+    color: Colors.textTertiary,
+    textAlign: "center",
+    paddingHorizontal: 20,
   },
 
   /* -- DiFluid button -- */
