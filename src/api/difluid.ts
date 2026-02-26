@@ -11,7 +11,7 @@ import type {
 
 interface StoreMeasurementPayload {
   measurable_type?: "inventory" | "roast";
-  measurable_id?: number;
+  measurable_id?: string | number;
   coffee_type: string;
   moisture?: number;
   water_activity?: number;
@@ -93,7 +93,7 @@ export async function batchStoreMeasurements(
 export async function linkMeasurement(
   id: number,
   measurableType: "inventory" | "roast",
-  measurableId: number
+  measurableId: string | number
 ): Promise<DiFluidMeasurementFromApi> {
   const response = await apiClient.patch<
     ApiResponse<DiFluidMeasurementFromApi>

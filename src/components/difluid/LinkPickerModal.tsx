@@ -19,13 +19,13 @@ interface LinkPickerModalProps {
   onClose: () => void;
   onSelect: (selection: {
     type: "inventory" | "roast";
-    id: number;
+    id: string | number;
     name: string;
   }) => void;
 }
 
 interface SearchItem {
-  id: number;
+  id: string | number;
   name?: string;
   profile_name?: string;
   created_at?: string;

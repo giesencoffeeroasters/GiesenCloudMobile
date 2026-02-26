@@ -869,7 +869,7 @@ export interface DiFluidMeasurement {
   altitude?: number;
   beanType?: number;
   linkedInventoryId?: number;
-  linkedRoastId?: number;
+  linkedRoastId?: string | number;
   deviceIdentifier?: string;
   measuredAt: string;
   syncedAt?: string;

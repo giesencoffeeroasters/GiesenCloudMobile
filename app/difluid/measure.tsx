@@ -97,7 +97,7 @@ export default function DiFluidMeasureScreen() {
     const linkedId = params.inventoryId
       ? Number(params.inventoryId)
       : params.roastId
-        ? Number(params.roastId)
+        ? params.roastId
         : undefined;
 
     try {

@@ -69,7 +69,7 @@ export default function MeasurementsScreen() {
 
   async function handleLinkSelect(selection: {
     type: "inventory" | "roast";
-    id: number;
+    id: string | number;
     name: string;
   }) {
     if (!linkingMeasurementId) return;

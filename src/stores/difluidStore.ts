@@ -64,13 +64,13 @@ interface DiFluidState {
   measure: (coffeeType: DiFluidCoffeeType) => Promise<void>;
   saveMeasurement: (
     linkedType?: "inventory" | "roast",
-    linkedId?: number
+    linkedId?: string | number
   ) => Promise<void>;
   syncPending: () => Promise<void>;
   linkMeasurement: (
     measurementId: number,
     type: "inventory" | "roast",
-    measurableId: number
+    measurableId: string | number
   ) => Promise<void>;
   clearCurrent: () => void;
 }
