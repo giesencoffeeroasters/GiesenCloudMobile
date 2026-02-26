@@ -355,6 +355,11 @@ function StepCompletionRow({
       {
         text: "Camera",
         onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Permission Required", "Camera access is needed to take photos.");
+            return;
+          }
           const result = await ImagePicker.launchCameraAsync({
             quality: 0.8,
           });
@@ -366,6 +371,11 @@ function StepCompletionRow({
       {
         text: "Photo Library",
         onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Permission Required", "Photo library access is needed to select photos.");
+            return;
+          }
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ["images"],
             quality: 0.8,

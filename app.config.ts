@@ -8,18 +8,21 @@ const envConfig = {
     apiUrl: "https://giesencloud-development-d1q0tt.laravel.cloud/api/mobile/v1",
     reverbHost: "reverb.test",
     reverbKey: "laravel-herd",
+    bundleIdentifier: "com.giesen.cloud.dev",
   },
   staging: {
     name: "GiesenCloud (Staging)",
     apiUrl: "https://staging.giesen.cloud/api/mobile/v1",
     reverbHost: "reverb.staging.giesen.cloud",
     reverbKey: "laravel-herd",
+    bundleIdentifier: "com.giesen.cloud.staging",
   },
   production: {
     name: "GiesenCloud",
     apiUrl: "https://giesen.cloud/api/mobile/v1",
     reverbHost: "reverb.giesen.cloud",
     reverbKey: "laravel-herd",
+    bundleIdentifier: "com.giesen.cloud",
   },
 } as const;
 
@@ -35,6 +38,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   scheme: "giesencloud",
+  updates: {
+    url: "https://u.expo.dev/17d21c66-42bf-44f3-9e7f-d7b4039c5050",
+  },
+  runtimeVersion: {
+    policy: "appVersion",
+  },
   splash: {
     image: "./assets/splash-icon.png",
     resizeMode: "contain",
@@ -42,7 +51,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   ios: {
     supportsTablet: false,
-    bundleIdentifier: "com.giesen.cloud",
+    bundleIdentifier: env.bundleIdentifier,
     icon: {
       dark: "./assets/icon-dark.png",
       tinted: "./assets/icon-tinted.png",
@@ -51,6 +60,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       ITSAppUsesNonExemptEncryption: false,
       NSBluetoothAlwaysUsageDescription:
         "GiesenCloud uses Bluetooth to connect to DiFluid Omix devices for coffee quality measurements.",
+      NSCameraUsageDescription:
+        "GiesenCloud uses the camera to take photos for maintenance evidence, service appointments, and support tickets.",
+      NSPhotoLibraryUsageDescription:
+        "GiesenCloud accesses your photo library to attach photos to maintenance tasks, service appointments, and support tickets.",
     },
   },
   android: {
@@ -75,6 +88,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         sounds: [],
       },
     ],
+    "expo-image-picker",
     "react-native-ble-plx",
   ],
   extra: {
