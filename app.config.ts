@@ -5,7 +5,7 @@ const APP_ENV = process.env.APP_ENV || "development";
 const envConfig = {
   development: {
     name: "GiesenCloud (Dev)",
-    apiUrl: "https://giesencloud.test/api/mobile/v1",
+    apiUrl: "https://giesencloud-development-d1q0tt.laravel.cloud/api/mobile/v1",
     reverbHost: "reverb.test",
     reverbKey: "laravel-herd",
   },
@@ -51,17 +51,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       ITSAppUsesNonExemptEncryption: false,
       NSBluetoothAlwaysUsageDescription:
         "GiesenCloud uses Bluetooth to connect to DiFluid Omix devices for coffee quality measurements.",
-      ...(APP_ENV === "development" && {
-        NSAppTransportSecurity: {
-          NSAllowsArbitraryLoads: false,
-          NSExceptionDomains: {
-            "giesencloud.test": {
-              NSExceptionAllowsInsecureHTTPLoads: true,
-              NSIncludesSubdomains: true,
-            },
-          },
-        },
-      }),
     },
   },
   android: {

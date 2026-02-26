@@ -14,6 +14,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "@/stores/authStore";
 import { useGiesenLive } from "@/hooks/useGiesenLive";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { initActiveServer } from "@/constants/config";
 
 // Suppress Expo Go push notification warnings (not applicable in dev builds)
 LogBox.ignoreLogs([
@@ -143,7 +144,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    loadUser();
+    initActiveServer().then(() => loadUser());
   }, []);
 
   // Keep WebSocket connection alive for Giesen Live data across all screens

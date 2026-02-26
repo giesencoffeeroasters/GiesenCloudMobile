@@ -59,6 +59,7 @@ export default function DiFluidDeviceScreen() {
     stopScan,
     connect,
     disconnect,
+    autoConnect,
   } = useDiFluidStore();
 
   const [recentMeasurements, setRecentMeasurements] = useState<DiFluidMeasurementFromApi[]>([]);
@@ -66,6 +67,11 @@ export default function DiFluidDeviceScreen() {
   const isScanning = connectionStatus === "scanning";
   const isConnected = connectionStatus === "connected" || connectionStatus === "measuring";
   const isConnecting = connectionStatus === "connecting";
+
+  // Auto-scan and reconnect to last device on mount
+  useEffect(() => {
+    autoConnect();
+  }, []);
 
   // Fetch device info when connected
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,14 +12,30 @@ import {
 import { Colors } from "@/constants/colors";
 import { useAuthStore } from "@/stores/authStore";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import {
+  BUILD_ENV,
+  SERVER_OPTIONS,
+  getActiveEnv,
+  setActiveEnv,
+  type AppEnv,
+} from "@/constants/config";
+
+const SHOW_SERVER_PICKER = BUILD_ENV !== "production";
+const ENV_KEYS: AppEnv[] = ["development", "staging", "production"];
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedEnv, setSelectedEnv] = useState<AppEnv>(getActiveEnv());
 
   const login = useAuthStore((state) => state.login);
+
+  const handleEnvChange = (env: AppEnv) => {
+    setSelectedEnv(env);
+    setActiveEnv(env);
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -60,6 +76,44 @@ export default function LoginScreen() {
 
         <Text style={styles.title}>GiesenCloud</Text>
         <Text style={styles.subtitle}>Sign in to your account</Text>
+
+        {SHOW_SERVER_PICKER && (
+          <View style={styles.serverPicker}>
+            {ENV_KEYS.map((env) => (
+              <TouchableOpacity
+                key={env}
+                style={[
+                  styles.serverOption,
+                  selectedEnv === env && styles.serverOptionActive,
+                ]}
+                activeOpacity={0.7}
+                onPress={() => handleEnvChange(env)}
+              >
+                <View
+                  style={[
+                    styles.serverDot,
+                    {
+                      backgroundColor:
+                        env === "development"
+                          ? Colors.sky
+                          : env === "staging"
+                          ? Colors.sun
+                          : Colors.leaf,
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.serverLabel,
+                    selectedEnv === env && styles.serverLabelActive,
+                  ]}
+                >
+                  {SERVER_OPTIONS[env].label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {error && (
           <View style={styles.errorContainer}>
@@ -155,6 +209,42 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 32,
   },
+  /* Server picker */
+  serverPicker: {
+    flexDirection: "row",
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 3,
+    marginBottom: 20,
+  },
+  serverOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  serverOptionActive: {
+    backgroundColor: Colors.slate,
+  },
+  serverDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  serverLabel: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  serverLabelActive: {
+    color: "#ffffff",
+  },
+  /* Error */
   errorContainer: {
     backgroundColor: "#fef2f2",
     borderWidth: 1,
@@ -170,6 +260,7 @@ const styles = StyleSheet.create({
     color: Colors.traffic,
     textAlign: "center",
   },
+  /* Form */
   form: {
     gap: 16,
   },

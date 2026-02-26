@@ -4,6 +4,7 @@
 
 import { Alert } from "react-native";
 import { create } from "zustand";
+import * as SecureStore from "expo-secure-store";
 import type {
   DiFluidDevice,
   DiFluidConnectionStatus,
@@ -23,6 +24,8 @@ import {
   storeMeasurement,
   batchStoreMeasurements,
 } from "@/api/difluid";
+
+const LAST_DEVICE_KEY = "difluid_last_device";
 
 /* ------------------------------------------------------------------ */
 /*  Store Interface                                                    */
@@ -56,6 +59,7 @@ interface DiFluidState {
   stopScan: () => void;
   connect: (deviceId: string) => Promise<void>;
   disconnect: () => Promise<void>;
+  autoConnect: () => Promise<void>;
   measure: (coffeeType: DiFluidCoffeeType) => Promise<void>;
   saveMeasurement: (
     linkedType?: "inventory" | "roast",
@@ -260,6 +264,9 @@ export const useDiFluidStore = create<DiFluidState>((set, get) => ({
         connectionStatus: "connected",
         connectedDevice: device ?? { id: deviceId, name: "Omix", rssi: -100 },
       });
+
+      // Persist device ID for auto-reconnect
+      SecureStore.setItemAsync(LAST_DEVICE_KEY, deviceId).catch(() => {});
     } catch (error) {
       console.error("[DiFluid] Connection failed:", error);
       set({ connectionStatus: "disconnected" });
@@ -273,6 +280,51 @@ export const useDiFluidStore = create<DiFluidState>((set, get) => ({
       connectionStatus: "disconnected",
       connectedDevice: null,
     });
+  },
+
+  autoConnect: async () => {
+    const { connectionStatus, connect } = get();
+    if (connectionStatus !== "disconnected") return;
+
+    const granted = await requestBlePermissions();
+    if (!granted) return;
+
+    const lastDeviceId = await SecureStore.getItemAsync(LAST_DEVICE_KEY).catch(() => null);
+
+    set({ connectionStatus: "scanning", scanResults: [], scanDiagnostic: "" });
+
+    // Auto-scan; if last device found, auto-connect
+    _stopScan = bleScan(
+      (device: ScannedDevice) => {
+        set((state) => {
+          if (state.scanResults.some((d) => d.id === device.id)) return state;
+          return { scanResults: [...state.scanResults, device] };
+        });
+
+        // Auto-connect to the last known device
+        if (lastDeviceId && device.id === lastDeviceId) {
+          _stopScan?.();
+          _stopScan = null;
+          connect(device.id).catch(() => {});
+        }
+      },
+      () => {
+        set({ connectionStatus: "disconnected" });
+      },
+      (diagnostic) => {
+        set({ scanDiagnostic: diagnostic });
+      }
+    );
+
+    // Stop scanning after 10s if nothing auto-connected
+    setTimeout(() => {
+      const { connectionStatus: current } = get();
+      if (current === "scanning") {
+        _stopScan?.();
+        _stopScan = null;
+        set({ connectionStatus: "disconnected" });
+      }
+    }, 10_000);
   },
 
   measure: async (coffeeType: DiFluidCoffeeType) => {
