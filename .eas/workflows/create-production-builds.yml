@@ -9,3 +9,9 @@ jobs:
     type: build
     params:
       platform: ios
+  submit_ios:
+    type: submit
+    needs: [build_ios]
+    params:
+      platform: ios
+      build_id: ${ needs.build_ios.output.build_id }
