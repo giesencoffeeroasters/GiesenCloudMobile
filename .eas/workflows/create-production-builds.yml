@@ -14,10 +14,10 @@ jobs:
     needs: [build_android]
     params:
       platform: android
-      build_id: ${ needs.build_android.output.build_id }
+      build_id: ${{ needs.build_android.outputs.build_id }}
   submit_ios:
     type: submit
     needs: [build_ios]
     params:
       platform: ios
-      build_id: ${ needs.build_ios.output.build_id }
+      build_id: ${{ needs.build_ios.outputs.build_id }}
