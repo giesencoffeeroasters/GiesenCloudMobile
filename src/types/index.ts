@@ -147,8 +147,13 @@ export interface InventoryItem {
   id: number;
   name: string;
   formatted_inventory_number: string;
+  unit_type: 'weight' | 'pieces' | 'volume';
+  current_quantity: number;
+  /** @deprecated Use current_quantity instead */
   current_quantity_grams: number;
-  low_stock_threshold_grams: number;
+  low_stock_threshold: number | null;
+  /** @deprecated Use low_stock_threshold instead */
+  low_stock_threshold_grams: number | null;
   stock_status: "ok" | "low" | "critical";
   supplier: {
     id: number;
@@ -180,6 +185,8 @@ export interface InventoryItem {
   size_grade?: string | null;
   sku?: string | null;
   lot_code?: string | null;
+  price_per_unit?: number | null;
+  /** @deprecated Use price_per_unit instead */
   price_per_kg?: number | null;
   currency?: string | null;
   notes?: string | null;
@@ -233,7 +240,11 @@ export interface InventoryTransaction {
   type_code: string | null;
   direction: "in" | "out" | "neutral" | null;
   quantity: number;
+  old_quantity: number | null;
+  new_quantity: number;
+  /** @deprecated Use old_quantity instead */
   old_quantity_grams: number | null;
+  /** @deprecated Use new_quantity instead */
   new_quantity_grams: number;
   remarks: string | null;
   source: string | null;

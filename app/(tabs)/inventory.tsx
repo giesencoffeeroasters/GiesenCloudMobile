@@ -27,6 +27,7 @@ import {
   ApiResponse,
   PaginatedResponse,
 } from "@/types/index";
+import { formatQuantity, getUnitLabel, convertToBaseUnit, convertFromBaseUnit } from "@/utils/unitConversion";
 
 type FilterOption = "All" | "Green Beans" | "Roasted" | "Blends";
 type ViewMode = "list" | "grid";
@@ -107,13 +108,15 @@ export default function InventoryScreen() {
   const [adjustReason, setAdjustReason] = useState("");
   const [adjustSubmitting, setAdjustSubmitting] = useState(false);
 
-  const currentWeightKg = adjustItem
-    ? Math.round((adjustItem.current_quantity_grams / 1000) * 10) / 10
+  const adjustUnitType = adjustItem?.unit_type ?? 'weight';
+  const adjustUnitLabel = getUnitLabel(adjustUnitType);
+  const currentDisplayQty = adjustItem
+    ? Math.round(convertFromBaseUnit(adjustItem.current_quantity, adjustUnitType) * 10) / 10
     : 0;
-  const newWeightKg =
+  const newDisplayQty =
     adjustMode === "add"
-      ? Math.round((currentWeightKg + adjustAmount) * 10) / 10
-      : Math.round((currentWeightKg - adjustAmount) * 10) / 10;
+      ? Math.round((currentDisplayQty + adjustAmount) * 10) / 10
+      : Math.round((currentDisplayQty - adjustAmount) * 10) / 10;
 
   const fetchInventory = useCallback(async (search?: string) => {
     try {
@@ -234,10 +237,10 @@ export default function InventoryScreen() {
       return;
     }
 
-    if (adjustMode === "remove" && adjustAmount > currentWeightKg) {
+    if (adjustMode === "remove" && adjustAmount > currentDisplayQty) {
       Alert.alert(
         "Invalid Amount",
-        `Cannot remove ${adjustAmount.toFixed(1)} kg. Only ${currentWeightKg.toFixed(1)} kg available.`
+        `Cannot remove ${adjustAmount.toFixed(1)} ${adjustUnitLabel}. Only ${currentDisplayQty.toFixed(1)} ${adjustUnitLabel} available.`
       );
       return;
     }
@@ -248,8 +251,8 @@ export default function InventoryScreen() {
     }
 
     const deltaGrams = adjustMode === "add"
-      ? Math.round(adjustAmount * 1000)
-      : -Math.round(adjustAmount * 1000);
+      ? Math.round(convertToBaseUnit(adjustAmount, adjustUnitType))
+      : -Math.round(convertToBaseUnit(adjustAmount, adjustUnitType));
 
     setAdjustSubmitting(true);
     try {
@@ -277,7 +280,7 @@ export default function InventoryScreen() {
 
   const renderItem = ({ item }: { item: InventoryItem }) => {
     const stockColor = getStockColor(item.stock_status);
-    const quantityKg = item.current_quantity_grams / 1000;
+    const quantityDisplay = String(formatQuantity(item.current_quantity, item.unit_type) ?? '0');
 
     if (viewMode === "grid") {
       return (
@@ -303,8 +306,7 @@ export default function InventoryScreen() {
               {item.formatted_inventory_number}
             </Text>
             <Text style={styles.gridWeightValue}>
-              {quantityKg.toFixed(1)}
-              <Text style={styles.gridWeightUnit}> kg</Text>
+              {quantityDisplay}
             </Text>
             <View style={styles.gridActions}>
               <TouchableOpacity
@@ -360,8 +362,7 @@ export default function InventoryScreen() {
           {/* Weight display */}
           <View style={styles.weightRow}>
             <Text style={styles.weightValue}>
-              {quantityKg.toFixed(1)}
-              <Text style={styles.weightUnit}> kg</Text>
+              {quantityDisplay}
             </Text>
           </View>
 
@@ -396,7 +397,7 @@ export default function InventoryScreen() {
               activeOpacity={0.6}
               onPress={() => handleOpenAdjustModal(item)}
             >
-              <Text style={styles.actionButtonText}>Adjust Weight</Text>
+              <Text style={styles.actionButtonText}>Adjust</Text>
             </TouchableOpacity>
             <View style={styles.actionDivider} />
             <TouchableOpacity
@@ -584,7 +585,7 @@ export default function InventoryScreen() {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Adjust Weight</Text>
+              <Text style={styles.modalTitle}>Adjust Quantity</Text>
               {adjustItem ? (
                 <Text style={styles.modalSubtitle} numberOfLines={1}>
                   {adjustItem.name}
@@ -640,7 +641,7 @@ export default function InventoryScreen() {
                     activeOpacity={0.7}
                     onPress={() => handlePresetPress(kg)}
                   >
-                    <Text style={styles.presetButtonText}>+{kg} kg</Text>
+                    <Text style={styles.presetButtonText}>+{kg} {adjustUnitLabel}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -675,7 +676,7 @@ export default function InventoryScreen() {
                       keyboardType="decimal-pad"
                       selectTextOnFocus
                     />
-                    <Text style={styles.stepperInputUnit}>kg</Text>
+                    <Text style={styles.stepperInputUnit}>{adjustUnitLabel}</Text>
                   </View>
                   <TouchableOpacity
                     style={styles.stepperButton}
@@ -705,8 +706,8 @@ export default function InventoryScreen() {
                   {adjustMode === "add" ? "ADDING STOCK" : "REMOVING STOCK"}
                 </Text>
                 <Text style={styles.previewWeights}>
-                  {currentWeightKg.toFixed(1)} kg {"  \u2192  "}
-                  {newWeightKg.toFixed(1)} kg
+                  {currentDisplayQty.toFixed(1)} {adjustUnitLabel} {"  \u2192  "}
+                  {newDisplayQty.toFixed(1)} {adjustUnitLabel}
                 </Text>
                 <Text
                   style={[
@@ -715,7 +716,7 @@ export default function InventoryScreen() {
                   ]}
                 >
                   {adjustMode === "add" ? "+" : "-"}
-                  {adjustAmount.toFixed(1)} kg
+                  {adjustAmount.toFixed(1)} {adjustUnitLabel}
                 </Text>
               </View>
 
