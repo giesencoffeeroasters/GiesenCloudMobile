@@ -32,7 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: env.name,
   slug: "GiesenCloudMobile",
-  version: "1.0.0",
+  version: "1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "automatic",
