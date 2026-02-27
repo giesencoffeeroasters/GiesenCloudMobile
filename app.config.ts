@@ -52,6 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: false,
     bundleIdentifier: env.bundleIdentifier,
+    buildNumber: "2",
     icon: {
       dark: "./assets/icon-dark.png",
       tinted: "./assets/icon-tinted.png",
