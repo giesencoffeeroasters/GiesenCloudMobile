@@ -316,7 +316,7 @@ export default function CreateQualitySessionScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.navigate("/(tabs)/quality")}
+              onPress={() => router.back()}
             >
               <BackIcon />
             </TouchableOpacity>

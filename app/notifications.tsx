@@ -282,7 +282,7 @@ export default function NotificationsScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.navigate("/(tabs)")}
+              onPress={() => router.back()}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path

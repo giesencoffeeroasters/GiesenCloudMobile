@@ -243,7 +243,7 @@ export default function ProfileDetailScreen() {
               <TouchableOpacity
                 style={detailStyles.backButton}
                 activeOpacity={0.7}
-                onPress={() => router.navigate("/(tabs)/roasts")}
+                onPress={() => router.back()}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -282,7 +282,7 @@ export default function ProfileDetailScreen() {
               <TouchableOpacity
                 style={detailStyles.backButton}
                 activeOpacity={0.7}
-                onPress={() => router.navigate("/(tabs)/roasts")}
+                onPress={() => router.back()}
               >
                 <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -310,7 +310,7 @@ export default function ProfileDetailScreen() {
           </Text>
           <TouchableOpacity
             style={detailStyles.retryButton}
-            onPress={() => router.navigate("/(tabs)/roasts")}
+            onPress={() => router.back()}
             activeOpacity={0.7}
           >
             <Text style={detailStyles.retryButtonText}>Go Back</Text>
@@ -329,7 +329,7 @@ export default function ProfileDetailScreen() {
             <TouchableOpacity
               style={detailStyles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.navigate("/(tabs)/roasts")}
+              onPress={() => router.back()}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path

@@ -283,10 +283,10 @@ export default function CreatePlanScreen() {
           }
         }
 
-        router.navigate("/(tabs)/planning");
+        router.back();
       } else {
         await apiClient.post("/planning", payload);
-        router.navigate("/(tabs)/planning");
+        router.back();
       }
     } catch (error: any) {
       if (error.response?.status === 422) {
@@ -319,7 +319,7 @@ export default function CreatePlanScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.navigate("/(tabs)/planning")}
+              onPress={() => router.back()}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path

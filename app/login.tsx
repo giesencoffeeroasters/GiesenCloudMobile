@@ -1,36 +1,55 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/colors";
 import { useAuthStore } from "@/stores/authStore";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import {
-  BUILD_ENV,
   SERVER_OPTIONS,
   getActiveEnv,
   setActiveEnv,
   type AppEnv,
 } from "@/constants/config";
 
-const SHOW_SERVER_PICKER = BUILD_ENV !== "production";
 const ENV_KEYS: AppEnv[] = ["development", "staging", "production"];
 
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEnv, setSelectedEnv] = useState<AppEnv>(getActiveEnv());
 
+  // Hidden dev mode: tap logo 5 times within 3s
+  const [devMode, setDevMode] = useState(false);
+  const tapCountRef = useRef(0);
+  const lastTapRef = useRef(0);
+
   const login = useAuthStore((state) => state.login);
+
+  const handleLogoTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current > 3000) {
+      tapCountRef.current = 0;
+    }
+    lastTapRef.current = now;
+    tapCountRef.current += 1;
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      setDevMode((prev) => !prev);
+    }
+  };
 
   const handleEnvChange = (env: AppEnv) => {
     setSelectedEnv(env);
@@ -68,16 +87,19 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        <View style={styles.logoContainer}>
+        <Pressable
+          style={styles.logoContainer}
+          onPress={handleLogoTap}
+        >
           <View style={styles.logoCircle}>
             <GiesenLogo size={36} color={Colors.slate} />
           </View>
-        </View>
+        </Pressable>
 
         <Text style={styles.title}>GiesenCloud</Text>
         <Text style={styles.subtitle}>Sign in to your account</Text>
 
-        {SHOW_SERVER_PICKER && (
+        {devMode && (
           <View style={styles.serverPicker}>
             {ENV_KEYS.map((env) => (
               <TouchableOpacity
@@ -169,6 +191,10 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <Text style={[styles.versionText, { marginBottom: insets.bottom + 12 }]}>
+        v2.4.1{devMode ? ` — ${SERVER_OPTIONS[selectedEnv].label}` : ""}
+      </Text>
     </KeyboardAvoidingView>
   );
 }
@@ -298,5 +324,11 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-SemiBold",
     fontSize: 16,
     color: Colors.card,
+  },
+  versionText: {
+    fontFamily: "JetBrainsMono-Regular",
+    fontSize: 11,
+    color: Colors.textTertiary,
+    textAlign: "center",
   },
 });

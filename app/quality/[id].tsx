@@ -588,7 +588,7 @@ export default function QualityDetailScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.navigate("/(tabs)/quality")}
+              onPress={() => router.back()}
             >
               <BackIcon />
             </TouchableOpacity>
@@ -632,7 +632,7 @@ export default function QualityDetailScreen() {
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.navigate("/(tabs)/quality")}
+            onPress={() => router.back()}
             activeOpacity={0.7}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>
@@ -893,7 +893,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       </TouchableOpacity>
       <TouchableOpacity
         style={{ marginTop: 12, paddingVertical: 8 }}
-        onPress={() => router.navigate("/(tabs)/quality")}
+        onPress={() => router.back()}
         activeOpacity={0.7}
       >
         <Text style={{ fontFamily: "DMSans-Medium", fontSize: 14, color: Colors.sky }}>Go Back</Text>

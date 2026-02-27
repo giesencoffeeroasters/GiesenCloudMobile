@@ -309,7 +309,7 @@ export default function WarrantyDetailScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.navigate("/(tabs)/maintenance")}
+              onPress={() => router.back()}
             >
               <BackIcon />
             </TouchableOpacity>
@@ -353,7 +353,7 @@ export default function WarrantyDetailScreen() {
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.navigate("/(tabs)/maintenance")}
+            onPress={() => router.back()}
             activeOpacity={0.7}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>
@@ -573,7 +573,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       </TouchableOpacity>
       <TouchableOpacity
         style={{ marginTop: 12, paddingVertical: 8 }}
-        onPress={() => router.navigate("/(tabs)/maintenance")}
+        onPress={() => router.back()}
         activeOpacity={0.7}
       >
         <Text

@@ -335,7 +335,7 @@ export default function ServiceAppointmentDetailScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.navigate("/service-appointments" as any)}
+              onPress={() => router.back()}
             >
               <BackIcon />
             </TouchableOpacity>
@@ -379,7 +379,7 @@ export default function ServiceAppointmentDetailScreen() {
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.navigate("/service-appointments" as any)}
+            onPress={() => router.back()}
             activeOpacity={0.7}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>
