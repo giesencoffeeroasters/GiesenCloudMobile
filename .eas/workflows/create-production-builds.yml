@@ -9,6 +9,12 @@ jobs:
     type: build
     params:
       platform: ios
+  submit_android:
+    type: submit
+    needs: [build_android]
+    params:
+      platform: android
+      build_id: ${ needs.build_android.output.build_id }
   submit_ios:
     type: submit
     needs: [build_ios]
