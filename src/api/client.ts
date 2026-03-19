@@ -14,9 +14,13 @@ apiClient.interceptors.request.use(async (config) => {
   config.baseURL = getApiBaseUrl();
 
   const token = await SecureStore.getItemAsync("auth_token");
+  const isAuthenticationRequest =
+    config.url?.includes("/auth/login") ||
+    config.url?.includes("/auth/two-factor-challenge");
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  } else if (!config.url?.includes("/auth/login")) {
+  } else if (!isAuthenticationRequest) {
     // Reject non-login requests when there's no token to prevent 401 cascades
     return Promise.reject(new axios.Cancel("No auth token"));
   }
@@ -37,7 +41,7 @@ apiClient.interceptors.response.use(
       onUnauthorized?.();
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

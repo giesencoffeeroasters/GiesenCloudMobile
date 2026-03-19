@@ -20,13 +20,19 @@ import {
   setActiveEnv,
   type AppEnv,
 } from "@/constants/config";
+import { useTranslation } from "react-i18next";
 
 const ENV_KEYS: AppEnv[] = ["development", "staging", "production"];
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEnv, setSelectedEnv] = useState<AppEnv>(getActiveEnv());
@@ -37,6 +43,9 @@ export default function LoginScreen() {
   const lastTapRef = useRef(0);
 
   const login = useAuthStore((state) => state.login);
+  const completeTwoFactorChallenge = useAuthStore(
+    (state) => state.completeTwoFactorChallenge,
+  );
 
   const handleLogoTap = () => {
     const now = Date.now();
@@ -56,9 +65,72 @@ export default function LoginScreen() {
     setActiveEnv(env);
   };
 
+  const extractApiErrorMessage = (err: unknown): string => {
+    if (err && typeof err === "object" && "response" in err) {
+      const axiosError = err as {
+        response?: {
+          data?: {
+            message?: string;
+            errors?: Record<string, string[]>;
+          };
+        };
+      };
+
+      const errors = axiosError.response?.data?.errors;
+
+      return (
+        errors?.code?.[0] ||
+        errors?.recovery_code?.[0] ||
+        errors?.challenge_id?.[0] ||
+        axiosError.response?.data?.message ||
+        t("common.somethingWentWrong")
+      );
+    }
+
+    return t("common.somethingWentWrong");
+  };
+
+  const resetTwoFactorState = () => {
+    setChallengeId(null);
+    setTwoFactorCode("");
+    setRecoveryCode("");
+    setUseRecoveryCode(false);
+  };
+
   const handleLogin = async () => {
+    if (challengeId) {
+      const value = useRecoveryCode
+        ? recoveryCode.trim()
+        : twoFactorCode.trim();
+
+      if (!value) {
+        setError(
+          useRecoveryCode
+            ? t("auth.recoveryCodeRequired")
+            : t("auth.twoFactorCodeRequired"),
+        );
+        return;
+      }
+
+      setError(null);
+      setIsSubmitting(true);
+
+      try {
+        await completeTwoFactorChallenge(challengeId, {
+          code: useRecoveryCode ? undefined : value,
+          recoveryCode: useRecoveryCode ? value : undefined,
+        });
+      } catch (err: unknown) {
+        setError(extractApiErrorMessage(err));
+      } finally {
+        setIsSubmitting(false);
+      }
+
+      return;
+    }
+
     if (!email.trim() || !password.trim()) {
-      setError("Please enter both email and password.");
+      setError(t("auth.loginError"));
       return;
     }
 
@@ -66,16 +138,17 @@ export default function LoginScreen() {
     setIsSubmitting(true);
 
     try {
-      await login(email.trim(), password);
-    } catch (err: unknown) {
-      if (err && typeof err === "object" && "response" in err) {
-        const axiosError = err as { response?: { data?: { message?: string } } };
-        setError(
-          axiosError.response?.data?.message ?? "Invalid credentials. Please try again."
-        );
-      } else {
-        setError("Something went wrong. Please try again.");
+      const result = await login(email.trim(), password);
+
+      if (result.status === "two_factor_required" && result.challengeId) {
+        setChallengeId(result.challengeId);
+        setPassword("");
+        setTwoFactorCode("");
+        setRecoveryCode("");
+        setUseRecoveryCode(false);
       }
+    } catch (err: unknown) {
+      setError(extractApiErrorMessage(err) || t("auth.invalidCredentials"));
     } finally {
       setIsSubmitting(false);
     }
@@ -87,19 +160,20 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        <Pressable
-          style={styles.logoContainer}
-          onPress={handleLogoTap}
-        >
+        <Pressable style={styles.logoContainer} onPress={handleLogoTap}>
           <View style={styles.logoCircle}>
             <GiesenLogo size={36} color={Colors.slate} />
           </View>
         </Pressable>
 
-        <Text style={styles.title}>GiesenCloud</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+        <Text style={styles.title}>
+          {challengeId ? t("auth.twoFactorTitle") : t("splash.appName")}
+        </Text>
+        <Text style={styles.subtitle}>
+          {challengeId ? t("auth.twoFactorSubtitle") : t("auth.signInSubtitle")}
+        </Text>
 
-        {devMode && (
+        {devMode && !challengeId && (
           <View style={styles.serverPicker}>
             {ENV_KEYS.map((env) => (
               <TouchableOpacity
@@ -119,8 +193,8 @@ export default function LoginScreen() {
                         env === "development"
                           ? Colors.sky
                           : env === "staging"
-                          ? Colors.sun
-                          : Colors.leaf,
+                            ? Colors.sun
+                            : Colors.leaf,
                     },
                   ]}
                 />
@@ -144,38 +218,96 @@ export default function LoginScreen() {
         )}
 
         <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@company.com"
-              placeholderTextColor={Colors.textTertiary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="emailAddress"
-              returnKeyType="next"
-              editable={!isSubmitting}
-            />
-          </View>
+          {challengeId ? (
+            <>
+              <View style={styles.infoContainer}>
+                <Text style={styles.infoText}>{t("auth.twoFactorHelp")}</Text>
+              </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              placeholderTextColor={Colors.textTertiary}
-              secureTextEntry
-              textContentType="password"
-              returnKeyType="go"
-              onSubmitEditing={handleLogin}
-              editable={!isSubmitting}
-            />
-          </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  {useRecoveryCode
+                    ? t("auth.recoveryCode")
+                    : t("auth.authenticationCode")}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={useRecoveryCode ? recoveryCode : twoFactorCode}
+                  onChangeText={(value) => {
+                    if (useRecoveryCode) {
+                      setRecoveryCode(value);
+                    } else {
+                      setTwoFactorCode(value);
+                    }
+                  }}
+                  placeholder={
+                    useRecoveryCode
+                      ? t("auth.recoveryCodePlaceholder")
+                      : t("auth.authenticationCodePlaceholder")
+                  }
+                  placeholderTextColor={Colors.textTertiary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType={useRecoveryCode ? "default" : "number-pad"}
+                  textContentType="oneTimeCode"
+                  returnKeyType="go"
+                  onSubmitEditing={handleLogin}
+                  editable={!isSubmitting}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={styles.linkButton}
+                onPress={() => {
+                  setUseRecoveryCode((prev) => !prev);
+                  setError(null);
+                }}
+                disabled={isSubmitting}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.linkButtonText}>
+                  {useRecoveryCode
+                    ? t("auth.useAuthenticationCode")
+                    : t("auth.useRecoveryCode")}
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t("auth.email")}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder={t("auth.emailPlaceholder")}
+                  placeholderTextColor={Colors.textTertiary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
+                  returnKeyType="next"
+                  editable={!isSubmitting}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t("auth.password")}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={t("auth.passwordPlaceholder")}
+                  placeholderTextColor={Colors.textTertiary}
+                  secureTextEntry
+                  textContentType="password"
+                  returnKeyType="go"
+                  onSubmitEditing={handleLogin}
+                  editable={!isSubmitting}
+                />
+              </View>
+            </>
+          )}
 
           <TouchableOpacity
             style={[styles.button, isSubmitting && styles.buttonDisabled]}
@@ -186,9 +318,27 @@ export default function LoginScreen() {
             {isSubmitting ? (
               <ActivityIndicator color={Colors.card} size="small" />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.buttonText}>
+                {challengeId ? t("auth.verifyCode") : t("auth.signIn")}
+              </Text>
             )}
           </TouchableOpacity>
+
+          {challengeId && (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => {
+                resetTwoFactorState();
+                setError(null);
+              }}
+              disabled={isSubmitting}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {t("auth.backToSignIn")}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -234,6 +384,20 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
     marginBottom: 32,
+  },
+  infoContainer: {
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  infoText: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    color: Colors.textSecondary,
   },
   /* Server picker */
   serverPicker: {
@@ -324,6 +488,27 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-SemiBold",
     fontSize: 16,
     color: Colors.card,
+  },
+  secondaryButton: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryButtonText: {
+    fontFamily: "DMSans-SemiBold",
+    fontSize: 15,
+    color: Colors.text,
+  },
+  linkButton: {
+    alignSelf: "flex-start",
+  },
+  linkButtonText: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 14,
+    color: Colors.slate,
   },
   versionText: {
     fontFamily: "JetBrainsMono-Regular",
