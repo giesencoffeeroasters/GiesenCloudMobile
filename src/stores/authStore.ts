@@ -5,18 +5,7 @@ import * as Notifications from "expo-notifications";
 import apiClient, { setOnUnauthorized } from "@/api/client";
 import { disconnectPusher } from "@/services/pusher";
 import { getExpoPushToken } from "@/utils/pushToken";
-
-interface User {
-  id: number;
-  name: string;
-  first_name?: string;
-  last_name?: string;
-  email: string;
-  current_team: {
-    id: number;
-    name: string;
-  };
-}
+import type { AppUser } from "@/types";
 
 export interface LoginResult {
   status: "authenticated" | "two_factor_required";
@@ -25,7 +14,7 @@ export interface LoginResult {
 }
 
 interface AuthState {
-  user: User | null;
+  user: AppUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
