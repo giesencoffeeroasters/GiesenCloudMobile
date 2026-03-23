@@ -52,6 +52,78 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export type DeviceCapabilityKey =
+  | "profiler"
+  | "profiler_compare"
+  | "profiler_storage"
+  | "roast_planning"
+  | "giesen_live"
+  | "inventory"
+  | "quality"
+  | "reports";
+
+export interface DeviceCapabilities {
+  profiler?: boolean;
+  profiler_compare?: boolean;
+  profiler_storage?: boolean;
+  roast_planning?: boolean;
+  giesen_live?: boolean;
+  inventory?: boolean;
+  quality?: boolean;
+  reports?: boolean;
+}
+
+export type AccessCapabilityKey = DeviceCapabilityKey;
+
+export type AccessFeatureKey =
+  | "maintenance"
+  | "roast_planning"
+  | "inventory"
+  | "giesen_live"
+  | "quality"
+  | "reports"
+  | "erp"
+  | "integrations"
+  | "academy"
+  | "learn"
+  | "service_portal"
+  | "expert_portal";
+
+export interface AccessContextDevice {
+  id: number | string;
+  name: string;
+  plan_slug: string;
+  plan_label: string;
+  legacy_plan_name?: string | null;
+  capabilities: DeviceCapabilities;
+}
+
+export interface AccessContext {
+  plan: {
+    plan_slug: string;
+    plan_label: string;
+    legacy_plan_name: string | null;
+  };
+  capabilities: DeviceCapabilities;
+  features: Partial<Record<AccessFeatureKey, boolean>>;
+  enabled_feature_keys: AccessFeatureKey[];
+  devices: AccessContextDevice[];
+}
+
+export interface AppUser {
+  id: number;
+  name: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  profile_photo_url?: string | null;
+  current_team: {
+    id: number;
+    name: string;
+  };
+  access_context?: AccessContext | null;
+}
+
 export type ActivityType =
   | "roast_completed"
   | "inventory_received"
@@ -296,13 +368,10 @@ export interface ProfilerDevice {
 export interface ProfilerDeviceDetail extends ProfilerDevice {
   sync_status: string | null;
   settings: Record<string, unknown> | null;
-  subscriptions: {
-    giesen_live: boolean;
-    roast_planning: boolean;
-    inventory: boolean;
-    profiler_compare: boolean;
-    profiler_storage: boolean;
-    profiler: boolean;
+  subscriptions: DeviceCapabilities & {
+    plan_slug: string;
+    plan_label: string;
+    legacy_plan_name: string | null;
   };
   latest_roasts: DeviceRoast[];
 }
