@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
 import {
   ProfilerProfile,
@@ -25,6 +26,7 @@ import {
   ApiResponse,
   PaginatedResponse,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 function formatDateDisplay(dateStr: string): string {
   const date = new Date(dateStr + "T00:00:00");
@@ -63,7 +65,12 @@ const DAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const EMPLOYEES_ENDPOINT = "/employees";
 
 export default function CreatePlanScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({
+    requiresCapabilities: ["roast_planning"],
+    requiresFeatures: ["roast_planning"],
+  });
 
   // Form state
   const [plannedAt, setPlannedAt] = useState(getTodayString());
@@ -335,8 +342,8 @@ export default function CreatePlanScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>New Plan</Text>
-              <Text style={styles.headerSubtitle}>Schedule a Roast</Text>
+              <Text style={styles.headerTitle}>{t("planning.create.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("planning.create.createPlan")}</Text>
             </View>
           </View>
         </View>
@@ -360,7 +367,7 @@ export default function CreatePlanScreen() {
 
           {/* Date Picker */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Date</Text>
+            <Text style={styles.fieldLabel}>{t("planning.create.selectDate")}</Text>
             <TouchableOpacity
               style={[styles.pickerButton, errors.planned_at ? styles.pickerButtonError : null]}
               activeOpacity={0.7}
@@ -395,7 +402,7 @@ export default function CreatePlanScreen() {
 
           {/* Profile Picker */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Profile</Text>
+            <Text style={styles.fieldLabel}>{t("planning.create.selectProfile")}</Text>
             <TouchableOpacity
               style={[
                 styles.pickerButton,
@@ -448,7 +455,7 @@ export default function CreatePlanScreen() {
 
           {/* Device Picker */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Roaster</Text>
+            <Text style={styles.fieldLabel}>{t("equipment.title")}</Text>
             <TouchableOpacity
               style={[
                 styles.pickerButton,
@@ -501,8 +508,8 @@ export default function CreatePlanScreen() {
           {/* Employee Picker */}
           <View style={styles.fieldCard}>
             <Text style={styles.fieldLabel}>
-              Operator{" "}
-              <Text style={styles.fieldLabelOptional}>(optional)</Text>
+              {t("planning.create.assignEmployee")}{" "}
+              <Text style={styles.fieldLabelOptional}>({t("common.optional")})</Text>
             </Text>
             <TouchableOpacity
               style={styles.pickerButton}
@@ -544,7 +551,7 @@ export default function CreatePlanScreen() {
 
           {/* Amount */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Batch Size</Text>
+            <Text style={styles.fieldLabel}>{t("planning.create.enterBatchSize")}</Text>
             <View
               style={[
                 styles.inputRow,
@@ -608,12 +615,12 @@ export default function CreatePlanScreen() {
           {/* Description */}
           <View style={styles.fieldCard}>
             <Text style={styles.fieldLabel}>
-              Description{" "}
-              <Text style={styles.fieldLabelOptional}>(optional)</Text>
+              {t("serviceAppointments.detail.description")}{" "}
+              <Text style={styles.fieldLabelOptional}>({t("common.optional")})</Text>
             </Text>
             <TextInput
               style={styles.descriptionInput}
-              placeholder="Add notes about this roast..."
+              placeholder={t("planning.create.addNotes")}
               placeholderTextColor={Colors.textTertiary}
               value={description}
               onChangeText={setDescription}
@@ -645,7 +652,7 @@ export default function CreatePlanScreen() {
               )
             ) : (
               <Text style={styles.submitButtonText}>
-                {batchCount > 1 ? `Create ${batchCount} Plans` : "Create Plan"}
+                {batchCount > 1 ? `${t("planning.create.createPlan")} (${batchCount})` : t("planning.create.createPlan")}
               </Text>
             )}
           </TouchableOpacity>
@@ -662,7 +669,7 @@ export default function CreatePlanScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
+              <Text style={styles.modalTitle}>{t("planning.create.selectDate")}</Text>
               <TouchableOpacity
                 onPress={() => setShowDatePicker(false)}
                 activeOpacity={0.7}
@@ -765,7 +772,7 @@ export default function CreatePlanScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContentFull, { paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Profile</Text>
+              <Text style={styles.modalTitle}>{t("planning.create.selectProfile")}</Text>
               <TouchableOpacity
                 onPress={() => setShowProfilePicker(false)}
                 activeOpacity={0.7}
@@ -876,7 +883,7 @@ export default function CreatePlanScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContentFull, { paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Roaster</Text>
+              <Text style={styles.modalTitle}>{t("equipment.title")}</Text>
               <TouchableOpacity
                 onPress={() => setShowDevicePicker(false)}
                 activeOpacity={0.7}
@@ -985,7 +992,7 @@ export default function CreatePlanScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContentFull, { paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Operator</Text>
+              <Text style={styles.modalTitle}>{t("planning.create.assignEmployee")}</Text>
               <TouchableOpacity
                 onPress={() => setShowEmployeePicker(false)}
                 activeOpacity={0.7}
@@ -1049,7 +1056,7 @@ export default function CreatePlanScreen() {
                           !selectedEmployee && styles.pickerItemNameActive,
                         ]}
                       >
-                        No operator
+                        {t("planning.detail.unassigned")}
                       </Text>
                     </View>
                     {!selectedEmployee ? (

@@ -20,6 +20,8 @@ import { getSerialNumber, getFirmwareVersion, getBatteryStatus } from "@/service
 import { getAllMeasurements } from "@/api/difluid";
 import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
 import type { DiFluidMeasurementFromApi } from "@/types/index";
+import { useTranslation } from "react-i18next";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 
 /* ------------------------------------------------------------------ */
 /*  Icons                                                              */
@@ -48,6 +50,8 @@ function BatteryIcon({ level }: { level?: number }) {
 /* ------------------------------------------------------------------ */
 
 export default function DiFluidDeviceScreen() {
+  const { t } = useTranslation();
+  useRouteAccessGuard({ requiresFeatures: ["quality"] });
   const insets = useSafeAreaInsets();
   const {
     connectionStatus,
@@ -101,17 +105,17 @@ export default function DiFluidDeviceScreen() {
         await connect(deviceId);
       } catch (error) {
         const msg = error instanceof Error ? error.message : "Unknown error";
-        Alert.alert("Connection Failed", msg);
+        Alert.alert(t("common.error"), msg);
       }
     },
     [connect]
   );
 
   const handleDisconnect = useCallback(async () => {
-    Alert.alert("Disconnect", "Disconnect from this device?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("difluid.disconnect"), t("difluid.disconnect") + "?", [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Disconnect",
+        text: t("difluid.disconnect"),
         style: "destructive",
         onPress: () => disconnect(),
       },
@@ -143,8 +147,8 @@ export default function DiFluidDeviceScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>DiFluid Omix</Text>
-              <Text style={styles.headerSubtitle}>Device Management</Text>
+              <Text style={styles.headerTitle}>{t("difluid.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("difluid.title")}</Text>
             </View>
           </View>
           <ConnectionBadge status={connectionStatus} />
@@ -173,6 +177,7 @@ export default function DiFluidDeviceScreen() {
                 ) : null}
                 {deviceInfo.serialNumber ? (
                   <Text style={styles.connectedSn}>S/N: {deviceInfo.serialNumber}</Text>
+
                 ) : null}
               </View>
             </View>
@@ -199,14 +204,14 @@ export default function DiFluidDeviceScreen() {
                   <Circle cx="12" cy="12" r="10" />
                   <Path d="M12 8v8M8 12h8" />
                 </Svg>
-                <Text style={styles.measureButtonText}>Start Measurement</Text>
+                <Text style={styles.measureButtonText}>{t("difluid.startMeasurement")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.disconnectButton}
                 activeOpacity={0.7}
                 onPress={handleDisconnect}
               >
-                <Text style={styles.disconnectButtonText}>Disconnect</Text>
+                <Text style={styles.disconnectButtonText}>{t("difluid.disconnect")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -216,7 +221,7 @@ export default function DiFluidDeviceScreen() {
         {!isConnected ? (
           <>
             <View style={styles.scanHeader}>
-              <Text style={styles.scanTitle}>Nearby Devices</Text>
+              <Text style={styles.scanTitle}>{t("difluid.scanForDevices")}</Text>
               <TouchableOpacity
                 style={[styles.scanButton, isScanning && styles.scanButtonActive]}
                 activeOpacity={0.7}
@@ -228,7 +233,7 @@ export default function DiFluidDeviceScreen() {
                   <BluetoothIcon color="#ffffff" />
                 )}
                 <Text style={styles.scanButtonText}>
-                  {isScanning ? "Stop Scan" : "Scan"}
+                  {isScanning ? t("difluid.scanning") : t("difluid.scanForDevices")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -251,7 +256,7 @@ export default function DiFluidDeviceScreen() {
                   <BluetoothIcon color={Colors.textTertiary} />
                 </View>
                 <Text style={styles.emptyTitle}>
-                  {isScanning ? "Scanning for devices..." : "No devices found"}
+                  {isScanning ? t("difluid.scanning") : t("difluid.noDevices")}
                 </Text>
                 <Text style={styles.emptySubtext}>
                   {isScanning
@@ -270,28 +275,28 @@ export default function DiFluidDeviceScreen() {
 
         {/* Instructions */}
         <View style={styles.instructionCard}>
-          <Text style={styles.instructionTitle}>How to connect</Text>
+          <Text style={styles.instructionTitle}>{t("difluid.howToConnect")}</Text>
           <View style={styles.step}>
             <Text style={styles.stepNumber}>1</Text>
-            <Text style={styles.stepText}>Power on your DiFluid Omix device</Text>
+            <Text style={styles.stepText}>{t("difluid.step1")}</Text>
           </View>
           <View style={styles.step}>
             <Text style={styles.stepNumber}>2</Text>
-            <Text style={styles.stepText}>Tap "Scan" to discover nearby devices</Text>
+            <Text style={styles.stepText}>{t("difluid.step2")}</Text>
           </View>
           <View style={styles.step}>
             <Text style={styles.stepNumber}>3</Text>
-            <Text style={styles.stepText}>Select your device and tap "Connect"</Text>
+            <Text style={styles.stepText}>{t("difluid.step3")}</Text>
           </View>
           <View style={styles.step}>
             <Text style={styles.stepNumber}>4</Text>
-            <Text style={styles.stepText}>Start measuring to get instant readings</Text>
+            <Text style={styles.stepText}>{t("difluid.step4")}</Text>
           </View>
         </View>
 
         {/* Recent Measurements */}
         <View style={styles.recentSection}>
-          <Text style={styles.recentTitle}>Recent Measurements</Text>
+          <Text style={styles.recentTitle}>{t("quality.measurements.title")}</Text>
           {recentMeasurements.length > 0 ? (
             <View style={styles.recentList}>
               {recentMeasurements.slice(0, 5).map((m) => (
@@ -300,7 +305,7 @@ export default function DiFluidDeviceScreen() {
             </View>
           ) : (
             <View style={styles.recentEmpty}>
-              <Text style={styles.recentEmptyText}>No measurements yet</Text>
+              <Text style={styles.recentEmptyText}>{t("difluid.noHistory")}</Text>
               <Text style={styles.recentEmptySubtext}>
                 Measurements taken with DiFluid will appear here.
               </Text>

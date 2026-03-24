@@ -14,7 +14,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect, Line, Polygon, Circle, G, Text as SvgText } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -105,18 +107,18 @@ function formatDate(dateString: string | null): string {
   });
 }
 
-function getStatusConfig(status: string): {
+function getStatusConfig(status: string, t: (key: string) => string): {
   label: string;
   color: string;
   bg: string;
 } {
   switch (status) {
     case "draft":
-      return { label: "Draft", color: Colors.sky, bg: Colors.skyBg };
+      return { label: t("quality.status.draft"), color: Colors.sky, bg: Colors.skyBg };
     case "in_progress":
-      return { label: "In Progress", color: Colors.boven, bg: Colors.bovenBg };
+      return { label: t("quality.status.inProgress"), color: Colors.boven, bg: Colors.bovenBg };
     case "completed":
-      return { label: "Completed", color: Colors.leaf, bg: Colors.leafBg };
+      return { label: t("quality.status.completed"), color: Colors.leaf, bg: Colors.leafBg };
     default:
       return {
         label: status,
@@ -515,8 +517,10 @@ function SampleCard({
 /* ------------------------------------------------------------------ */
 
 export default function QualityDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ requiresFeatures: ["quality"] });
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -554,12 +558,12 @@ export default function QualityDetailScreen() {
 
   const handleCompleteSession = useCallback(async () => {
     Alert.alert(
-      "Complete Session",
-      "Are you sure you want to complete this cupping session? This cannot be undone.",
+      t("common.confirm"),
+      t("common.confirm"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Complete",
+          text: t("common.confirm"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -569,8 +573,8 @@ export default function QualityDetailScreen() {
               await fetchSession();
             } catch (err: any) {
               Alert.alert(
-                "Error",
-                err.response?.data?.message ?? "Failed to complete session."
+                t("common.error"),
+                err.response?.data?.message ?? t("common.somethingWentWrong")
               );
             }
           },
@@ -597,10 +601,10 @@ export default function QualityDetailScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                {title ?? "Quality"}
+                {title ?? t("quality.title")}
               </Text>
               <Text style={styles.headerSubtitle}>
-                {subtitle ?? "Session Details"}
+                {subtitle ?? t("quality.detail.sessionDetails")}
               </Text>
             </View>
           </View>
@@ -628,14 +632,14 @@ export default function QualityDetailScreen() {
         {renderHeader()}
         <View style={styles.centeredContainer}>
           <Text style={styles.errorText}>
-            {error ?? "Session not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -643,7 +647,7 @@ export default function QualityDetailScreen() {
   }
 
   /* ── Data ── */
-  const statusCfg = getStatusConfig(session.status);
+  const statusCfg = getStatusConfig(session.status, t);
   const samples = session.samples ?? [];
   const formAttributes = session.form?.attributes ?? [];
   const sampleCount = samples.length;
@@ -656,7 +660,7 @@ export default function QualityDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      {renderHeader(session.name, "Session Details")}
+      {renderHeader(session.name, t("quality.detail.sessionDetails"))}
 
       <ScrollView
         style={styles.scrollView}
@@ -680,7 +684,7 @@ export default function QualityDetailScreen() {
               >
                 {overallScore !== null ? overallScore.toFixed(1) : "-"}
               </Text>
-              <Text style={styles.overallScoreLabel}>Overall Score</Text>
+              <Text style={styles.overallScoreLabel}>{t("quality.detail.overallScore")}</Text>
             </View>
 
             {/* Progress + status */}
@@ -744,19 +748,19 @@ export default function QualityDetailScreen() {
 
         {/* Session info card */}
         <View style={styles.infoCard}>
-          <Text style={styles.sectionTitle}>Session Info</Text>
+          <Text style={styles.sectionTitle}>{t("quality.detail.sessionDetails")}</Text>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Creator</Text>
             <Text style={styles.infoValue}>
-              {session.creator?.name ?? "Unknown"}
+              {session.creator?.name ?? t("common.unknown")}
             </Text>
           </View>
 
           <View style={styles.infoDivider} />
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Date</Text>
+            <Text style={styles.infoLabel}>{t("quality.detail.date")}</Text>
             <Text style={styles.infoValue}>
               {formatDate(session.scheduled_at ?? session.created_at)}
             </Text>
@@ -765,7 +769,7 @@ export default function QualityDetailScreen() {
           <View style={styles.infoDivider} />
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Form</Text>
+            <Text style={styles.infoLabel}>{t("quality.detail.form")}</Text>
             <Text style={styles.infoValue}>{session.form?.name ?? "N/A"}</Text>
           </View>
 
@@ -777,7 +781,7 @@ export default function QualityDetailScreen() {
               {session.is_blind ? (
                 <View style={styles.blindBadge}>
                   <BlindIcon color={Colors.grape} />
-                  <Text style={styles.blindBadgeText}>Blind Tasting</Text>
+                  <Text style={styles.blindBadgeText}>{t("quality.blind")}</Text>
                 </View>
               ) : (
                 <Text style={styles.infoValue}>Normal</Text>
@@ -789,7 +793,7 @@ export default function QualityDetailScreen() {
             <>
               <View style={styles.infoDivider} />
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Description</Text>
+                <Text style={styles.infoLabel}>{t("serviceAppointments.detail.description")}</Text>
                 <Text
                   style={[styles.infoValue, { flex: 1, textAlign: "right" }]}
                   numberOfLines={3}
@@ -804,7 +808,7 @@ export default function QualityDetailScreen() {
         {/* Samples section */}
         <View style={styles.samplesSection}>
           <Text style={styles.sectionTitle}>
-            Samples ({sampleCount})
+            {t("quality.detail.samples")} ({sampleCount})
           </Text>
 
           {sampleCount === 0 ? (
@@ -826,9 +830,9 @@ export default function QualityDetailScreen() {
                   strokeLinecap="round"
                 />
               </Svg>
-              <Text style={styles.emptyStateTitle}>No samples yet</Text>
+              <Text style={styles.emptyStateTitle}>{t("common.noData")}</Text>
               <Text style={styles.emptyStateText}>
-                No samples have been added to this session.
+                {t("common.noResults")}
               </Text>
             </View>
           ) : (
@@ -860,7 +864,7 @@ export default function QualityDetailScreen() {
                 strokeLinejoin="round"
               />
             </Svg>
-            <Text style={styles.completeButtonText}>Complete Session</Text>
+            <Text style={styles.completeButtonText}>{t("common.confirm")}</Text>
           </TouchableOpacity>
         ) : null}
       </ScrollView>

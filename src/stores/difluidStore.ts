@@ -371,8 +371,8 @@ export const useDiFluidStore = create<DiFluidState>((set, get) => ({
       altitude: currentMeasurement.altitude,
       beanType: currentMeasurement.beanType,
       linkedInventoryId:
-        linkedType === "inventory" ? linkedId : undefined,
-      linkedRoastId: linkedType === "roast" ? linkedId : undefined,
+        linkedType === "inventory" ? Number(linkedId) : undefined,
+      linkedRoastId: linkedType === "roast" ? Number(linkedId) : undefined,
       deviceIdentifier: connectedDevice?.id,
       measuredAt: new Date().toISOString(),
     };

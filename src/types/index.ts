@@ -147,6 +147,26 @@ export interface InventoryAlert {
   severity: "low" | "critical";
 }
 
+export interface ProductionDailyBreakdown {
+  date: string;
+  roast_count: number;
+  total_weight: number;
+}
+
+export interface ProductionTopProfile {
+  profile_name: string;
+  roast_count: number;
+  total_weight: number;
+}
+
+export interface ProductionReportData {
+  total_roasts: number;
+  total_weight_kg: number;
+  avg_duration: number | null;
+  daily_breakdown: ProductionDailyBreakdown[];
+  top_profiles: ProductionTopProfile[];
+}
+
 export interface DashboardData {
   today_roasts: number;
   active_roasters: number;
@@ -155,6 +175,7 @@ export interface DashboardData {
   schedule: RoastPlan[];
   live_roasters: LiveRoaster[];
   recent_activity: ActivityItem[];
+  production_summary?: ProductionReportData | null;
 }
 
 export interface RoastPlan {

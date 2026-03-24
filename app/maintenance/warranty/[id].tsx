@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
 import type {
   WarrantyDetail,
@@ -20,6 +21,7 @@ import type {
   MaintenanceTask,
   MaintenanceTaskStatus,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -259,8 +261,10 @@ function RecentTaskRow({ task }: { task: MaintenanceTask }) {
 /* ------------------------------------------------------------------ */
 
 export default function WarrantyDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ feature: "maintenance" });
   const [warranty, setWarranty] = useState<WarrantyDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -317,7 +321,7 @@ export default function WarrantyDetailScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.headerSubtitle}>Warranty</Text>
+              <Text style={styles.headerSubtitle}>{t("maintenance.warranty.warrantyDetails")}</Text>
               {title ? (
                 <Text style={styles.headerTitle} numberOfLines={2}>
                   {title}
@@ -349,14 +353,14 @@ export default function WarrantyDetailScreen() {
         {renderHeader()}
         <View style={styles.centeredContainer}>
           <Text style={styles.errorText}>
-            {error ?? "Warranty not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -389,7 +393,7 @@ export default function WarrantyDetailScreen() {
         <View style={styles.card}>
           <View style={styles.complianceHeader}>
             <ShieldIcon color={Colors.sky} />
-            <Text style={styles.sectionTitle}>Compliance</Text>
+            <Text style={styles.sectionTitle}>{t("maintenance.avgCompliance")}</Text>
           </View>
 
           <View style={styles.complianceScoreRow}>
@@ -430,13 +434,13 @@ export default function WarrantyDetailScreen() {
 
           <View style={styles.dateRow}>
             <View style={styles.dateItem}>
-              <Text style={styles.dateLabel}>Started</Text>
+              <Text style={styles.dateLabel}>{t("maintenance.warranty.startDate")}</Text>
               <Text style={styles.dateValue}>
                 {formatDate(warranty.started_at)}
               </Text>
             </View>
             <View style={styles.dateItem}>
-              <Text style={styles.dateLabel}>Expires</Text>
+              <Text style={styles.dateLabel}>{t("maintenance.warranty.endDate")}</Text>
               <Text style={styles.dateValue}>
                 {formatDate(warranty.expires_at)}
               </Text>
@@ -450,32 +454,32 @@ export default function WarrantyDetailScreen() {
 
           <View style={styles.summaryGrid}>
             <SummaryStat
-              label="Completed"
+              label={t("maintenance.status.completed")}
               value={summary.completed}
               color={Colors.leaf}
             />
             <SummaryStat
-              label="Pending"
+              label={t("maintenance.status.pending")}
               value={summary.pending}
               color={Colors.sky}
             />
             <SummaryStat
-              label="Overdue"
+              label={t("maintenance.status.overdue")}
               value={summary.overdue}
               color={Colors.traffic}
             />
             <SummaryStat
-              label="Skipped"
+              label={t("maintenance.status.skipped")}
               value={summary.skipped}
               color={Colors.textTertiary}
             />
             <SummaryStat
-              label="In Progress"
+              label={t("maintenance.status.inProgress")}
               value={summary.in_progress}
               color={Colors.boven}
             />
             <SummaryStat
-              label="Total"
+              label={t("quality.score.total")}
               value={summary.total}
               color={Colors.text}
             />
@@ -487,7 +491,7 @@ export default function WarrantyDetailScreen() {
           <Text style={styles.sectionTitle}>Recent Tasks</Text>
 
           {recentTasks.length === 0 ? (
-            <Text style={styles.emptyText}>No tasks yet.</Text>
+            <Text style={styles.emptyText}>{t("maintenance.noTasks")}</Text>
           ) : (
             <View style={styles.recentTasksList}>
               {recentTasks.map((task, index) => (

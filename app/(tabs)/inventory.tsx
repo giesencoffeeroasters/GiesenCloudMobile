@@ -19,6 +19,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import {
@@ -28,6 +29,7 @@ import {
   PaginatedResponse,
 } from "@/types/index";
 import { formatQuantity, getUnitLabel, convertToBaseUnit, convertFromBaseUnit } from "@/utils/unitConversion";
+import { useTranslation } from "react-i18next";
 
 type FilterOption = "All" | "Green Beans" | "Roasted" | "Blends";
 type ViewMode = "list" | "grid";
@@ -38,6 +40,13 @@ const FILTER_OPTIONS: FilterOption[] = [
   "Roasted",
   "Blends",
 ];
+
+const FILTER_I18N: Record<FilterOption, string> = {
+  "All": "inventory.filters.all",
+  "Green Beans": "inventory.filters.greenBeans",
+  "Roasted": "inventory.filters.roasted",
+  "Blends": "inventory.filters.blends",
+};
 
 function getStockColor(status: "ok" | "low" | "critical"): string {
   switch (status) {
@@ -50,14 +59,14 @@ function getStockColor(status: "ok" | "low" | "critical"): string {
   }
 }
 
-function getStockLabel(status: "ok" | "low" | "critical"): string {
+function getStockLabel(status: "ok" | "low" | "critical", t: (key: string) => string): string {
   switch (status) {
     case "ok":
-      return "In Stock";
+      return t("inventory.status.inStock");
     case "low":
-      return "Low Stock";
+      return t("inventory.status.lowStock");
     case "critical":
-      return "Critical";
+      return t("inventory.status.critical");
   }
 }
 
@@ -83,7 +92,12 @@ function formatDate(dateString: string | null): string {
 }
 
 export default function InventoryScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({
+    requiresCapabilities: ["inventory"],
+    requiresFeatures: ["inventory"],
+  });
   const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterOption>("All");
@@ -233,20 +247,20 @@ export default function InventoryScreen() {
     if (!adjustItem) return;
 
     if (adjustAmount === 0) {
-      Alert.alert("Invalid Amount", "Please enter an adjustment amount.");
+      Alert.alert(t("inventory.invalidAmount"), t("inventory.pleaseEnterAmount"));
       return;
     }
 
     if (adjustMode === "remove" && adjustAmount > currentDisplayQty) {
       Alert.alert(
-        "Invalid Amount",
-        `Cannot remove ${adjustAmount.toFixed(1)} ${adjustUnitLabel}. Only ${currentDisplayQty.toFixed(1)} ${adjustUnitLabel} available.`
+        t("inventory.invalidAmount"),
+        t("inventory.cannotRemove", { amount: adjustAmount.toFixed(1), unit: adjustUnitLabel, available: currentDisplayQty.toFixed(1) })
       );
       return;
     }
 
     if (!adjustReason.trim()) {
-      Alert.alert("Reason Required", "Please enter a reason for the adjustment.");
+      Alert.alert(t("inventory.reasonRequired"), t("inventory.pleaseEnterReason"));
       return;
     }
 
@@ -266,7 +280,7 @@ export default function InventoryScreen() {
       await fetchInventory(searchQuery);
     } catch (error) {
       console.error("Failed to adjust weight:", error);
-      Alert.alert("Error", "Failed to adjust weight. Please try again.");
+      Alert.alert(t("common.error"), t("inventory.failedToAdjust"));
     } finally {
       setAdjustSubmitting(false);
     }
@@ -296,7 +310,7 @@ export default function InventoryScreen() {
               ]}
             >
               <Text style={[styles.stockBadgeText, { color: stockColor }]}>
-                {getStockLabel(item.stock_status)}
+                {getStockLabel(item.stock_status, t)}
               </Text>
             </View>
             <Text style={styles.gridItemName} numberOfLines={2}>
@@ -314,14 +328,14 @@ export default function InventoryScreen() {
                 activeOpacity={0.6}
                 onPress={() => handleOpenAdjustModal(item)}
               >
-                <Text style={styles.gridActionText}>Adjust</Text>
+                <Text style={styles.gridActionText}>{t("inventory.detail.adjustStock")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.gridActionButton}
                 activeOpacity={0.6}
                 onPress={() => handleViewDetails(item)}
               >
-                <Text style={styles.gridActionText}>Details</Text>
+                <Text style={styles.gridActionText}>{t("inventory.detail.itemDetails")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -353,7 +367,7 @@ export default function InventoryScreen() {
                 ]}
               >
                 <Text style={[styles.stockBadgeText, { color: stockColor }]}>
-                  {getStockLabel(item.stock_status)}
+                  {getStockLabel(item.stock_status, t)}
                 </Text>
               </View>
             </View>
@@ -369,7 +383,7 @@ export default function InventoryScreen() {
           {/* Details: Location */}
           {item.location ? (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Location</Text>
+              <Text style={styles.detailLabel}>{t("equipment.detail.location")}</Text>
               <Text style={styles.detailValue}>{item.location.name}</Text>
             </View>
           ) : null}
@@ -377,13 +391,13 @@ export default function InventoryScreen() {
           {/* Meta row: supplier + received date */}
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Supplier</Text>
+              <Text style={styles.metaLabel}>{t("inventory.detail.supplier")}</Text>
               <Text style={styles.metaValue} numberOfLines={1}>
                 {item.supplier?.name ?? "N/A"}
               </Text>
             </View>
             <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Received</Text>
+              <Text style={styles.metaLabel}>{t("inventory.detail.arrivedAt")}</Text>
               <Text style={styles.metaValue}>
                 {formatDate(item.received_at)}
               </Text>
@@ -397,7 +411,7 @@ export default function InventoryScreen() {
               activeOpacity={0.6}
               onPress={() => handleOpenAdjustModal(item)}
             >
-              <Text style={styles.actionButtonText}>Adjust</Text>
+              <Text style={styles.actionButtonText}>{t("inventory.detail.adjustStock")}</Text>
             </TouchableOpacity>
             <View style={styles.actionDivider} />
             <TouchableOpacity
@@ -405,7 +419,7 @@ export default function InventoryScreen() {
               activeOpacity={0.6}
               onPress={() => handleViewDetails(item)}
             >
-              <Text style={styles.actionButtonText}>View Details</Text>
+              <Text style={styles.actionButtonText}>{t("inventory.detail.itemDetails")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -420,8 +434,8 @@ export default function InventoryScreen() {
           <View style={styles.headerLeft}>
             <HamburgerButton />
             <View>
-              <Text style={styles.title}>Inventory</Text>
-              <Text style={styles.headerSubtitle}>Stock Management</Text>
+              <Text style={styles.title}>{t("inventory.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("inventory.title")}</Text>
             </View>
           </View>
         </View>
@@ -439,8 +453,8 @@ export default function InventoryScreen() {
         <View style={styles.headerLeft}>
           <HamburgerButton />
           <View>
-            <Text style={styles.title}>Inventory</Text>
-            <Text style={styles.headerSubtitle}>Stock Management</Text>
+            <Text style={styles.title}>{t("inventory.title")}</Text>
+            <Text style={styles.headerSubtitle}>{t("inventory.stockManagement")}</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
@@ -488,7 +502,7 @@ export default function InventoryScreen() {
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search inventory..."
+          placeholder={t("inventory.searchPlaceholder")}
           placeholderTextColor={Colors.textTertiary}
           autoCapitalize="none"
           autoCorrect={false}
@@ -518,7 +532,7 @@ export default function InventoryScreen() {
                   activeFilter === filter && styles.filterChipTextActive,
                 ]}
               >
-                {filter}
+                {t(FILTER_I18N[filter])}
               </Text>
             </TouchableOpacity>
           ))}
@@ -531,20 +545,20 @@ export default function InventoryScreen() {
           <Text style={[styles.summaryValue, { color: Colors.sky }]}>
             {summary.total_items}
           </Text>
-          <Text style={styles.summaryLabel}>TOTAL ITEMS</Text>
+          <Text style={styles.summaryLabel}>{t("inventory.summary.totalItems").toUpperCase()}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: Colors.boven }]}>
             {summary.low_stock_count}
           </Text>
-          <Text style={styles.summaryLabel}>LOW STOCK</Text>
+          <Text style={styles.summaryLabel}>{t("inventory.summary.lowStockItems").toUpperCase()}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: Colors.leaf }]}>
             {totalWeight.toFixed(1)}
-            <Text style={styles.summaryUnit}> kg</Text>
+            <Text style={styles.summaryUnit}> {t("inventory.units.kg")}</Text>
           </Text>
-          <Text style={styles.summaryLabel}>TOTAL WEIGHT</Text>
+          <Text style={styles.summaryLabel}>{t("inventory.summary.totalWeight").toUpperCase()}</Text>
         </View>
       </View>
 
@@ -567,7 +581,7 @@ export default function InventoryScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No inventory items found.</Text>
+            <Text style={styles.emptyText}>{t("inventory.noItems")}</Text>
           </View>
         }
       />
@@ -585,7 +599,7 @@ export default function InventoryScreen() {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Adjust Quantity</Text>
+              <Text style={styles.modalTitle}>{t("inventory.detail.adjustStock")}</Text>
               {adjustItem ? (
                 <Text style={styles.modalSubtitle} numberOfLines={1}>
                   {adjustItem.name}
@@ -610,7 +624,7 @@ export default function InventoryScreen() {
                       adjustMode === "add" && styles.toggleButtonTextAddActive,
                     ]}
                   >
-                    + Add
+                    + {t("common.add")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -627,7 +641,7 @@ export default function InventoryScreen() {
                       adjustMode === "remove" && styles.toggleButtonTextRemoveActive,
                     ]}
                   >
-                    - Remove
+                    - {t("common.remove")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -648,7 +662,7 @@ export default function InventoryScreen() {
 
               {/* Stepper */}
               <View style={styles.modalField}>
-                <Text style={styles.modalLabel}>Adjustment Amount</Text>
+                <Text style={styles.modalLabel}>{t("inventory.detail.adjustment")}</Text>
                 <View style={styles.stepperRow}>
                   <TouchableOpacity
                     style={[
@@ -703,7 +717,7 @@ export default function InventoryScreen() {
                     { color: adjustMode === "add" ? Colors.leaf : Colors.traffic },
                   ]}
                 >
-                  {adjustMode === "add" ? "ADDING STOCK" : "REMOVING STOCK"}
+                  {adjustMode === "add" ? t("inventory.addingStock") : t("inventory.removingStock")}
                 </Text>
                 <Text style={styles.previewWeights}>
                   {currentDisplayQty.toFixed(1)} {adjustUnitLabel} {"  \u2192  "}
@@ -722,12 +736,12 @@ export default function InventoryScreen() {
 
               {/* Reason */}
               <View style={styles.modalField}>
-                <Text style={styles.modalLabel}>Reason</Text>
+                <Text style={styles.modalLabel}>{t("inventory.detail.reason")}</Text>
                 <TextInput
                   style={[styles.modalInput, styles.modalInputMultiline]}
                   value={adjustReason}
                   onChangeText={setAdjustReason}
-                  placeholder="e.g. Received shipment, spillage, physical count..."
+                  placeholder={t("inventory.reasonPlaceholderExample")}
                   placeholderTextColor={Colors.textTertiary}
                   multiline
                   numberOfLines={3}
@@ -743,7 +757,7 @@ export default function InventoryScreen() {
                 activeOpacity={0.7}
                 disabled={adjustSubmitting}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>{t("common.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -759,7 +773,7 @@ export default function InventoryScreen() {
                   <ActivityIndicator size="small" color={Colors.text} />
                 ) : (
                   <Text style={styles.modalSubmitText}>
-                    {adjustMode === "add" ? "Add Stock" : "Remove Stock"}
+                    {adjustMode === "add" ? t("inventory.addStock") : t("inventory.removeStock")}
                   </Text>
                 )}
               </TouchableOpacity>

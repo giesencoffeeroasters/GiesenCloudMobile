@@ -18,7 +18,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
+import { useTranslation } from "react-i18next";
 import {
   PlanningItem,
   ProfilerProfile,
@@ -106,8 +108,13 @@ const DAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const EMPLOYEES_ENDPOINT = "/employees";
 
 export default function PlanDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({
+    requiresCapabilities: ["roast_planning"],
+    requiresFeatures: ["roast_planning"],
+  });
 
   // View vs edit mode
   const [isEditing, setIsEditing] = useState(false);
@@ -407,7 +414,7 @@ export default function PlanDetailScreen() {
     } catch (err: any) {
       const message =
         err.response?.data?.message ?? "Failed to mark as complete.";
-      Alert.alert("Error", message);
+      Alert.alert(t("common.error"), message);
     } finally {
       setCompleting(false);
     }
@@ -415,12 +422,12 @@ export default function PlanDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      "Delete Plan",
-      "Are you sure you want to delete this roast plan? This action cannot be undone.",
+      t("common.delete"),
+      t("planning.detail.markCompleteConfirm"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             setDeleting(true);
@@ -428,7 +435,7 @@ export default function PlanDetailScreen() {
               await apiClient.delete(`/planning/${id}`);
               router.back();
             } catch (err) {
-              Alert.alert("Error", "Failed to delete plan.");
+              Alert.alert(t("common.error"), t("common.somethingWentWrong"));
             } finally {
               setDeleting(false);
             }
@@ -464,8 +471,8 @@ export default function PlanDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Plan Details</Text>
-                <Text style={styles.headerSubtitle}>Loading...</Text>
+                <Text style={styles.headerTitle}>{t("planning.detail.planDetails")}</Text>
+                <Text style={styles.headerSubtitle}>{t("common.loading")}</Text>
               </View>
             </View>
           </View>
@@ -503,8 +510,8 @@ export default function PlanDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Plan Details</Text>
-                <Text style={styles.headerSubtitle}>Error</Text>
+                <Text style={styles.headerTitle}>{t("planning.detail.planDetails")}</Text>
+                <Text style={styles.headerSubtitle}>{t("common.error")}</Text>
               </View>
             </View>
           </View>
@@ -516,7 +523,7 @@ export default function PlanDetailScreen() {
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -556,8 +563,8 @@ export default function PlanDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Edit Plan</Text>
-                <Text style={styles.headerSubtitle}>Update Roast Plan</Text>
+                <Text style={styles.headerTitle}>{t("planning.create.editTitle")}</Text>
+                <Text style={styles.headerSubtitle}>{t("planning.create.updatePlan")}</Text>
               </View>
             </View>
           </View>
@@ -1320,9 +1327,9 @@ export default function PlanDetailScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                {plan.description ?? plan.profile?.name ?? "Roast Plan"}
+                {plan.description ?? plan.profile?.name ?? t("planning.detail.roastPlan")}
               </Text>
-              <Text style={styles.headerSubtitle}>Plan Details</Text>
+              <Text style={styles.headerSubtitle}>{t("planning.detail.planDetails")}</Text>
             </View>
           </View>
         </View>
@@ -1366,10 +1373,10 @@ export default function PlanDetailScreen() {
 
         {/* Details Card */}
         <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Details</Text>
+          <Text style={styles.sectionTitle}>{t("planning.detail.planDetails")}</Text>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Date</Text>
+            <Text style={styles.detailLabel}>{t("planning.detail.scheduledDate")}</Text>
             <Text style={styles.detailValue}>
               {formatDateShort(plan.planned_at)}
             </Text>
@@ -1378,7 +1385,7 @@ export default function PlanDetailScreen() {
           <View style={styles.detailDivider} />
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Profile</Text>
+            <Text style={styles.detailLabel}>{t("planning.detail.profile")}</Text>
             <Text style={styles.detailValue}>
               {plan.profile?.name ?? "N/A"}
             </Text>
@@ -1388,7 +1395,7 @@ export default function PlanDetailScreen() {
             <>
               <View style={styles.detailDivider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Roaster Model</Text>
+                <Text style={styles.detailLabel}>{t("equipment.detail.model")}</Text>
                 <Text style={styles.detailValue}>{plan.profile.roaster_model}</Text>
               </View>
             </>
@@ -1397,7 +1404,7 @@ export default function PlanDetailScreen() {
           <View style={styles.detailDivider} />
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Roaster</Text>
+            <Text style={styles.detailLabel}>{t("equipment.title")}</Text>
             <Text style={styles.detailValue}>
               {plan.device?.name ?? "N/A"}
             </Text>
@@ -1407,7 +1414,7 @@ export default function PlanDetailScreen() {
             <>
               <View style={styles.detailDivider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Duration</Text>
+                <Text style={styles.detailLabel}>{t("roasts.detail.duration")}</Text>
                 <Text style={styles.detailValue}>
                   {formatDuration(plan.profile.duration)}
                 </Text>
@@ -1419,7 +1426,7 @@ export default function PlanDetailScreen() {
             <>
               <View style={styles.detailDivider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Employee</Text>
+                <Text style={styles.detailLabel}>{t("planning.detail.assignedTo")}</Text>
                 <Text style={styles.detailValue}>{plan.employee.name}</Text>
               </View>
             </>
@@ -1441,7 +1448,7 @@ export default function PlanDetailScreen() {
         {/* Description Card */}
         {plan.description ? (
           <View style={styles.detailsCard}>
-            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.sectionTitle}>{t("planning.detail.notes")}</Text>
             <Text style={styles.descriptionText}>{plan.description}</Text>
           </View>
         ) : null}

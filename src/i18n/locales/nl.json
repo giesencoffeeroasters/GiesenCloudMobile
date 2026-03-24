@@ -207,6 +207,13 @@
     "planRoast": "Plan Branding",
     "logQuality": "Log Kwaliteit",
     "checkStock": "Controleer Voorraad",
+    "activityTitles": {
+      "roastCompleted": "Branding voltooid",
+      "inventoryReceived": "Voorraad ontvangen",
+      "inventoryUsed": "Voorraad verbruikt",
+      "inventoryAdjusted": "Voorraad gecorrigeerd",
+      "stockAlert": "Lage voorraad waarschuwing"
+    },
     "kgRoasted": "KG Gebrand",
     "batches": "Batches",
     "avgBatch": "Gem. Batch",

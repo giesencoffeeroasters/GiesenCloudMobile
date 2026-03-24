@@ -21,6 +21,7 @@ import type {
   ServiceAppointmentDetail,
   ServiceAppointmentPlannedStatus,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -185,6 +186,7 @@ function ImageIcon({ color }: { color: string }) {
 /* ------------------------------------------------------------------ */
 
 export default function ServiceAppointmentDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [appointment, setAppointment] = useState<ServiceAppointmentDetail | null>(null);
@@ -232,12 +234,12 @@ export default function ServiceAppointmentDetailScreen() {
   /* ── Actions ── */
   const handleConfirm = useCallback(() => {
     Alert.alert(
-      "Confirm Appointment",
-      "Are you sure you want to confirm this service appointment?",
+      t("serviceAppointments.detail.confirmAppointment"),
+      t("serviceAppointments.detail.confirmMessage"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Confirm",
+          text: t("common.confirm"),
           onPress: async () => {
             setConfirming(true);
             try {
@@ -245,8 +247,8 @@ export default function ServiceAppointmentDetailScreen() {
               await fetchAppointment();
             } catch (err: any) {
               Alert.alert(
-                "Error",
-                err.response?.data?.message ?? "Failed to confirm appointment."
+                t("common.error"),
+                err.response?.data?.message ?? t("common.somethingWentWrong")
               );
             } finally {
               setConfirming(false);
@@ -259,16 +261,16 @@ export default function ServiceAppointmentDetailScreen() {
 
   const handleDecline = useCallback(() => {
     Alert.prompt(
-      "Decline Appointment",
-      "Please provide a reason for declining:",
+      t("serviceAppointments.detail.declineAppointment"),
+      t("serviceAppointments.detail.declineMessage"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Decline",
+          text: t("serviceAppointments.detail.declineAppointment"),
           style: "destructive",
           onPress: async (reason?: string) => {
             if (!reason?.trim()) {
-              Alert.alert("Error", "A decline reason is required.");
+              Alert.alert(t("common.error"), t("common.required"));
               return;
             }
             setDeclining(true);
@@ -279,8 +281,8 @@ export default function ServiceAppointmentDetailScreen() {
               await fetchAppointment();
             } catch (err: any) {
               Alert.alert(
-                "Error",
-                err.response?.data?.message ?? "Failed to decline appointment."
+                t("common.error"),
+                err.response?.data?.message ?? t("common.somethingWentWrong")
               );
             } finally {
               setDeclining(false);
@@ -294,15 +296,15 @@ export default function ServiceAppointmentDetailScreen() {
 
   const handleReschedule = useCallback(() => {
     Alert.prompt(
-      "Reschedule Appointment",
-      "Please provide a reason for rescheduling:",
+      t("serviceAppointments.detail.reschedule"),
+      t("serviceAppointments.detail.reschedule"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Reschedule",
+          text: t("serviceAppointments.detail.reschedule"),
           onPress: async (reason?: string) => {
             if (!reason?.trim()) {
-              Alert.alert("Error", "A reschedule reason is required.");
+              Alert.alert(t("common.error"), t("common.required"));
               return;
             }
             setRescheduling(true);
@@ -313,8 +315,8 @@ export default function ServiceAppointmentDetailScreen() {
               await fetchAppointment();
             } catch (err: any) {
               Alert.alert(
-                "Error",
-                err.response?.data?.message ?? "Failed to reschedule appointment."
+                t("common.error"),
+                err.response?.data?.message ?? t("common.somethingWentWrong")
               );
             } finally {
               setRescheduling(false);
@@ -343,7 +345,7 @@ export default function ServiceAppointmentDetailScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.headerSubtitle}>Service Appointment</Text>
+              <Text style={styles.headerSubtitle}>{t("serviceAppointments.detail.appointmentDetails")}</Text>
               {title ? (
                 <Text style={styles.headerTitle} numberOfLines={1}>
                   {title}
@@ -375,14 +377,14 @@ export default function ServiceAppointmentDetailScreen() {
         {renderHeader()}
         <View style={styles.centeredContainer}>
           <Text style={styles.errorText}>
-            {error ?? "Appointment not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -442,7 +444,7 @@ export default function ServiceAppointmentDetailScreen() {
             <View style={styles.infoRow}>
               <View style={styles.infoIconRow}>
                 <CalendarIcon color={Colors.textTertiary} />
-                <Text style={styles.infoLabel}>Work Date</Text>
+                <Text style={styles.infoLabel}>{t("serviceAppointments.detail.date")}</Text>
               </View>
               <Text style={styles.infoValue}>
                 {formatDate(appointment.work_date)}
@@ -454,7 +456,7 @@ export default function ServiceAppointmentDetailScreen() {
             <>
               <View style={styles.infoDivider} />
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Time</Text>
+                <Text style={styles.infoLabel}>{t("serviceAppointments.detail.time")}</Text>
                 <Text style={styles.infoValue}>{appointment.work_time}</Text>
               </View>
             </>
@@ -466,7 +468,7 @@ export default function ServiceAppointmentDetailScreen() {
               <View style={styles.infoRow}>
                 <View style={styles.infoIconRow}>
                   <ToolIcon color={Colors.textTertiary} />
-                  <Text style={styles.infoLabel}>Work Type</Text>
+                  <Text style={styles.infoLabel}>{t("serviceAppointments.detail.workType")}</Text>
                 </View>
                 <Text style={styles.infoValue}>
                   {appointment.work_type.title}
@@ -478,7 +480,7 @@ export default function ServiceAppointmentDetailScreen() {
 
         {/* ── Machine Info Card ── */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Machine Info</Text>
+          <Text style={styles.sectionTitle}>{t("serviceAppointments.detail.equipment")}</Text>
 
           {appointment.asset ? (
             <View style={styles.infoRow}>
@@ -491,7 +493,7 @@ export default function ServiceAppointmentDetailScreen() {
             <>
               <View style={styles.infoDivider} />
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Model</Text>
+                <Text style={styles.infoLabel}>{t("equipment.detail.model")}</Text>
                 <Text style={styles.infoValue}>{appointment.asset.model}</Text>
               </View>
             </>
@@ -501,7 +503,7 @@ export default function ServiceAppointmentDetailScreen() {
             <>
               <View style={styles.infoDivider} />
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Serial Number</Text>
+                <Text style={styles.infoLabel}>{t("equipment.detail.serialNumber")}</Text>
                 <Text style={styles.infoValueMono}>
                   {appointment.machine_serial_number}
                 </Text>
@@ -549,7 +551,7 @@ export default function ServiceAppointmentDetailScreen() {
         {/* ── Service Note Card ── */}
         {appointment.service_note ? (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Service Note</Text>
+            <Text style={styles.sectionTitle}>{t("serviceAppointments.detail.description")}</Text>
             <Text style={styles.noteText}>{appointment.service_note}</Text>
           </View>
         ) : null}
@@ -703,7 +705,7 @@ export default function ServiceAppointmentDetailScreen() {
             {confirming ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={styles.confirmButtonText}>Confirm</Text>
+              <Text style={styles.confirmButtonText}>{t("serviceAppointments.detail.confirmAppointment")}</Text>
             )}
           </TouchableOpacity>
 
@@ -720,7 +722,7 @@ export default function ServiceAppointmentDetailScreen() {
               {declining ? (
                 <ActivityIndicator size="small" color={Colors.traffic} />
               ) : (
-                <Text style={styles.declineButtonText}>Decline</Text>
+                <Text style={styles.declineButtonText}>{t("serviceAppointments.detail.declineAppointment")}</Text>
               )}
             </TouchableOpacity>
 
@@ -736,7 +738,7 @@ export default function ServiceAppointmentDetailScreen() {
               {rescheduling ? (
                 <ActivityIndicator size="small" color={Colors.sun} />
               ) : (
-                <Text style={styles.rescheduleButtonText}>Reschedule</Text>
+                <Text style={styles.rescheduleButtonText}>{t("serviceAppointments.detail.reschedule")}</Text>
               )}
             </TouchableOpacity>
           </View>

@@ -17,7 +17,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -128,7 +130,9 @@ function CheckIcon({ color }: { color: string }) {
 /* ------------------------------------------------------------------ */
 
 export default function CreateQualitySessionScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ requiresFeatures: ["quality"] });
 
   /* ── Form state ── */
   const [name, setName] = useState("");
@@ -298,7 +302,7 @@ export default function CreateQualitySessionScreen() {
         setErrors({
           general:
             err.response?.data?.message ??
-            "Something went wrong. Please try again.",
+            t("common.somethingWentWrong"),
         });
       }
     } finally {
@@ -324,8 +328,8 @@ export default function CreateQualitySessionScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>New Session</Text>
-              <Text style={styles.headerSubtitle}>Cupping Session</Text>
+              <Text style={styles.headerTitle}>{t("quality.create.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("quality.cuppingSessions")}</Text>
             </View>
           </View>
         </View>
@@ -351,7 +355,7 @@ export default function CreateQualitySessionScreen() {
           {/* Session Name */}
           <View style={styles.fieldCard}>
             <Text style={styles.fieldLabel}>
-              Session Name <Text style={styles.required}>*</Text>
+              {t("quality.create.title")} <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={[
@@ -372,7 +376,7 @@ export default function CreateQualitySessionScreen() {
 
           {/* Description */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Description</Text>
+            <Text style={styles.fieldLabel}>{t("supportScreen.create.description")}</Text>
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={description}
@@ -387,12 +391,12 @@ export default function CreateQualitySessionScreen() {
 
           {/* Form Type Picker */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Cupping Form</Text>
+            <Text style={styles.fieldLabel}>{t("quality.create.selectForm")}</Text>
 
             {loadingForms ? (
               <View style={styles.loadingFormsRow}>
                 <ActivityIndicator size="small" color={Colors.slate} />
-                <Text style={styles.loadingFormsText}>Loading forms...</Text>
+                <Text style={styles.loadingFormsText}>{t("common.loading")}</Text>
               </View>
             ) : forms.length === 0 ? (
               <View style={styles.noFormsBox}>
@@ -488,7 +492,7 @@ export default function CreateQualitySessionScreen() {
           <View style={styles.fieldCard}>
             <View style={styles.toggleRow}>
               <View style={styles.toggleInfo}>
-                <Text style={styles.fieldLabel}>Blind Tasting</Text>
+                <Text style={styles.fieldLabel}>{t("quality.blind")}</Text>
                 <Text style={styles.toggleDescription}>
                   Sample identities will be hidden during scoring
                 </Text>
@@ -507,7 +511,7 @@ export default function CreateQualitySessionScreen() {
 
           {/* Schedule Date */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Schedule Date</Text>
+            <Text style={styles.fieldLabel}>{t("planning.create.selectDate")}</Text>
             <View style={styles.datePickerRow}>
               <TouchableOpacity
                 style={[
@@ -564,7 +568,7 @@ export default function CreateQualitySessionScreen() {
 
           {/* Samples */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Samples</Text>
+            <Text style={styles.fieldLabel}>{t("quality.detail.samples")}</Text>
             <View style={{ gap: 12 }}>
               {samples.map((sample, index) => (
                 <View key={index} style={styles.sampleEntry}>
@@ -624,7 +628,7 @@ export default function CreateQualitySessionScreen() {
                   strokeLinecap="round"
                 />
               </Svg>
-              <Text style={styles.addSampleButtonText}>Add Sample</Text>
+              <Text style={styles.addSampleButtonText}>{t("quality.create.addSample")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -641,7 +645,7 @@ export default function CreateQualitySessionScreen() {
             {submitting ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.submitButtonText}>Create Session</Text>
+              <Text style={styles.submitButtonText}>{t("quality.create.startSession")}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -657,7 +661,7 @@ export default function CreateQualitySessionScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
+              <Text style={styles.modalTitle}>{t("planning.create.selectDate")}</Text>
               <TouchableOpacity
                 onPress={() => setShowDatePicker(false)}
                 activeOpacity={0.7}

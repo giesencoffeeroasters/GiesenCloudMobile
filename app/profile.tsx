@@ -17,8 +17,11 @@ import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
+import { useTranslation } from "react-i18next";
+import { LANGUAGES, changeLanguage, type LanguageCode } from "@/i18n";
 
 export default function ProfileScreen() {
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user, loadUser } = useAuthStore();
 
@@ -82,7 +85,7 @@ export default function ProfileScreen() {
       await apiClient.put("/auth/profile", payload);
       await loadUser();
 
-      setSuccessMessage("Profile updated successfully.");
+      setSuccessMessage(t("profile.profileUpdated"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -93,7 +96,7 @@ export default function ProfileScreen() {
       if (err.response?.status === 422 && err.response?.data?.errors) {
         setErrors(err.response.data.errors);
       } else {
-        setErrors({ general: ["Something went wrong. Please try again."] });
+        setErrors({ general: [t("common.somethingWentWrong")] });
       }
     } finally {
       setSaving(false);
@@ -129,8 +132,8 @@ export default function ProfileScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Profile</Text>
-              <Text style={styles.headerSubtitle}>Your account details</Text>
+              <Text style={styles.headerTitle}>{t("profile.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("profile.subtitle")}</Text>
             </View>
           </View>
         </View>
@@ -151,7 +154,7 @@ export default function ProfileScreen() {
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
-            <Text style={styles.avatarName}>{user?.name ?? "Unknown"}</Text>
+            <Text style={styles.avatarName}>{user?.name ?? t("common.unknown")}</Text>
             <Text style={styles.avatarEmail}>{user?.email ?? ""}</Text>
           </View>
 
@@ -180,15 +183,15 @@ export default function ProfileScreen() {
 
           {/* Personal Info */}
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
+            <Text style={styles.sectionTitle}>{t("profile.personalInfo")}</Text>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>First Name</Text>
+              <Text style={styles.fieldLabel}>{t("profile.firstName")}</Text>
               <TextInput
                 style={[styles.input, getFieldError("first_name") && styles.inputError]}
                 value={firstName}
                 onChangeText={setFirstName}
-                placeholder="First name"
+                placeholder={t("profile.firstNamePlaceholder")}
                 placeholderTextColor={Colors.textTertiary}
                 autoCapitalize="words"
                 autoCorrect={false}
@@ -199,12 +202,12 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Last Name</Text>
+              <Text style={styles.fieldLabel}>{t("profile.lastName")}</Text>
               <TextInput
                 style={[styles.input, getFieldError("last_name") && styles.inputError]}
                 value={lastName}
                 onChangeText={setLastName}
-                placeholder="Last name"
+                placeholder={t("profile.lastNamePlaceholder")}
                 placeholderTextColor={Colors.textTertiary}
                 autoCapitalize="words"
                 autoCorrect={false}
@@ -215,12 +218,12 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Email</Text>
+              <Text style={styles.fieldLabel}>{t("profile.emailLabel")}</Text>
               <TextInput
                 style={[styles.input, getFieldError("email") && styles.inputError]}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="Email address"
+                placeholder={t("profile.emailPlaceholder")}
                 placeholderTextColor={Colors.textTertiary}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -232,10 +235,10 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Team</Text>
+              <Text style={styles.fieldLabel}>{t("profile.team")}</Text>
               <View style={styles.readOnlyField}>
                 <Text style={styles.readOnlyText}>
-                  {user?.current_team?.name ?? "No team"}
+                  {user?.current_team?.name ?? t("profile.noTeam")}
                 </Text>
               </View>
             </View>
@@ -255,7 +258,7 @@ export default function ProfileScreen() {
                 }
               }}
             >
-              <Text style={styles.sectionTitle}>Change Password</Text>
+              <Text style={styles.sectionTitle}>{t("profile.changePassword")}</Text>
               <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
                 <Path
                   d={showPassword ? "M18 15l-6-6-6 6" : "M6 9l6 6 6-6"}
@@ -270,12 +273,12 @@ export default function ProfileScreen() {
             {showPassword ? (
               <View style={styles.passwordFields}>
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.fieldLabel}>Current Password</Text>
+                  <Text style={styles.fieldLabel}>{t("profile.currentPassword")}</Text>
                   <TextInput
                     style={[styles.input, getFieldError("current_password") && styles.inputError]}
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
-                    placeholder="Enter current password"
+                    placeholder={t("profile.currentPasswordPlaceholder")}
                     placeholderTextColor={Colors.textTertiary}
                     secureTextEntry
                     autoCapitalize="none"
@@ -287,12 +290,12 @@ export default function ProfileScreen() {
                 </View>
 
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.fieldLabel}>New Password</Text>
+                  <Text style={styles.fieldLabel}>{t("profile.newPassword")}</Text>
                   <TextInput
                     style={[styles.input, getFieldError("password") && styles.inputError]}
                     value={newPassword}
                     onChangeText={setNewPassword}
-                    placeholder="At least 8 characters"
+                    placeholder={t("profile.newPasswordPlaceholder")}
                     placeholderTextColor={Colors.textTertiary}
                     secureTextEntry
                     autoCapitalize="none"
@@ -304,12 +307,12 @@ export default function ProfileScreen() {
                 </View>
 
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.fieldLabel}>Confirm Password</Text>
+                  <Text style={styles.fieldLabel}>{t("profile.confirmPassword")}</Text>
                   <TextInput
                     style={styles.input}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
-                    placeholder="Repeat new password"
+                    placeholder={t("profile.confirmPasswordPlaceholder")}
                     placeholderTextColor={Colors.textTertiary}
                     secureTextEntry
                     autoCapitalize="none"
@@ -318,6 +321,43 @@ export default function ProfileScreen() {
                 </View>
               </View>
             ) : null}
+          </View>
+
+          {/* Language */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t("profile.language")}</Text>
+            <Text style={styles.languageSubtitle}>{t("profile.languageSubtitle")}</Text>
+            <View style={styles.languageOptions}>
+              {LANGUAGES.map((lang) => {
+                const isActive = i18n.language === lang.code;
+                return (
+                  <TouchableOpacity
+                    key={lang.code}
+                    style={[styles.languageOption, isActive && styles.languageOptionActive]}
+                    activeOpacity={0.6}
+                    onPress={() => changeLanguage(lang.code as LanguageCode)}
+                  >
+                    <Text style={styles.languageFlag}>{lang.flag}</Text>
+                    <Text style={[styles.languageLabel, isActive && styles.languageLabelActive]}>
+                      {lang.label}
+                    </Text>
+                    {isActive && (
+                      <View style={styles.languageCheck}>
+                        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                          <Path
+                            d="M20 6L9 17l-5-5"
+                            stroke={Colors.safety}
+                            strokeWidth={2.5}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </Svg>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Save Button */}
@@ -330,7 +370,7 @@ export default function ProfileScreen() {
             {saving ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={styles.saveButtonText}>Save Changes</Text>
+              <Text style={styles.saveButtonText}>{t("profile.saveChanges")}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -521,6 +561,52 @@ const styles = StyleSheet.create({
   },
   passwordFields: {
     marginTop: 0,
+  },
+
+  /* -- Language selector -- */
+  languageSubtitle: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 12,
+    color: Colors.textTertiary,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  languageOptions: {
+    gap: 8,
+  },
+  languageOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bg,
+  },
+  languageOptionActive: {
+    borderColor: Colors.safety,
+    backgroundColor: "rgba(204,255,0,0.06)",
+  },
+  languageFlag: {
+    fontSize: 20,
+  },
+  languageLabel: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 14,
+    color: Colors.text,
+    flex: 1,
+  },
+  languageLabelActive: {
+    fontFamily: "DMSans-SemiBold",
+    color: Colors.text,
+  },
+  languageCheck: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   /* -- Save button -- */

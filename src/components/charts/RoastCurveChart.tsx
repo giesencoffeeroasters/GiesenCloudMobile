@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import { useTranslation } from "react-i18next";
 import Svg, {
   Path,
   Line,
@@ -200,6 +201,7 @@ export function RoastCurveChart({
   phases = [],
   clipId = "curve-clip",
 }: RoastCurveChartProps) {
+  const { t } = useTranslation();
   const screenWidth = Dimensions.get("window").width;
   const chartWidth = screenWidth - 40;
   const chartHeight = 220;
@@ -343,16 +345,16 @@ export function RoastCurveChart({
       <View style={chartStyles.legend}>
         <View style={chartStyles.legendItem}>
           <View style={[chartStyles.legendDot, { backgroundColor: CHART_COLORS.beanTemp }]} />
-          <Text style={chartStyles.legendText}>Bean Temp</Text>
+          <Text style={chartStyles.legendText}>{t("roasts.detail.beanTemp")}</Text>
         </View>
         <View style={chartStyles.legendItem}>
           <View style={[chartStyles.legendDot, { backgroundColor: CHART_COLORS.drumTemp }]} />
-          <Text style={chartStyles.legendText}>Drum Temp</Text>
+          <Text style={chartStyles.legendText}>{t("roasts.detail.envTemp")}</Text>
         </View>
         {ror.length > 0 ? (
           <View style={chartStyles.legendItem}>
             <View style={[chartStyles.legendDot, { backgroundColor: CHART_COLORS.ror }]} />
-            <Text style={chartStyles.legendText}>RoR</Text>
+            <Text style={chartStyles.legendText}>{t("roasts.detail.rateOfRise")}</Text>
           </View>
         ) : null}
       </View>
@@ -611,7 +613,7 @@ export function RoastCurveChart({
                   showDrumSpeed && { color: Colors.sun },
                 ]}
               >
-                Drum Speed
+                {t("giesenLive.metrics.drumSpeed")}
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -655,7 +657,7 @@ export function RoastCurveChart({
         <MiniChart
           points={curveData.drum_speed}
           color={CHART_COLORS.drumSpeed}
-          label="Drum Speed"
+          label={t("giesenLive.metrics.drumSpeed")}
           chartWidth={chartWidth}
           timeMax={timeMax}
           paddingLeft={paddingLeft}

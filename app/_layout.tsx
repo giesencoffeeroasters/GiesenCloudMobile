@@ -15,6 +15,8 @@ import { useAuthStore } from "@/stores/authStore";
 import { useGiesenLive } from "@/hooks/useGiesenLive";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { initActiveServer } from "@/constants/config";
+import { initI18n } from "@/i18n";
+import { useTranslation } from "react-i18next";
 
 // Suppress Expo Go push notification warnings (not applicable in dev builds)
 LogBox.ignoreLogs([
@@ -25,8 +27,10 @@ LogBox.ignoreLogs([
 SplashScreen.preventAutoHideAsync();
 
 function BrandedSplash() {
-  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const { t } = useTranslation();
+  const logoScale = useRef(new Animated.Value(0.5)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
+  const textTranslateY = useRef(new Animated.Value(16)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
   const spinnerOpacity = useRef(new Animated.Value(0)).current;
 
@@ -35,24 +39,31 @@ function BrandedSplash() {
       Animated.parallel([
         Animated.spring(logoScale, {
           toValue: 1,
-          tension: 60,
-          friction: 8,
+          tension: 50,
+          friction: 7,
           useNativeDriver: true,
         }),
         Animated.timing(logoOpacity, {
           toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textTranslateY, {
+          toValue: 0,
           duration: 400,
           useNativeDriver: true,
         }),
       ]),
-      Animated.timing(textOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
       Animated.timing(spinnerOpacity, {
         toValue: 1,
-        duration: 200,
+        duration: 300,
         useNativeDriver: true,
       }),
     ]).start();
@@ -73,9 +84,14 @@ function BrandedSplash() {
           />
         </Animated.View>
 
-        <Animated.View style={{ opacity: textOpacity }}>
+        <Animated.View
+          style={{
+            opacity: textOpacity,
+            transform: [{ translateY: textTranslateY }],
+          }}
+        >
           <Text style={splashStyles.title}>GiesenCloud</Text>
-          <Text style={splashStyles.subtitle}>Coffee Roasting Platform</Text>
+          <Text style={splashStyles.subtitle}>{t("splash.tagline")}</Text>
         </Animated.View>
       </View>
 
@@ -99,11 +115,16 @@ const splashStyles = StyleSheet.create({
   },
   logoWrap: {
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   logoImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
+    width: 88,
+    height: 88,
+    borderRadius: 20,
   },
   title: {
     fontSize: 28,
@@ -144,7 +165,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    initActiveServer().then(() => loadUser());
+    Promise.all([initActiveServer(), initI18n()]).then(() => loadUser());
   }, []);
 
   // Keep WebSocket connection alive for Giesen Live data across all screens

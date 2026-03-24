@@ -17,6 +17,7 @@ import { HamburgerButton } from "@/components/HamburgerButton";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import { ProfilerDevice } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 function isOnline(device: ProfilerDevice): boolean {
   if (!device.last_synced_at) return false;
@@ -32,6 +33,7 @@ function formatHours(hours: number | null): string {
 }
 
 export default function EquipmentScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [devices, setDevices] = useState<ProfilerDevice[]>([]);
@@ -46,12 +48,12 @@ export default function EquipmentScreen() {
       setDevices(response.data.data ?? []);
     } catch (err) {
       console.error("Failed to fetch equipment:", err);
-      setError("Failed to load equipment.");
+      setError(t("equipment.failedToLoad"));
     } finally {
       setLoading(false);
       if (isRefresh) setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -86,7 +88,7 @@ export default function EquipmentScreen() {
             />
           </View>
           <View style={styles.deviceModelRow}>
-            <Text style={styles.deviceModel}>{item.model ?? "Unknown Model"}</Text>
+            <Text style={styles.deviceModel}>{item.model ?? t("equipment.unknownModel")}</Text>
             {item.subscription_tier ? (
               <View
                 style={[
@@ -159,13 +161,13 @@ export default function EquipmentScreen() {
 
           <View style={styles.roastBadge}>
             <Text style={styles.roastBadgeText}>
-              {item.roasts_count ?? 0} roasts
+              {t("equipment.roastsCount", { count: item.roasts_count ?? 0 })}
             </Text>
           </View>
         </View>
       </TouchableOpacity>
     );
-  }, []);
+  }, [t]);
 
   const renderEmpty = useCallback(() => {
     if (loading) return null;
@@ -190,14 +192,13 @@ export default function EquipmentScreen() {
             />
           </Svg>
         </View>
-        <Text style={styles.emptyTitle}>No equipment found</Text>
+        <Text style={styles.emptyTitle}>{t("equipment.noEquipment")}</Text>
         <Text style={styles.emptySubtitle}>
-          Your team does not have any roasting equipment registered yet.
-          Add devices through giesen.cloud to see them here.
+          {t("equipment.noEquipmentDescription")}
         </Text>
       </View>
     );
-  }, [loading]);
+  }, [loading, t]);
 
   return (
     <View style={styles.screen}>
@@ -207,11 +208,11 @@ export default function EquipmentScreen() {
           <View style={styles.headerLeft}>
             <HamburgerButton />
             <View>
-              <Text style={styles.headerTitle}>Equipment</Text>
+              <Text style={styles.headerTitle}>{t("equipment.title")}</Text>
               <Text style={styles.headerSubtitle}>
                 {devices.length > 0
-                  ? `${devices.length} device${devices.length !== 1 ? "s" : ""}`
-                  : "Manage your roasters"}
+                  ? (devices.length === 1 ? t("equipment.deviceCount", { count: 1 }) : t("equipment.devicesCount", { count: devices.length }))
+                  : t("equipment.manageRoasters")}
               </Text>
             </View>
           </View>
@@ -233,7 +234,7 @@ export default function EquipmentScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>{t("common.retry")}</Text>
           </TouchableOpacity>
         </View>
       ) : (

@@ -1,7 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import Svg, { Rect, Line, Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
+import { useAuthStore } from "@/stores/authStore";
+import { canAccessFeature, hasRequiredAccess } from "@/lib/featureAccess";
 import type { DashboardData } from "@/types";
 
 interface QuickActionsWidgetProps {
@@ -83,24 +86,62 @@ function ActionButton({ label, icon, onPress }: ActionButtonProps) {
   );
 }
 
-export function QuickActionsWidget({ data }: QuickActionsWidgetProps) {
+export function QuickActionsWidget({ data: _data }: QuickActionsWidgetProps) {
+  const { t } = useTranslation();
+  const user = useAuthStore((state) => state.user);
+
+  const actions = [
+    hasRequiredAccess(user, {
+      requiresCapabilities: ["roast_planning"],
+      requiresFeatures: ["roast_planning"],
+    })
+      ? {
+          key: "new_plan",
+          label: t("widgets.newPlan"),
+          icon: <CalendarPlusIcon />,
+          onPress: () => router.push("/planning/create"),
+        }
+      : null,
+    canAccessFeature(user, "quality")
+      ? {
+          key: "quality_check",
+          label: t("widgets.qualityCheck"),
+          icon: <StarIcon />,
+          onPress: () => router.push("/quality/create"),
+        }
+      : null,
+    hasRequiredAccess(user, {
+      requiresCapabilities: ["inventory"],
+      requiresFeatures: ["inventory"],
+    })
+      ? {
+          key: "inventory",
+          label: t("tabs.inventory"),
+          icon: <PackageIcon />,
+          onPress: () => router.push("/(tabs)/inventory"),
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    key: string;
+    label: string;
+    icon: React.ReactNode;
+    onPress: () => void;
+  }>;
+
+  if (actions.length === 0) {
+    return null;
+  }
+
   return (
     <View style={styles.row}>
-      <ActionButton
-        label="Plan Roast"
-        icon={<CalendarPlusIcon />}
-        onPress={() => router.push("/planning/create")}
-      />
-      <ActionButton
-        label="Log Quality"
-        icon={<StarIcon />}
-        onPress={() => router.push("/quality/create")}
-      />
-      <ActionButton
-        label="Check Stock"
-        icon={<PackageIcon />}
-        onPress={() => router.push("/(tabs)/inventory")}
-      />
+      {actions.map((action) => (
+        <ActionButton
+          key={action.key}
+          label={action.label}
+          icon={action.icon}
+          onPress={action.onPress}
+        />
+      ))}
     </View>
   );
 }

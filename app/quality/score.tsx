@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
 import type {
   CuppingSessionDetail,
@@ -24,6 +25,7 @@ import type {
   CuppingFormAttribute,
   CuppingDescriptorCategory,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Local types                                                        */
@@ -346,11 +348,13 @@ function DescriptorChip({
 /* ------------------------------------------------------------------ */
 
 export default function ScoreSampleScreen() {
+  const { t } = useTranslation();
   const { sessionId, sampleId } = useLocalSearchParams<{
     sessionId: string;
     sampleId: string;
   }>();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ requiresFeatures: ["quality"] });
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -616,7 +620,7 @@ export default function ScoreSampleScreen() {
       const msg =
         err.response?.data?.message ??
         "Failed to save evaluation. Please try again.";
-      Alert.alert("Error", msg);
+      Alert.alert(t("common.error"), msg);
     } finally {
       setSubmitting(false);
     }
@@ -722,10 +726,10 @@ export default function ScoreSampleScreen() {
               <Text style={styles.headerTitle} numberOfLines={1}>
                 {sample
                   ? `Sample ${sample.sample_code}${sample.label ? ` \u2014 ${sample.label}` : ""}`
-                  : "Score Sample"}
+                  : t("quality.score.title")}
               </Text>
               <Text style={styles.headerSubtitle}>
-                {isEditMode ? "Edit Scores" : "Enter Scores"}
+                {isEditMode ? t("common.edit") : t("quality.score.title")}
               </Text>
             </View>
           </View>
@@ -753,14 +757,14 @@ export default function ScoreSampleScreen() {
         {renderHeader()}
         <View style={styles.centeredContainer}>
           <Text style={styles.errorText}>
-            {error ?? "Sample not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -871,7 +875,7 @@ export default function ScoreSampleScreen() {
           {/* ── Defects ── */}
           {showDefects && (
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Defects</Text>
+              <Text style={styles.sectionTitle}>{t("quality.score.defects")}</Text>
               <View style={{ gap: 12 }}>
                 <View>
                   <Text style={styles.fieldLabel}>Defect Cups (0-5)</Text>
@@ -941,7 +945,7 @@ export default function ScoreSampleScreen() {
 
           {/* ── Notes ── */}
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Notes</Text>
+            <Text style={styles.sectionTitle}>{t("quality.detail.notes")}</Text>
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={notes}
@@ -968,7 +972,7 @@ export default function ScoreSampleScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={styles.submitButtonText}>
-                {isEditMode ? "Update Scores" : "Submit Scores"}
+                {isEditMode ? t("common.update") : t("quality.score.submitScore")}
               </Text>
             )}
           </TouchableOpacity>

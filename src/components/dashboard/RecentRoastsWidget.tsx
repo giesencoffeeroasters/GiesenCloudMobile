@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
 import type { DashboardData } from "@/types";
@@ -77,17 +78,18 @@ function RoastCard({ item }: RoastCardProps) {
 }
 
 export function RecentRoastsWidget({ data }: RecentRoastsWidgetProps) {
+  const { t } = useTranslation();
   const roasts = MOCK_ROASTS;
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent Roasts</Text>
+        <Text style={styles.sectionTitle}>{t("widgets.recentRoasts")}</Text>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push("/(tabs)/roasts")}
         >
-          <Text style={styles.viewAllLink}>View All</Text>
+          <Text style={styles.viewAllLink}>{t("common.viewAll")}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.roastList}>

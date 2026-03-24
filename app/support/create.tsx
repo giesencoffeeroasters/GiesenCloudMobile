@@ -19,6 +19,7 @@ import { GiesenLogo } from "@/components/GiesenLogo";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import type { TicketAsset } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  SVG Icons                                                          */
@@ -112,6 +113,7 @@ function CheckIcon({ color }: { color: string }) {
 /* ------------------------------------------------------------------ */
 
 export default function CreateTicketScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
 
@@ -256,7 +258,7 @@ export default function CreateTicketScreen() {
         setErrors({
           general:
             err.response?.data?.message ??
-            "Something went wrong. Please try again.",
+            t("common.somethingWentWrong"),
         });
       }
     } finally {
@@ -282,8 +284,8 @@ export default function CreateTicketScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>New Ticket</Text>
-              <Text style={styles.headerSubtitle}>Support & Contact</Text>
+              <Text style={styles.headerTitle}>{t("supportScreen.create.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("supportScreen.title")}</Text>
             </View>
           </View>
         </View>
@@ -309,7 +311,7 @@ export default function CreateTicketScreen() {
           {/* Subject */}
           <View style={styles.fieldCard}>
             <Text style={styles.fieldLabel}>
-              Subject <Text style={styles.required}>*</Text>
+              {t("supportScreen.create.subject")} <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={[
@@ -318,7 +320,7 @@ export default function CreateTicketScreen() {
               ]}
               value={subject}
               onChangeText={setSubject}
-              placeholder="Brief summary of your issue"
+              placeholder={t("supportScreen.create.subjectPlaceholder")}
               placeholderTextColor={Colors.textTertiary}
               autoCapitalize="sentences"
               returnKeyType="next"
@@ -331,7 +333,7 @@ export default function CreateTicketScreen() {
           {/* Description */}
           <View style={styles.fieldCard}>
             <Text style={styles.fieldLabel}>
-              Description <Text style={styles.required}>*</Text>
+              {t("supportScreen.create.description")} <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={[
@@ -341,7 +343,7 @@ export default function CreateTicketScreen() {
               ]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Describe your issue in detail..."
+              placeholder={t("supportScreen.create.descriptionPlaceholder")}
               placeholderTextColor={Colors.textTertiary}
               multiline
               numberOfLines={5}
@@ -372,7 +374,7 @@ export default function CreateTicketScreen() {
 
           {/* Roaster / Machine */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Roaster / Machine</Text>
+            <Text style={styles.fieldLabel}>{t("supportScreen.create.equipment")}</Text>
 
             {!manualEntry ? (
               <>
@@ -532,7 +534,7 @@ export default function CreateTicketScreen() {
 
           {/* Attachments */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Attachments</Text>
+            <Text style={styles.fieldLabel}>{t("supportScreen.create.attachments")}</Text>
 
             {selectedFiles.length > 0 && (
               <View style={styles.fileList}>
@@ -570,7 +572,7 @@ export default function CreateTicketScreen() {
                   strokeLinecap="round"
                 />
               </Svg>
-              <Text style={styles.addFileButtonText}>Add File</Text>
+              <Text style={styles.addFileButtonText}>{t("supportScreen.create.addAttachment")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -587,7 +589,7 @@ export default function CreateTicketScreen() {
             {submitting ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.submitButtonText}>Submit Ticket</Text>
+              <Text style={styles.submitButtonText}>{t("supportScreen.create.submitTicket")}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

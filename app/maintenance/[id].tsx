@@ -17,6 +17,7 @@ import Svg, { Path, Circle as SvgCircle } from "react-native-svg";
 import * as ImagePicker from "expo-image-picker";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
 import type {
   MaintenanceTask,
@@ -24,6 +25,7 @@ import type {
   MaintenanceComment,
   SkipImpact,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -597,8 +599,10 @@ function StepCompletionRow({
 /* ------------------------------------------------------------------ */
 
 export default function MaintenanceTaskDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ feature: "maintenance" });
   const [task, setTask] = useState<MaintenanceTask | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -616,7 +620,7 @@ export default function MaintenanceTaskDetailScreen() {
       setError(null);
     } catch (err) {
       console.error("Failed to fetch maintenance task:", err);
-      setError("Failed to load task details.");
+      setError(t("common.somethingWentWrong"));
     }
   }, [id]);
 
@@ -654,8 +658,8 @@ export default function MaintenanceTaskDetailScreen() {
       await fetchTask();
     } catch (err: any) {
       Alert.alert(
-        "Error",
-        err.response?.data?.message ?? "Failed to add comment."
+        t("common.error"),
+        err.response?.data?.message ?? t("common.somethingWentWrong")
       );
     } finally {
       setSendingComment(false);
@@ -665,12 +669,12 @@ export default function MaintenanceTaskDetailScreen() {
   /* ── Complete task ── */
   const handleCompleteTask = useCallback(async () => {
     Alert.alert(
-      "Complete Task",
-      "Are you sure you want to mark this task as complete?",
+      t("maintenance.detail.completeTask"),
+      t("maintenance.detail.completeConfirm"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Complete",
+          text: t("maintenance.detail.completeTask"),
           onPress: async () => {
             setCompletingTask(true);
             try {
@@ -678,8 +682,8 @@ export default function MaintenanceTaskDetailScreen() {
               await fetchTask();
             } catch (err: any) {
               Alert.alert(
-                "Error",
-                err.response?.data?.message ?? "Failed to complete task."
+                t("common.error"),
+                err.response?.data?.message ?? t("common.somethingWentWrong")
               );
             } finally {
               setCompletingTask(false);
@@ -704,22 +708,22 @@ export default function MaintenanceTaskDetailScreen() {
         : "";
       const scoreMsg = `Compliance score will drop from ${impact.current_score}% to ${impact.projected_score}%.${voidWarning}`;
 
-      Alert.alert("Skip Task", scoreMsg + "\n\nAre you sure you want to skip?", [
-        { text: "Cancel", style: "cancel" },
+      Alert.alert(t("maintenance.detail.skipTask"), scoreMsg + "\n\n" + t("maintenance.detail.skipConfirm"), [
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Skip",
+          text: t("maintenance.detail.skipTask"),
           style: "destructive",
           onPress: () => {
             Alert.prompt(
               "Skip Reason",
               "Please provide a reason for skipping this task.",
               [
-                { text: "Cancel", style: "cancel" },
+                { text: t("common.cancel"), style: "cancel" },
                 {
-                  text: "Submit",
+                  text: t("common.save"),
                   onPress: async (reason?: string) => {
                     if (!reason?.trim()) {
-                      Alert.alert("Error", "A skip reason is required.");
+                      Alert.alert(t("common.error"), t("common.required"));
                       return;
                     }
                     try {
@@ -729,8 +733,8 @@ export default function MaintenanceTaskDetailScreen() {
                       await fetchTask();
                     } catch (err: any) {
                       Alert.alert(
-                        "Error",
-                        err.response?.data?.message ?? "Failed to skip task."
+                        t("common.error"),
+                        err.response?.data?.message ?? t("common.somethingWentWrong")
                       );
                     }
                   },
@@ -743,8 +747,8 @@ export default function MaintenanceTaskDetailScreen() {
       ]);
     } catch (err: any) {
       Alert.alert(
-        "Error",
-        err.response?.data?.message ?? "Failed to fetch skip impact."
+        t("common.error"),
+        err.response?.data?.message ?? t("common.somethingWentWrong")
       );
     } finally {
       setSkipping(false);
@@ -768,7 +772,7 @@ export default function MaintenanceTaskDetailScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.headerSubtitle}>Task Details</Text>
+              <Text style={styles.headerSubtitle}>{t("maintenance.detail.taskDetails")}</Text>
               {title ? (
                 <Text style={styles.headerTitle} numberOfLines={2}>
                   {title}
@@ -800,14 +804,14 @@ export default function MaintenanceTaskDetailScreen() {
         {renderHeader()}
         <View style={styles.centeredContainer}>
           <Text style={styles.errorText}>
-            {error ?? "Task not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -869,7 +873,7 @@ export default function MaintenanceTaskDetailScreen() {
                     : Colors.textTertiary
                 }
               />
-              <Text style={styles.infoLabel}>Due Date</Text>
+              <Text style={styles.infoLabel}>{t("maintenance.detail.dueDate")}</Text>
             </View>
             <Text
               style={[
@@ -888,7 +892,7 @@ export default function MaintenanceTaskDetailScreen() {
               <View style={styles.infoRow}>
                 <View style={styles.infoIconRow}>
                   <UserIcon color={Colors.textTertiary} />
-                  <Text style={styles.infoLabel}>Assignee</Text>
+                  <Text style={styles.infoLabel}>{t("maintenance.detail.assignedTo")}</Text>
                 </View>
                 <Text style={styles.infoValue}>{task.assignee.name}</Text>
               </View>
@@ -931,7 +935,7 @@ export default function MaintenanceTaskDetailScreen() {
           <View style={styles.card}>
             <View style={styles.warrantyHeader}>
               <ShieldIcon color={Colors.sky} />
-              <Text style={styles.sectionTitle}>Warranty & Compliance</Text>
+              <Text style={styles.sectionTitle}>{t("maintenance.warrantyAndCompliance")}</Text>
             </View>
 
             <View style={styles.warrantyScoreRow}>
@@ -975,7 +979,7 @@ export default function MaintenanceTaskDetailScreen() {
               </View>
               {warranty.expires_at ? (
                 <Text style={styles.warrantyExpiry}>
-                  Expires {formatDate(warranty.expires_at)}
+                  {t("maintenance.warranty.endDate")} {formatDate(warranty.expires_at)}
                 </Text>
               ) : null}
             </View>
@@ -1000,7 +1004,7 @@ export default function MaintenanceTaskDetailScreen() {
         {/* ── Steps Section ── */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>
-            Steps ({task.steps_completed}/{task.steps_total})
+            {t("maintenance.steps", { completed: task.steps_completed, total: task.steps_total })}
           </Text>
 
           {steps.length === 0 ? (
@@ -1127,7 +1131,7 @@ export default function MaintenanceTaskDetailScreen() {
                     strokeLinejoin="round"
                   />
                 </Svg>
-                <Text style={styles.completeTaskButtonText}>Complete Task</Text>
+                <Text style={styles.completeTaskButtonText}>{t("maintenance.detail.completeTask")}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -1144,7 +1148,7 @@ export default function MaintenanceTaskDetailScreen() {
             {skipping ? (
               <ActivityIndicator size="small" color={Colors.traffic} />
             ) : (
-              <Text style={styles.skipTaskButtonText}>Skip Task</Text>
+              <Text style={styles.skipTaskButtonText}>{t("maintenance.detail.skipTask")}</Text>
             )}
           </TouchableOpacity>
         </View>

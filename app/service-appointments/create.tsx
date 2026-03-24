@@ -21,6 +21,7 @@ import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
 import type { OutsmartWorkType } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -171,6 +172,7 @@ function CloseIcon({ color }: { color: string }) {
 /* ------------------------------------------------------------------ */
 
 export default function CreateServiceAppointmentScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   /* ── Form state ── */
@@ -299,7 +301,7 @@ export default function CreateServiceAppointmentScreen() {
 
   /* ── Photo handling ── */
   const handleAddPhoto = useCallback(() => {
-    Alert.alert("Add Photo", "Choose a source", [
+    Alert.alert(t("supportScreen.create.addAttachment"), "", [
       {
         text: "Camera",
         onPress: async () => {
@@ -345,9 +347,9 @@ export default function CreateServiceAppointmentScreen() {
           }
         },
       },
-      { text: "Cancel", style: "cancel" },
+      { text: t("common.cancel"), style: "cancel" },
     ]);
-  }, []);
+  }, [t]);
 
   const removePhoto = useCallback((index: number) => {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
@@ -461,7 +463,7 @@ export default function CreateServiceAppointmentScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>New Service Appointment</Text>
+              <Text style={styles.headerTitle}>{t("serviceAppointments.create.title")}</Text>
             </View>
           </View>
         </View>
@@ -486,7 +488,7 @@ export default function CreateServiceAppointmentScreen() {
 
           {/* ── Machine Selection ── */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Machine</Text>
+            <Text style={styles.fieldLabel}>{t("serviceAppointments.detail.equipment")}</Text>
 
             {loadingAssets ? (
               <View style={styles.loadingRow}>
@@ -559,7 +561,7 @@ export default function CreateServiceAppointmentScreen() {
           {/* ── Details ── */}
           <View style={styles.fieldCard}>
             <Text style={styles.fieldLabel}>
-              Serial Number <Text style={styles.required}>*</Text>
+              {t("equipment.detail.serialNumber")} <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={[
@@ -592,7 +594,7 @@ export default function CreateServiceAppointmentScreen() {
             />
 
             <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
-              Last Service Date
+              {t("equipment.detail.lastMaintenance")}
             </Text>
             <View style={styles.datePickerRow}>
               <TouchableOpacity
@@ -644,7 +646,7 @@ export default function CreateServiceAppointmentScreen() {
             </View>
 
             <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
-              Service Note
+              {t("serviceAppointments.detail.description")}
             </Text>
             <TextInput
               style={[styles.textInput, styles.textArea]}
@@ -660,7 +662,7 @@ export default function CreateServiceAppointmentScreen() {
 
           {/* ── Service Type ── */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Service Type</Text>
+            <Text style={styles.fieldLabel}>{t("serviceAppointments.create.selectWorkType")}</Text>
 
             {loadingWorkTypes ? (
               <View style={styles.loadingRow}>
@@ -747,7 +749,7 @@ export default function CreateServiceAppointmentScreen() {
 
           {/* ── Location ── */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Location</Text>
+            <Text style={styles.fieldLabel}>{t("equipment.detail.location")}</Text>
 
             <TextInput
               style={styles.textInput}
@@ -799,7 +801,7 @@ export default function CreateServiceAppointmentScreen() {
 
           {/* ── Photos ── */}
           <View style={styles.fieldCard}>
-            <Text style={styles.fieldLabel}>Photos</Text>
+            <Text style={styles.fieldLabel}>{t("supportScreen.create.attachments")}</Text>
 
             {photos.length > 0 ? (
               <ScrollView
@@ -832,7 +834,7 @@ export default function CreateServiceAppointmentScreen() {
               onPress={handleAddPhoto}
             >
               <CameraIcon color={Colors.sky} />
-              <Text style={styles.addPhotoButtonText}>Add Photo</Text>
+              <Text style={styles.addPhotoButtonText}>{t("supportScreen.create.addAttachment")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -850,7 +852,7 @@ export default function CreateServiceAppointmentScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={styles.submitButtonText}>
-                Request Service Appointment
+                {t("serviceAppointments.create.submitRequest")}
               </Text>
             )}
           </TouchableOpacity>
@@ -872,7 +874,7 @@ export default function CreateServiceAppointmentScreen() {
             ]}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
+              <Text style={styles.modalTitle}>{t("planning.create.selectDate")}</Text>
               <TouchableOpacity
                 onPress={() => setShowDatePicker(false)}
                 activeOpacity={0.7}

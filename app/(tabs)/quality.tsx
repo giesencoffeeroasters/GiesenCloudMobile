@@ -14,8 +14,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Line, Circle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -148,6 +150,7 @@ function ScoreBar({ overall }: { overall: number }) {
 /* ------------------------------------------------------------------ */
 
 function ActiveSessionCard({ session, onContinue }: { session: QualitySession; onContinue: () => void }) {
+  const { t } = useTranslation();
   const progress =
     session.sample_count > 0
       ? session.scored_count / session.sample_count
@@ -166,7 +169,7 @@ function ActiveSessionCard({ session, onContinue }: { session: QualitySession; o
         </View>
         <View style={styles.inProgressBadge}>
           <View style={styles.inProgressDot} />
-          <Text style={styles.inProgressText}>In Progress</Text>
+          <Text style={styles.inProgressText}>{t("quality.status.inProgress")}</Text>
         </View>
       </View>
 
@@ -174,7 +177,7 @@ function ActiveSessionCard({ session, onContinue }: { session: QualitySession; o
       <View style={styles.progressSection}>
         <View style={styles.progressLabelRow}>
           <Text style={styles.progressLabel}>
-            {session.scored_count} of {session.sample_count} samples scored
+            {t("common.samplesScored", { scored: session.scored_count, total: session.sample_count })}
           </Text>
           <Text style={styles.progressPct}>{progressPct}%</Text>
         </View>
@@ -193,13 +196,13 @@ function ActiveSessionCard({ session, onContinue }: { session: QualitySession; o
         <View style={styles.cardMetaItem}>
           <SamplesIcon color={Colors.textTertiary} />
           <Text style={styles.cardMetaText}>
-            {session.sample_count} samples
+            {session.sample_count} {t("common.samples")}
           </Text>
         </View>
         <View style={styles.cardMetaItem}>
           <EvaluatorIcon color={Colors.textTertiary} />
           <Text style={styles.cardMetaText}>
-            {session.creator ? "1 evaluator" : "0 evaluators"}
+            {session.creator ? t("common.evaluator", { count: 1 }) : t("common.evaluators", { count: 0 })}
           </Text>
         </View>
       </View>
@@ -210,7 +213,7 @@ function ActiveSessionCard({ session, onContinue }: { session: QualitySession; o
         activeOpacity={0.7}
         onPress={onContinue}
       >
-        <Text style={styles.continueButtonText}>Continue Scoring</Text>
+        <Text style={styles.continueButtonText}>{t("quality.continueScoring")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -221,6 +224,7 @@ function ActiveSessionCard({ session, onContinue }: { session: QualitySession; o
 /* ------------------------------------------------------------------ */
 
 function CompletedSessionCard({ session }: { session: QualitySession }) {
+  const { t } = useTranslation();
   const score = session.overall_score;
   const scoreColor = score !== null ? getScoreColor(score) : Colors.textSecondary;
 
@@ -242,7 +246,7 @@ function CompletedSessionCard({ session }: { session: QualitySession }) {
           <Text style={[styles.completedScore, { color: scoreColor }]}>
             {score !== null ? score.toFixed(1) : "-"}
           </Text>
-          <Text style={styles.completedScoreLabel}>Avg Score</Text>
+          <Text style={styles.completedScoreLabel}>{t("quality.summary.avgScore")}</Text>
         </View>
       </View>
 
@@ -251,17 +255,17 @@ function CompletedSessionCard({ session }: { session: QualitySession }) {
         <View style={styles.cardMetaItem}>
           <SamplesIcon color={Colors.textTertiary} />
           <Text style={styles.cardMetaText}>
-            {session.sample_count} samples
+            {session.sample_count} {t("common.samples")}
           </Text>
         </View>
         <View style={styles.cardMetaItem}>
           <EvaluatorIcon color={Colors.textTertiary} />
           <Text style={styles.cardMetaText}>
-            {session.creator ? "1 evaluator" : "0 evaluators"}
+            {session.creator ? t("common.evaluator", { count: 1 }) : t("common.evaluators", { count: 0 })}
           </Text>
         </View>
         <View style={styles.completedBadge}>
-          <Text style={styles.completedBadgeText}>Completed</Text>
+          <Text style={styles.completedBadgeText}>{t("quality.status.completed")}</Text>
         </View>
       </View>
 
@@ -280,7 +284,9 @@ function CompletedSessionCard({ session }: { session: QualitySession }) {
 type FilterOption = "all" | "active" | "completed" | "blind";
 
 export default function QualityScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ requiresFeatures: ["quality"] });
   const { user } = useAuthStore();
   const [activeSessions, setActiveSessions] = useState<QualitySession[]>([]);
   const [completedSessions, setCompletedSessions] = useState<QualitySession[]>(
@@ -373,8 +379,8 @@ export default function QualityScreen() {
           <View style={styles.headerLeft}>
             <HamburgerButton />
             <View>
-              <Text style={styles.headerTitle}>Quality</Text>
-              <Text style={styles.headerSubtitle}>Cupping Sessions</Text>
+              <Text style={styles.headerTitle}>{t("quality.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("quality.cuppingSessions")}</Text>
             </View>
           </View>
         </View>
@@ -392,8 +398,8 @@ export default function QualityScreen() {
         <View style={styles.headerLeft}>
           <HamburgerButton />
           <View>
-            <Text style={styles.headerTitle}>Quality</Text>
-            <Text style={styles.headerSubtitle}>Cupping Sessions</Text>
+            <Text style={styles.headerTitle}>{t("quality.title")}</Text>
+            <Text style={styles.headerSubtitle}>{t("quality.cuppingSessions")}</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
@@ -440,12 +446,12 @@ export default function QualityScreen() {
                   ]}
                 >
                   {option === "all"
-                    ? "All"
+                    ? t("common.all")
                     : option === "active"
-                    ? "Active"
+                    ? t("quality.filters.inProgress")
                     : option === "completed"
-                    ? "Completed"
-                    : "Blind"}
+                    ? t("quality.filters.completed")
+                    : t("quality.blind")}
                 </Text>
               </TouchableOpacity>
             )
@@ -474,7 +480,7 @@ export default function QualityScreen() {
             <Text style={[styles.statValue, { color: Colors.sky }]}>
               {summary?.active_sessions ?? "-"}
             </Text>
-            <Text style={styles.statLabel}>ACTIVE</Text>
+            <Text style={styles.statLabel}>{t("quality.statsActive")}</Text>
           </View>
           <View style={styles.statCard}>
             <View
@@ -483,7 +489,7 @@ export default function QualityScreen() {
             <Text style={[styles.statValue, { color: Colors.leaf }]}>
               {avgScore !== null ? avgScore.toFixed(1) : "-"}
             </Text>
-            <Text style={styles.statLabel}>AVG SCORE</Text>
+            <Text style={styles.statLabel}>{t("quality.statsAvgScore")}</Text>
           </View>
           <View style={styles.statCard}>
             <View
@@ -492,7 +498,7 @@ export default function QualityScreen() {
             <Text style={[styles.statValue, { color: Colors.grape }]}>
               {samplesYTD > 0 ? samplesYTD : "-"}
             </Text>
-            <Text style={styles.statLabel}>SAMPLES YTD</Text>
+            <Text style={styles.statLabel}>{t("quality.statsSamplesYtd")}</Text>
           </View>
         </View>
 
@@ -500,12 +506,12 @@ export default function QualityScreen() {
         {shouldShowBlind && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Blind Sessions</Text>
+              <Text style={styles.sectionTitle}>{t("quality.title")}</Text>
             </View>
             <View style={styles.sectionCards}>
               {blindSessions.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>No blind sessions.</Text>
+                  <Text style={styles.emptyText}>{t("quality.noSessions")}</Text>
                 </View>
               ) : (
                 blindSessions.map((session) =>
@@ -529,7 +535,7 @@ export default function QualityScreen() {
             }}
           >
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Active Sessions</Text>
+              <Text style={styles.sectionTitle}>{t("quality.filters.inProgress")}</Text>
               {activeSessions.length > PREVIEW_LIMIT && !showAllActive ? (
                 <TouchableOpacity
                   activeOpacity={0.6}
@@ -541,21 +547,21 @@ export default function QualityScreen() {
                     });
                   }}
                 >
-                  <Text style={styles.sectionLink}>View All</Text>
+                  <Text style={styles.sectionLink}>{t("common.viewAll")}</Text>
                 </TouchableOpacity>
               ) : activeSessions.length > PREVIEW_LIMIT && showAllActive ? (
                 <TouchableOpacity
                   activeOpacity={0.6}
                   onPress={() => setShowAllActive(false)}
                 >
-                  <Text style={styles.sectionLink}>Show Less</Text>
+                  <Text style={styles.sectionLink}>{t("common.showLess")}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
             <View style={styles.sectionCards}>
               {activeSessions.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>No active sessions.</Text>
+                  <Text style={styles.emptyText}>{t("quality.noSessions")}</Text>
                 </View>
               ) : (
                 displayedActive.map((session) => (
@@ -575,7 +581,7 @@ export default function QualityScreen() {
             }}
           >
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Completed</Text>
+              <Text style={styles.sectionTitle}>{t("quality.filters.completed")}</Text>
               {completedSessions.length > PREVIEW_LIMIT &&
               !showAllCompleted ? (
                 <TouchableOpacity
@@ -588,7 +594,7 @@ export default function QualityScreen() {
                     });
                   }}
                 >
-                  <Text style={styles.sectionLink}>History</Text>
+                  <Text style={styles.sectionLink}>{t("quality.history")}</Text>
                 </TouchableOpacity>
               ) : completedSessions.length > PREVIEW_LIMIT &&
                 showAllCompleted ? (
@@ -596,14 +602,14 @@ export default function QualityScreen() {
                   activeOpacity={0.6}
                   onPress={() => setShowAllCompleted(false)}
                 >
-                  <Text style={styles.sectionLink}>Show Less</Text>
+                  <Text style={styles.sectionLink}>{t("common.showLess")}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
             <View style={styles.sectionCards}>
               {completedSessions.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>No completed sessions.</Text>
+                  <Text style={styles.emptyText}>{t("quality.noSessions")}</Text>
                 </View>
               ) : (
                 displayedCompleted.map((session) => (

@@ -18,6 +18,7 @@ import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
 import apiClient from "@/api/client";
 import type { TicketListItem, TicketPipelineStage } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -197,6 +198,7 @@ function TicketCard({ ticket }: { ticket: TicketListItem }) {
 /* ------------------------------------------------------------------ */
 
 export default function SupportScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [tickets, setTickets] = useState<TicketListItem[]>([]);
   const [statuses, setStatuses] = useState<TicketPipelineStage[]>([]);
@@ -361,8 +363,8 @@ export default function SupportScreen() {
         <View style={styles.headerLeft}>
           <HamburgerButton />
           <View>
-            <Text style={styles.headerTitle}>Support & Contact</Text>
-            <Text style={styles.headerSubtitle}>Tickets</Text>
+            <Text style={styles.headerTitle}>{t("supportScreen.title")}</Text>
+            <Text style={styles.headerSubtitle}>{t("supportScreen.title")}</Text>
           </View>
         </View>
         <TouchableOpacity
@@ -395,7 +397,7 @@ export default function SupportScreen() {
               activeFilter === "all" && styles.filterChipTextActive,
             ]}
           >
-            All
+            {t("common.all")}
           </Text>
         </TouchableOpacity>
         {statuses.map((status) => (
@@ -429,7 +431,7 @@ export default function SupportScreen() {
             style={styles.searchInput}
             value={search}
             onChangeText={onSearchChange}
-            placeholder="Search tickets..."
+            placeholder={t("supportScreen.searchPlaceholder")}
             placeholderTextColor={Colors.textTertiary}
             returnKeyType="search"
             autoCapitalize="none"
@@ -456,7 +458,7 @@ export default function SupportScreen() {
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No tickets found.</Text>
+            <Text style={styles.emptyText}>{t("supportScreen.noTickets")}</Text>
           </View>
         }
       />

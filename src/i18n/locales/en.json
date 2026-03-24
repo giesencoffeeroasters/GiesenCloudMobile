@@ -207,6 +207,13 @@
     "planRoast": "Plan Roast",
     "logQuality": "Log Quality",
     "checkStock": "Check Stock",
+    "activityTitles": {
+      "roastCompleted": "Roast completed",
+      "inventoryReceived": "Inventory received",
+      "inventoryUsed": "Inventory used",
+      "inventoryAdjusted": "Inventory adjusted",
+      "stockAlert": "Low stock alert"
+    },
     "kgRoasted": "KG Roasted",
     "batches": "Batches",
     "avgBatch": "Avg Batch",

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import type {
@@ -25,6 +26,7 @@ import type {
   WarrantyStatus,
   TeamAsset,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -86,18 +88,18 @@ function getStatusBg(status: MaintenanceTaskStatus): string {
   }
 }
 
-function getStatusLabel(status: MaintenanceTaskStatus): string {
+function getStatusLabel(status: MaintenanceTaskStatus, t: (key: string) => string): string {
   switch (status) {
     case "overdue":
-      return "Overdue";
+      return t("maintenance.status.overdue");
     case "pending":
-      return "Pending";
+      return t("maintenance.status.pending");
     case "in_progress":
-      return "In Progress";
+      return t("maintenance.status.inProgress");
     case "completed":
-      return "Completed";
+      return t("maintenance.status.completed");
     case "skipped":
-      return "Skipped";
+      return t("maintenance.status.skipped");
   }
 }
 
@@ -127,16 +129,16 @@ function getWarrantyBg(status: WarrantyStatus): string {
   }
 }
 
-function getWarrantyLabel(status: WarrantyStatus): string {
+function getWarrantyLabel(status: WarrantyStatus, t: (key: string) => string): string {
   switch (status) {
     case "active":
-      return "Active";
+      return t("maintenance.warranty.active");
     case "suspended":
-      return "Suspended";
+      return t("maintenance.warranty.suspended");
     case "expired":
-      return "Expired";
+      return t("maintenance.warranty.expired");
     case "voided":
-      return "Voided";
+      return t("maintenance.warranty.voided");
   }
 }
 
@@ -276,6 +278,7 @@ function ComplianceCard({
   warrantyStatus: WarrantyStatus;
   score: number;
 }) {
+  const { t } = useTranslation();
   const compColor = getComplianceColor(score);
   const pct = Math.min(100, Math.max(0, score));
 
@@ -297,7 +300,7 @@ function ComplianceCard({
             { color: getWarrantyColor(warrantyStatus) },
           ]}
         >
-          {getWarrantyLabel(warrantyStatus)}
+          {getWarrantyLabel(warrantyStatus, t)}
         </Text>
       </View>
       <View style={styles.complianceScoreRow}>
@@ -322,6 +325,7 @@ function ComplianceCard({
 /* ------------------------------------------------------------------ */
 
 function TaskCard({ task }: { task: MaintenanceTask }) {
+  const { t } = useTranslation();
   const dueOverdue =
     task.due_at && task.status !== "completed" && task.status !== "skipped"
       ? isOverdue(task.due_at)
@@ -363,7 +367,7 @@ function TaskCard({ task }: { task: MaintenanceTask }) {
                 { color: getStatusColor(task.status) },
               ]}
             >
-              {getStatusLabel(task.status)}
+              {getStatusLabel(task.status, t)}
             </Text>
           </View>
         </View>
@@ -380,7 +384,7 @@ function TaskCard({ task }: { task: MaintenanceTask }) {
                 dueOverdue && { color: Colors.traffic },
               ]}
             >
-              Due {formatDate(task.due_at)}
+              {t("common.due", { date: formatDate(task.due_at) })}
             </Text>
           </View>
         )}
@@ -408,7 +412,7 @@ function TaskCard({ task }: { task: MaintenanceTask }) {
           <View style={styles.stepProgressSection}>
             <View style={styles.stepProgressLabelRow}>
               <Text style={styles.stepProgressLabel}>
-                {task.steps_completed} / {task.steps_total} steps
+                {t("maintenance.steps", { completed: task.steps_completed, total: task.steps_total })}
               </Text>
               <Text style={styles.stepProgressPct}>{stepPct}%</Text>
             </View>
@@ -442,17 +446,28 @@ type FilterOption =
   | "completed"
   | "skipped";
 
-const FILTER_OPTIONS: { key: FilterOption; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "overdue", label: "Overdue" },
-  { key: "pending", label: "Pending" },
-  { key: "in_progress", label: "In Progress" },
-  { key: "completed", label: "Completed" },
-  { key: "skipped", label: "Skipped" },
+const FILTER_LABEL_KEYS: Record<FilterOption, string> = {
+  all: "common.all",
+  overdue: "maintenance.status.overdue",
+  pending: "maintenance.status.pending",
+  in_progress: "maintenance.status.inProgress",
+  completed: "maintenance.status.completed",
+  skipped: "maintenance.status.skipped",
+};
+
+const FILTER_OPTIONS: FilterOption[] = [
+  "all",
+  "overdue",
+  "pending",
+  "in_progress",
+  "completed",
+  "skipped",
 ];
 
 export default function MaintenanceScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ feature: "maintenance" });
   const { user } = useAuthStore();
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
   const [summary, setSummary] = useState<MaintenanceSummary | null>(null);
@@ -578,8 +593,8 @@ export default function MaintenanceScreen() {
           <View style={styles.headerLeft}>
             <HamburgerButton />
             <View>
-              <Text style={styles.headerTitle}>Maintenance</Text>
-              <Text style={styles.headerSubtitle}>Tasks & Compliance</Text>
+              <Text style={styles.headerTitle}>{t("maintenance.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("maintenance.tasksAndCompliance")}</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -609,8 +624,8 @@ export default function MaintenanceScreen() {
         <View style={styles.headerLeft}>
           <HamburgerButton />
           <View>
-            <Text style={styles.headerTitle}>Maintenance</Text>
-            <Text style={styles.headerSubtitle}>Tasks & Compliance</Text>
+            <Text style={styles.headerTitle}>{t("maintenance.title")}</Text>
+            <Text style={styles.headerSubtitle}>{t("maintenance.tasksAndCompliance")}</Text>
           </View>
         </View>
         <TouchableOpacity
@@ -631,21 +646,21 @@ export default function MaintenanceScreen() {
       >
         {FILTER_OPTIONS.map((option) => (
           <TouchableOpacity
-            key={option.key}
+            key={option}
             style={[
               styles.filterChip,
-              activeFilter === option.key && styles.filterChipActive,
+              activeFilter === option && styles.filterChipActive,
             ]}
             activeOpacity={0.7}
-            onPress={() => onFilterPress(option.key)}
+            onPress={() => onFilterPress(option)}
           >
             <Text
               style={[
                 styles.filterChipText,
-                activeFilter === option.key && styles.filterChipTextActive,
+                activeFilter === option && styles.filterChipTextActive,
               ]}
             >
-              {option.label}
+              {t(FILTER_LABEL_KEYS[option])}
             </Text>
           </TouchableOpacity>
         ))}
@@ -712,7 +727,7 @@ export default function MaintenanceScreen() {
                 <Text style={[styles.statValue, { color: Colors.traffic }]}>
                   {summary?.overdue_count ?? "-"}
                 </Text>
-                <Text style={styles.statLabel}>OVERDUE</Text>
+                <Text style={styles.statLabel}>{t("maintenance.statsOverdue")}</Text>
               </View>
               <View style={styles.statCard}>
                 <View
@@ -724,7 +739,7 @@ export default function MaintenanceScreen() {
                 <Text style={[styles.statValue, { color: Colors.sky }]}>
                   {summary?.pending_count ?? "-"}
                 </Text>
-                <Text style={styles.statLabel}>PENDING</Text>
+                <Text style={styles.statLabel}>{t("maintenance.statsPending")}</Text>
               </View>
               <View style={styles.statCard}>
                 <View
@@ -736,7 +751,7 @@ export default function MaintenanceScreen() {
                 <Text style={[styles.statValue, { color: avgCompColor }]}>
                   {avgCompliance !== null ? `${avgCompliance}%` : "-"}
                 </Text>
-                <Text style={styles.statLabel}>AVG COMPLIANCE</Text>
+                <Text style={styles.statLabel}>{t("maintenance.statsAvgCompliance")}</Text>
               </View>
             </View>
 
@@ -745,13 +760,13 @@ export default function MaintenanceScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>
-                    Warranty & Compliance
+                    {t("maintenance.warranties")}
                   </Text>
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => router.push("/maintenance/warranties")}
                   >
-                    <Text style={styles.viewAllLink}>View All</Text>
+                    <Text style={styles.viewAllLink}>{t("common.viewAll")}</Text>
                   </TouchableOpacity>
                 </View>
                 <ScrollView
@@ -774,9 +789,9 @@ export default function MaintenanceScreen() {
             {/* Task list header */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Tasks</Text>
+                <Text style={styles.sectionTitle}>{t("common.tasks")}</Text>
                 <Text style={styles.sectionCount}>
-                  {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+                  {tasks.length} {tasks.length === 1 ? t("common.task") : t("common.tasksPlural")}
                 </Text>
               </View>
             </View>
@@ -784,7 +799,7 @@ export default function MaintenanceScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No tasks found.</Text>
+            <Text style={styles.emptyText}>{t("maintenance.noTasks")}</Text>
           </View>
         }
       />
@@ -849,18 +864,21 @@ const styles = StyleSheet.create({
   /* -- Filter chips -- */
   filterRow: {
     backgroundColor: Colors.slate,
-    maxHeight: 44,
+    minHeight: 52,
   },
   filterRowContent: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 10,
     gap: 8,
+    alignItems: "center",
   },
   filterChip: {
+    minHeight: 36,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
     backgroundColor: Colors.headerOverlay,
+    justifyContent: "center",
   },
   filterChipActive: {
     backgroundColor: Colors.safety,
@@ -868,6 +886,7 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontFamily: "DMSans-Medium",
     fontSize: 13,
+    lineHeight: 18,
     color: "#ffffff",
   },
   filterChipTextActive: {
@@ -876,21 +895,24 @@ const styles = StyleSheet.create({
 
   /* -- Asset filter chips -- */
   assetFilterRow: {
-    maxHeight: 44,
+    minHeight: 52,
     backgroundColor: Colors.bg,
   },
   assetFilterRowContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     gap: 8,
+    alignItems: "center",
   },
   assetChip: {
+    minHeight: 36,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
+    justifyContent: "center",
   },
   assetChipActive: {
     backgroundColor: Colors.safety,
@@ -899,6 +921,7 @@ const styles = StyleSheet.create({
   assetChipText: {
     fontFamily: "DMSans-Medium",
     fontSize: 13,
+    lineHeight: 18,
     color: Colors.textSecondary,
   },
   assetChipTextActive: {

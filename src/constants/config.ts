@@ -32,21 +32,15 @@ export const SERVER_OPTIONS: Record<
 };
 
 const ACTIVE_SERVER_KEY = "active_server_env";
+const STARTUP_ENV: AppEnv = "production";
 
-let _activeEnv: AppEnv = BUILD_ENV;
+let _activeEnv: AppEnv = STARTUP_ENV;
 let _initialized = false;
 
 /** Load persisted server choice. Call once at app startup. */
 export async function initActiveServer(): Promise<void> {
   if (_initialized) return;
-  try {
-    const stored = await SecureStore.getItemAsync(ACTIVE_SERVER_KEY);
-    if (stored && stored in SERVER_OPTIONS) {
-      _activeEnv = stored as AppEnv;
-    }
-  } catch {
-    // ignore
-  }
+  _activeEnv = STARTUP_ENV;
   _initialized = true;
 }
 

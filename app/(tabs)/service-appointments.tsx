@@ -19,6 +19,7 @@ import type {
   ServiceAppointmentListItem,
   ServiceAppointmentPlannedStatus,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -54,23 +55,23 @@ function getStatusBg(status: ServiceAppointmentPlannedStatus): string {
   }
 }
 
-function getStatusLabel(status: ServiceAppointmentPlannedStatus): string {
+function getStatusLabel(status: ServiceAppointmentPlannedStatus, t: (key: string) => string): string {
   switch (status) {
     case "requested":
-      return "Requested";
+      return t("serviceAppointments.status.requested");
     case "proposal":
-      return "Proposal";
+      return t("serviceAppointments.status.proposal");
     case "confirmed":
-      return "Confirmed";
+      return t("serviceAppointments.status.confirmed");
     case "executed":
-      return "Executed";
+      return t("serviceAppointments.status.executed");
     case "declined":
-      return "Declined";
+      return t("serviceAppointments.status.declined");
   }
 }
 
 function formatDate(dateString: string | null): string {
-  if (!dateString) return "Not scheduled";
+  if (!dateString) return "N/A";
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
     month: "short",
@@ -160,17 +161,30 @@ function LocationIcon({ color }: { color: string }) {
 
 type FilterOption = "all" | ServiceAppointmentPlannedStatus;
 
-const FILTER_OPTIONS: {
-  key: FilterOption;
-  label: string;
-  color?: string;
-}[] = [
-  { key: "all", label: "All" },
-  { key: "requested", label: "Requested", color: Colors.sky },
-  { key: "proposal", label: "Proposal", color: Colors.sun },
-  { key: "confirmed", label: "Confirmed", color: Colors.leaf },
-  { key: "executed", label: "Executed", color: Colors.leaf },
-  { key: "declined", label: "Declined", color: Colors.traffic },
+const FILTER_LABEL_KEYS: Record<FilterOption, string> = {
+  all: "common.all",
+  requested: "serviceAppointments.status.requested",
+  proposal: "serviceAppointments.status.proposal",
+  confirmed: "serviceAppointments.status.confirmed",
+  executed: "serviceAppointments.status.executed",
+  declined: "serviceAppointments.status.declined",
+};
+
+const FILTER_COLORS: Partial<Record<FilterOption, string>> = {
+  requested: Colors.sky,
+  proposal: Colors.sun,
+  confirmed: Colors.leaf,
+  executed: Colors.leaf,
+  declined: Colors.traffic,
+};
+
+const FILTER_OPTIONS: FilterOption[] = [
+  "all",
+  "requested",
+  "proposal",
+  "confirmed",
+  "executed",
+  "declined",
 ];
 
 /* ------------------------------------------------------------------ */
@@ -178,6 +192,7 @@ const FILTER_OPTIONS: {
 /* ------------------------------------------------------------------ */
 
 function AppointmentCard({ item }: { item: ServiceAppointmentListItem }) {
+  const { t } = useTranslation();
   return (
     <TouchableOpacity
       style={styles.card}
@@ -186,7 +201,7 @@ function AppointmentCard({ item }: { item: ServiceAppointmentListItem }) {
     >
       <View style={styles.cardTopRow}>
         <Text style={styles.cardSerial} numberOfLines={1}>
-          {item.machine_serial_number ?? "No Serial"}
+          {item.machine_serial_number ?? t("common.noSerial")}
         </Text>
         <View
           style={[
@@ -200,7 +215,7 @@ function AppointmentCard({ item }: { item: ServiceAppointmentListItem }) {
               { color: getStatusColor(item.planned_status) },
             ]}
           >
-            {getStatusLabel(item.planned_status)}
+            {getStatusLabel(item.planned_status, t)}
           </Text>
         </View>
       </View>
@@ -250,6 +265,7 @@ function AppointmentCard({ item }: { item: ServiceAppointmentListItem }) {
 /* ------------------------------------------------------------------ */
 
 export default function ServiceAppointmentsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [appointments, setAppointments] = useState<ServiceAppointmentListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -344,7 +360,7 @@ export default function ServiceAppointmentsScreen() {
           <View style={styles.headerLeft}>
             <HamburgerButton />
             <View>
-              <Text style={styles.headerTitle}>Service Appointments</Text>
+              <Text style={styles.headerTitle}>{t("serviceAppointments.title")}</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -369,7 +385,7 @@ export default function ServiceAppointmentsScreen() {
         <View style={styles.headerLeft}>
           <HamburgerButton />
           <View>
-            <Text style={styles.headerTitle}>Service Appointments</Text>
+            <Text style={styles.headerTitle}>{t("serviceAppointments.title")}</Text>
           </View>
         </View>
         <TouchableOpacity
@@ -389,19 +405,19 @@ export default function ServiceAppointmentsScreen() {
         contentContainerStyle={styles.filterRowContent}
       >
         {FILTER_OPTIONS.map((option) => {
-          const isActive = activeFilter === option.key;
+          const isActive = activeFilter === option;
           return (
             <TouchableOpacity
-              key={option.key}
+              key={option}
               style={[
                 styles.filterChip,
                 isActive && {
                   backgroundColor:
-                    option.color ?? Colors.safety,
+                    FILTER_COLORS[option] ?? Colors.safety,
                 },
               ]}
               activeOpacity={0.7}
-              onPress={() => onFilterPress(option.key)}
+              onPress={() => onFilterPress(option)}
             >
               <Text
                 style={[
@@ -409,7 +425,7 @@ export default function ServiceAppointmentsScreen() {
                   isActive && styles.filterChipTextActive,
                 ]}
               >
-                {option.label}
+                {t(FILTER_LABEL_KEYS[option])}
               </Text>
             </TouchableOpacity>
           );
@@ -440,7 +456,7 @@ export default function ServiceAppointmentsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No service appointments found.</Text>
+            <Text style={styles.emptyText}>{t("serviceAppointments.noAppointments")}</Text>
           </View>
         }
       />

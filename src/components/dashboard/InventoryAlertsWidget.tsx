@@ -1,13 +1,16 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { useAuthStore } from "@/stores/authStore";
+import { hasRequiredAccess } from "@/lib/featureAccess";
 import type { DashboardData, InventoryAlert } from "@/types";
 
 interface InventoryAlertsWidgetProps {
   data: DashboardData | null;
 }
 
-function getSeverityStyle(severity: "low" | "critical"): {
+function getSeverityStyle(severity: "low" | "critical", t: (key: string) => string): {
   color: string;
   bg: string;
   label: string;
@@ -16,18 +19,19 @@ function getSeverityStyle(severity: "low" | "critical"): {
     return {
       color: Colors.traffic,
       bg: Colors.trafficBg,
-      label: "CRITICAL",
+      label: t("widgets.critical").toUpperCase(),
     };
   }
   return {
     color: Colors.sun,
     bg: Colors.sunBg,
-    label: "LOW",
+    label: t("widgets.lowStock").toUpperCase(),
   };
 }
 
 function AlertCard({ item }: { item: InventoryAlert }) {
-  const severity = getSeverityStyle(item.severity);
+  const { t } = useTranslation();
+  const severity = getSeverityStyle(item.severity, t);
 
   return (
     <TouchableOpacity
@@ -53,22 +57,33 @@ function AlertCard({ item }: { item: InventoryAlert }) {
 }
 
 export function InventoryAlertsWidget({ data }: InventoryAlertsWidgetProps) {
+  const { t } = useTranslation();
+  const user = useAuthStore((state) => state.user);
+  if (
+    !hasRequiredAccess(user, {
+      requiresCapabilities: ["inventory"],
+      requiresFeatures: ["inventory"],
+    })
+  ) {
+    return null;
+  }
+
   const alerts = data?.inventory_alerts;
 
   if (!alerts || alerts.length === 0) {
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Inventory Alerts</Text>
+          <Text style={styles.sectionTitle}>{t("widgets.inventoryAlerts")}</Text>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => router.push("/(tabs)/inventory")}
           >
-            <Text style={styles.viewAllLink}>View All</Text>
+            <Text style={styles.viewAllLink}>{t("common.viewAll")}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>All stock levels healthy</Text>
+          <Text style={styles.emptyStateText}>{t("widgets.noAlerts")}</Text>
         </View>
       </View>
     );
@@ -77,12 +92,12 @@ export function InventoryAlertsWidget({ data }: InventoryAlertsWidgetProps) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Inventory Alerts</Text>
+        <Text style={styles.sectionTitle}>{t("widgets.inventoryAlerts")}</Text>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push("/(tabs)/inventory")}
         >
-          <Text style={styles.viewAllLink}>View All</Text>
+          <Text style={styles.viewAllLink}>{t("common.viewAll")}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.alertList}>

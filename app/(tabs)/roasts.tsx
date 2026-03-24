@@ -19,7 +19,9 @@ import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
+import { isExpectedAuthCancellation } from "@/api/errors";
 import type { ProfilerProfile, ProfileSummary } from "@/types";
+import { useTranslation } from "react-i18next";
 
 interface Roast {
   id: string;
@@ -421,6 +423,7 @@ interface ProfilesModalProps {
 }
 
 function ProfilesModal({ visible, onClose, onSelectProfile }: ProfilesModalProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [profiles, setProfiles] = useState<ProfilerProfile[]>([]);
   const [filteredProfiles, setFilteredProfiles] = useState<ProfilerProfile[]>([]);
@@ -471,7 +474,7 @@ function ProfilesModal({ visible, onClose, onSelectProfile }: ProfilesModalProps
       <View style={[modalStyles.container, { paddingTop: insets.top }]}>
         {/* Header */}
         <View style={modalStyles.header}>
-          <Text style={modalStyles.headerTitle}>Profiles</Text>
+          <Text style={modalStyles.headerTitle}>{t("roasts.detail.profile")}</Text>
           <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={modalStyles.closeBtn}>
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
               <Path
@@ -708,10 +711,12 @@ const modalStyles = StyleSheet.create({
 /* ------------------------------------------------------------------ */
 
 export default function RoastsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ segment?: string }>();
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const teamId = user?.current_team?.id;
 
   // Segment state
@@ -754,7 +759,27 @@ export default function RoastsScreen() {
   const [profilesSearchQuery, setProfilesSearchQuery] = useState("");
   const [showProfilesSearch, setShowProfilesSearch] = useState(false);
 
+  const resetScreenData = useCallback(() => {
+    setRoasts([]);
+    setSummary(null);
+    setProfiles([]);
+    setProfilesSummary(null);
+    setProfilesLoaded(false);
+  }, []);
+
+  const logFetchError = useCallback((message: string, error: unknown) => {
+    if (isExpectedAuthCancellation(error)) {
+      return;
+    }
+
+    console.error(message, error);
+  }, []);
+
   const fetchRoasts = useCallback(async (filter?: FilterOption) => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     try {
       const params: Record<string, string | number> = { per_page: 20 };
       const filterParam = FILTER_PARAM_MAP[filter ?? "All"];
@@ -764,18 +789,22 @@ export default function RoastsScreen() {
       const response = await apiClient.get("/roasts", { params });
       setRoasts(response.data.data);
     } catch (error) {
-      console.error("Failed to fetch roasts:", error);
+      logFetchError("Failed to fetch roasts:", error);
     }
-  }, []);
+  }, [isAuthenticated, logFetchError]);
 
   const fetchSummary = useCallback(async () => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     try {
       const response = await apiClient.get("/roasts/summary");
       setSummary(response.data.data);
     } catch (error) {
-      console.error("Failed to fetch roast summary:", error);
+      logFetchError("Failed to fetch roast summary:", error);
     }
-  }, []);
+  }, [isAuthenticated, logFetchError]);
 
   const loadData = useCallback(
     async (filter?: FilterOption) => {
@@ -786,6 +815,10 @@ export default function RoastsScreen() {
 
   // Profiles fetch functions
   const fetchProfiles = useCallback(async (filter?: ProfileFilterOption) => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     try {
       const params: Record<string, string | number> = { per_page: 50 };
       const filterParam = PROFILE_FILTER_PARAM_MAP[filter ?? "All"];
@@ -795,18 +828,22 @@ export default function RoastsScreen() {
       const response = await apiClient.get("/profiles", { params });
       setProfiles(response.data.data);
     } catch (error) {
-      console.error("Failed to fetch profiles:", error);
+      logFetchError("Failed to fetch profiles:", error);
     }
-  }, []);
+  }, [isAuthenticated, logFetchError]);
 
   const fetchProfilesSummary = useCallback(async () => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     try {
       const response = await apiClient.get("/profiles/summary");
       setProfilesSummary(response.data.data);
     } catch (error) {
-      console.error("Failed to fetch profiles summary:", error);
+      logFetchError("Failed to fetch profiles summary:", error);
     }
-  }, []);
+  }, [isAuthenticated, logFetchError]);
 
   const loadProfilesData = useCallback(
     async (filter?: ProfileFilterOption) => {
@@ -818,28 +855,52 @@ export default function RoastsScreen() {
   // Fetch on focus and when team changes
   useFocusEffect(
     useCallback(() => {
+      if (!isAuthenticated) {
+        return;
+      }
+
       setIsLoading(true);
       loadData(activeFilter).finally(() => setIsLoading(false));
-    }, [loadData, activeFilter, teamId])
+    }, [isAuthenticated, loadData, activeFilter, teamId])
   );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      return;
+    }
+
+    resetScreenData();
+    setIsLoading(false);
+    setIsProfilesLoading(false);
+  }, [isAuthenticated, resetScreenData]);
 
   // Clear all data and refetch when team changes
   useEffect(() => {
-    setRoasts([]);
-    setSummary(null);
-    setProfiles([]);
-    setProfilesSummary(null);
-    setProfilesLoaded(false);
+    resetScreenData();
+
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     loadData(activeFilter).finally(() => setIsLoading(false));
-  }, [teamId, loadData, activeFilter]);
+  }, [isAuthenticated, teamId, loadData, activeFilter, resetScreenData]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     fetchRoasts(activeFilter);
-  }, [activeFilter, fetchRoasts]);
+  }, [isAuthenticated, activeFilter, fetchRoasts]);
 
   // Lazy-load profiles when segment first switches (or after team change resets profilesLoaded)
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     if (activeSegment === "profiles" && !profilesLoaded) {
       setIsProfilesLoading(true);
       loadProfilesData(profilesActiveFilter).finally(() => {
@@ -847,14 +908,18 @@ export default function RoastsScreen() {
         setProfilesLoaded(true);
       });
     }
-  }, [activeSegment, profilesLoaded, loadProfilesData, profilesActiveFilter]);
+  }, [isAuthenticated, activeSegment, profilesLoaded, loadProfilesData, profilesActiveFilter]);
 
   // Refetch profiles when profile filter changes
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     if (profilesLoaded) {
       fetchProfiles(profilesActiveFilter);
     }
-  }, [profilesActiveFilter, fetchProfiles, profilesLoaded]);
+  }, [isAuthenticated, profilesActiveFilter, fetchProfiles, profilesLoaded]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -927,17 +992,17 @@ export default function RoastsScreen() {
             <View style={styles.headerLeft}>
               <HamburgerButton />
               <View>
-                <Text style={styles.headerTitle}>Roasts</Text>
-                <Text style={styles.headerSubtitle}>Roast History</Text>
+                <Text style={styles.headerTitle}>{t("roasts.title")}</Text>
+                <Text style={styles.headerSubtitle}>{t("roasts.title")}</Text>
               </View>
             </View>
           </View>
           <View style={styles.segmentControl}>
             <View style={[styles.segmentButton, styles.segmentButtonActive]}>
-              <Text style={[styles.segmentButtonText, styles.segmentButtonTextActive]}>Roasts</Text>
+              <Text style={[styles.segmentButtonText, styles.segmentButtonTextActive]}>{t("roasts.title")}</Text>
             </View>
             <View style={styles.segmentButton}>
-              <Text style={styles.segmentButtonText}>Profiles</Text>
+              <Text style={styles.segmentButtonText}>{t("roasts.detail.profile")}</Text>
             </View>
           </View>
         </View>
@@ -956,10 +1021,10 @@ export default function RoastsScreen() {
             <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>
-                {activeSegment === "roasts" ? "Roasts" : "Profiles"}
+                {activeSegment === "roasts" ? t("roasts.title") : t("roasts.detail.profile")}
               </Text>
               <Text style={styles.headerSubtitle}>
-                {activeSegment === "roasts" ? "Roast History" : "Profile Library"}
+                {activeSegment === "roasts" ? t("roasts.title") : t("roasts.detail.profile")}
               </Text>
             </View>
           </View>
@@ -1014,7 +1079,7 @@ export default function RoastsScreen() {
             onPress={() => handleSegmentSwitch("roasts")}
           >
             <Text style={[styles.segmentButtonText, activeSegment === "roasts" && styles.segmentButtonTextActive]}>
-              Roasts
+              {t("roasts.title")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1023,7 +1088,7 @@ export default function RoastsScreen() {
             onPress={() => handleSegmentSwitch("profiles")}
           >
             <Text style={[styles.segmentButtonText, activeSegment === "profiles" && styles.segmentButtonTextActive]}>
-              Profiles
+              {t("roasts.detail.profile")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1048,7 +1113,7 @@ export default function RoastsScreen() {
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholder="Search by profile, bean, or device..."
+                placeholder={t("roasts.searchPlaceholder")}
                 placeholderTextColor={Colors.textTertiary}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -1153,7 +1218,7 @@ export default function RoastsScreen() {
           </ScrollView>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Roast History</Text>
+            <Text style={styles.sectionTitle}>{t("roasts.title")}</Text>
             <Text style={styles.sectionCount}>
               {displayedRoasts.length}{displayedRoasts.length !== roasts.length ? ` of ${roasts.length}` : ""} roasts
             </Text>
@@ -1181,7 +1246,7 @@ export default function RoastsScreen() {
             }
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No roasts found.</Text>
+                <Text style={styles.emptyText}>{t("roasts.noRoasts")}</Text>
               </View>
             }
           />
@@ -1207,7 +1272,7 @@ export default function RoastsScreen() {
                 style={styles.searchInput}
                 value={profilesSearchQuery}
                 onChangeText={setProfilesSearchQuery}
-                placeholder="Search by name or roaster..."
+                placeholder={t("roasts.searchPlaceholder")}
                 placeholderTextColor={Colors.textTertiary}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -1266,7 +1331,7 @@ export default function RoastsScreen() {
               </ScrollView>
 
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Profile Library</Text>
+                <Text style={styles.sectionTitle}>{t("roasts.detail.profile")}</Text>
                 <Text style={styles.sectionCount}>
                   {displayedProfiles.length}
                   {displayedProfiles.length !== profiles.length ? ` of ${profiles.length}` : ""} profiles
@@ -1303,7 +1368,7 @@ export default function RoastsScreen() {
                         strokeLinecap="round"
                       />
                     </Svg>
-                    <Text style={styles.emptyText}>No profiles found.</Text>
+                    <Text style={styles.emptyText}>{t("roasts.noRoasts")}</Text>
                   </View>
                 }
               />

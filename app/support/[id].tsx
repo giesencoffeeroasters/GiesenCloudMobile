@@ -25,6 +25,7 @@ import type {
   ConversationMessage,
   TicketAttachment,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -218,6 +219,7 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
 /* ------------------------------------------------------------------ */
 
 export default function TicketDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -323,8 +325,8 @@ export default function TicketDetailScreen() {
       }, 300);
     } catch (err: any) {
       Alert.alert(
-        "Error",
-        err.response?.data?.message ?? "Failed to send message."
+        t("common.error"),
+        err.response?.data?.message ?? t("common.somethingWentWrong")
       );
     } finally {
       setSending(false);
@@ -334,12 +336,12 @@ export default function TicketDetailScreen() {
   /* ── Close ticket ── */
   const handleCloseTicket = useCallback(() => {
     Alert.alert(
-      "Close Ticket",
-      "Are you sure you want to close this ticket? This action cannot be undone.",
+      t("supportScreen.detail.closeTicket"),
+      t("supportScreen.detail.closeConfirm"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Close Ticket",
+          text: t("supportScreen.detail.closeTicket"),
           style: "destructive",
           onPress: async () => {
             setClosing(true);
@@ -348,8 +350,8 @@ export default function TicketDetailScreen() {
               await fetchTicket();
             } catch (err: any) {
               Alert.alert(
-                "Error",
-                err.response?.data?.message ?? "Failed to close ticket."
+                t("common.error"),
+                err.response?.data?.message ?? t("common.somethingWentWrong")
               );
             } finally {
               setClosing(false);
@@ -377,7 +379,7 @@ export default function TicketDetailScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.headerSubtitle}>Ticket Details</Text>
+              <Text style={styles.headerSubtitle}>{t("supportScreen.detail.ticketDetails")}</Text>
               {title ? (
                 <Text style={styles.headerTitle} numberOfLines={2}>
                   {title}
@@ -409,14 +411,14 @@ export default function TicketDetailScreen() {
         {renderHeader()}
         <View style={styles.centeredContainer}>
           <Text style={styles.errorText}>
-            {error ?? "Ticket not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -471,7 +473,7 @@ export default function TicketDetailScreen() {
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Created</Text>
+              <Text style={styles.infoLabel}>{t("supportScreen.detail.created")}</Text>
               <Text style={styles.infoValue}>
                 {formatDateTime(ticket.created_at)}
               </Text>
@@ -481,7 +483,7 @@ export default function TicketDetailScreen() {
             {ticket.contact_email ? (
               <>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Contact</Text>
+                  <Text style={styles.infoLabel}>{t("profile.emailLabel")}</Text>
                   <Text style={styles.infoValue}>{ticket.contact_email}</Text>
                 </View>
                 <View style={styles.infoDivider} />
@@ -493,7 +495,7 @@ export default function TicketDetailScreen() {
                 {ticket.roaster_info.model ? (
                   <>
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>Model</Text>
+                      <Text style={styles.infoLabel}>{t("equipment.detail.model")}</Text>
                       <Text style={styles.infoValue}>
                         {ticket.roaster_info.model}
                       </Text>
@@ -527,11 +529,11 @@ export default function TicketDetailScreen() {
           {/* ── Conversation Thread ── */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>
-              Conversation ({conversations.length})
+              {t("supportScreen.detail.messages")} ({conversations.length})
             </Text>
 
             {conversations.length === 0 ? (
-              <Text style={styles.emptyText}>No messages yet.</Text>
+              <Text style={styles.emptyText}>{t("common.noData")}</Text>
             ) : (
               <View style={styles.messagesList}>
                 {conversations.map((msg) => (
@@ -555,7 +557,7 @@ export default function TicketDetailScreen() {
               {closing ? (
                 <ActivityIndicator size="small" color={Colors.traffic} />
               ) : (
-                <Text style={styles.closeTicketButtonText}>Close Ticket</Text>
+                <Text style={styles.closeTicketButtonText}>{t("supportScreen.detail.closeTicket")}</Text>
               )}
             </TouchableOpacity>
           )}
@@ -601,7 +603,7 @@ export default function TicketDetailScreen() {
                 style={styles.messageInput}
                 value={messageText}
                 onChangeText={setMessageText}
-                placeholder="Type a message..."
+                placeholder={t("supportScreen.detail.sendMessage")}
                 placeholderTextColor={Colors.textTertiary}
                 multiline
                 numberOfLines={3}

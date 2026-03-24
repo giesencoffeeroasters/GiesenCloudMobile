@@ -14,6 +14,7 @@ import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import type { KBArticle } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  SVG Icons                                                          */
@@ -244,6 +245,7 @@ function RenderHtmlNodes({
 /* ------------------------------------------------------------------ */
 
 export default function KnowledgeBaseDetailScreen() {
+  const { t } = useTranslation();
   const { id, articleData } = useLocalSearchParams<{
     id: string;
     articleData: string;
@@ -289,9 +291,9 @@ export default function KnowledgeBaseDetailScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.headerSubtitle}>Knowledge Base</Text>
+              <Text style={styles.headerSubtitle}>{t("knowledgeBase.title")}</Text>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                Article
+                {t("knowledgeBase.detail.articleDetails")}
               </Text>
             </View>
           </View>
@@ -306,13 +308,13 @@ export default function KnowledgeBaseDetailScreen() {
       <View style={styles.screen}>
         {renderHeader()}
         <View style={styles.centeredContainer}>
-          <Text style={styles.errorText}>Article not found.</Text>
+          <Text style={styles.errorText}>{t("common.somethingWentWrong")}</Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -359,7 +361,7 @@ export default function KnowledgeBaseDetailScreen() {
           ) : article.answer ? (
             <Text style={styles.bodyText}>{article.answer}</Text>
           ) : (
-            <Text style={styles.emptyText}>No content available.</Text>
+            <Text style={styles.emptyText}>{t("common.noData")}</Text>
           )}
         </View>
       </ScrollView>

@@ -1,13 +1,16 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { useAuthStore } from "@/stores/authStore";
+import { hasRequiredAccess } from "@/lib/featureAccess";
 import type { DashboardData, RoastPlan } from "@/types";
 
 interface ScheduleWidgetProps {
   data: DashboardData | null;
 }
 
-function getStatusStyle(status: string): {
+function getStatusStyle(status: string, t: (key: string) => string): {
   color: string;
   bg: string;
   label: string;
@@ -17,35 +20,36 @@ function getStatusStyle(status: string): {
       return {
         color: Colors.leaf,
         bg: Colors.leafBg,
-        label: "Completed",
+        label: t("planning.status.completed"),
       };
     case "in_progress":
       return {
         color: Colors.boven,
         bg: Colors.bovenBg,
-        label: "In Progress",
+        label: t("planning.status.inProgress"),
       };
     case "cancelled":
       return {
         color: Colors.traffic,
         bg: Colors.trafficBg,
-        label: "Cancelled",
+        label: t("planning.status.completed"),
       };
     default:
       return {
         color: Colors.textTertiary,
         bg: "rgba(0,0,0,0.04)",
-        label: "Pending",
+        label: t("widgets.pending"),
       };
   }
 }
 
 interface ScheduleCardProps {
   plan: RoastPlan;
+  t: (key: string) => string;
 }
 
-function ScheduleCard({ plan }: ScheduleCardProps) {
-  const status = getStatusStyle(plan.status);
+function ScheduleCard({ plan, t }: ScheduleCardProps) {
+  const status = getStatusStyle(plan.status, t);
 
   return (
     <View style={styles.scheduleCard}>
@@ -70,6 +74,17 @@ function ScheduleCard({ plan }: ScheduleCardProps) {
 }
 
 export function ScheduleWidget({ data }: ScheduleWidgetProps) {
+  const { t } = useTranslation();
+  const user = useAuthStore((state) => state.user);
+  if (
+    !hasRequiredAccess(user, {
+      requiresCapabilities: ["roast_planning"],
+      requiresFeatures: ["roast_planning"],
+    })
+  ) {
+    return null;
+  }
+
   const scheduleItems =
     data?.schedule
       ?.filter((p) => p.status !== "completed" && p.status !== "cancelled")
@@ -78,24 +93,24 @@ export function ScheduleWidget({ data }: ScheduleWidgetProps) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Today's Schedule</Text>
+        <Text style={styles.sectionTitle}>{t("widgets.schedule")}</Text>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push("/(tabs)/planning")}
         >
-          <Text style={styles.viewAllLink}>View All</Text>
+          <Text style={styles.viewAllLink}>{t("common.viewAll")}</Text>
         </TouchableOpacity>
       </View>
       {scheduleItems.length > 0 ? (
         <View style={styles.scheduleList}>
           {scheduleItems.map((plan) => (
-            <ScheduleCard key={plan.id} plan={plan} />
+            <ScheduleCard key={plan.id} plan={plan} t={t} />
           ))}
         </View>
       ) : (
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>
-            No roasts scheduled for today
+            {t("widgets.noSchedule")}
           </Text>
         </View>
       )}

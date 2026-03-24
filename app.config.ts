@@ -45,14 +45,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     policy: "appVersion",
   },
   splash: {
-    image: "./assets/splash-icon.png",
-    resizeMode: "contain",
     backgroundColor: "#F0F2F4",
   },
   ios: {
     supportsTablet: false,
     bundleIdentifier: env.bundleIdentifier,
-    buildNumber: "4",
+    buildNumber: "6",
     icon: {
       dark: "./assets/icon-dark.png",
       tinted: "./assets/icon-tinted.png",
@@ -91,6 +89,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     "expo-image-picker",
     "react-native-ble-plx",
+    "expo-localization",
+    [
+      "expo-splash-screen",
+      {
+        image: "./assets/splash-icon.png",
+        imageWidth: 200,
+        backgroundColor: "#F0F2F4",
+      },
+    ],
   ],
   extra: {
     appEnv: APP_ENV,

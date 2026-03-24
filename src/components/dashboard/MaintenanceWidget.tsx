@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { useAuthStore } from "@/stores/authStore";
+import { canAccessFeature } from "@/lib/featureAccess";
 import apiClient from "@/api/client";
 import type { DashboardData } from "@/types";
 
@@ -24,10 +27,18 @@ function getComplianceColor(score: number): string {
 }
 
 export function MaintenanceWidget({ data: _data }: MaintenanceWidgetProps) {
+  const { t } = useTranslation();
+  const user = useAuthStore((state) => state.user);
+  const hasMaintenanceAccess = canAccessFeature(user, "maintenance");
   const [maintenanceData, setMaintenanceData] = useState<MaintenanceWidgetData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!hasMaintenanceAccess) {
+      setIsLoading(false);
+      return;
+    }
+
     async function fetchMaintenance() {
       try {
         const response = await apiClient.get("/maintenance/summary");
@@ -39,13 +50,17 @@ export function MaintenanceWidget({ data: _data }: MaintenanceWidgetProps) {
       }
     }
     fetchMaintenance();
-  }, []);
+  }, [hasMaintenanceAccess]);
+
+  if (!hasMaintenanceAccess) {
+    return null;
+  }
 
   if (isLoading) {
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Maintenance</Text>
+          <Text style={styles.sectionTitle}>{t("widgets.maintenanceOverview")}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={Colors.textTertiary} />
@@ -58,10 +73,10 @@ export function MaintenanceWidget({ data: _data }: MaintenanceWidgetProps) {
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Maintenance</Text>
+          <Text style={styles.sectionTitle}>{t("widgets.maintenanceOverview")}</Text>
         </View>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No maintenance data</Text>
+          <Text style={styles.emptyStateText}>{t("widgets.noMaintenance")}</Text>
         </View>
       </View>
     );
@@ -76,12 +91,12 @@ export function MaintenanceWidget({ data: _data }: MaintenanceWidgetProps) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Maintenance</Text>
+        <Text style={styles.sectionTitle}>{t("widgets.maintenanceOverview")}</Text>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push("/(tabs)/maintenance")}
         >
-          <Text style={styles.viewAllLink}>View All</Text>
+          <Text style={styles.viewAllLink}>{t("common.viewAll")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -96,19 +111,19 @@ export function MaintenanceWidget({ data: _data }: MaintenanceWidgetProps) {
           >
             {maintenanceData.overdue_count}
           </Text>
-          <Text style={styles.statLabel}>Overdue</Text>
+          <Text style={styles.statLabel}>{t("widgets.overdue")}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={[styles.statValue, { color: Colors.sky }]}>
             {maintenanceData.pending_count}
           </Text>
-          <Text style={styles.statLabel}>Pending</Text>
+          <Text style={styles.statLabel}>{t("widgets.pending")}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={[styles.statValue, { color: getComplianceColor(avgCompliance) }]}>
             {Math.round(avgCompliance)}%
           </Text>
-          <Text style={styles.statLabel}>Compliance</Text>
+          <Text style={styles.statLabel}>{t("widgets.compliance")}</Text>
         </View>
       </View>
 
@@ -121,8 +136,7 @@ export function MaintenanceWidget({ data: _data }: MaintenanceWidgetProps) {
         >
           <View style={styles.overdueDot} />
           <Text style={styles.overdueText}>
-            {maintenanceData.overdue_count} overdue task
-            {maintenanceData.overdue_count !== 1 ? "s" : ""} need attention
+            {t("widgets.overdueTasksAttention", { count: maintenanceData.overdue_count })}
           </Text>
         </TouchableOpacity>
       )}

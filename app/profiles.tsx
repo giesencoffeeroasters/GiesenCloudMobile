@@ -17,6 +17,7 @@ import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
 import type { ProfilerProfile, ProfileSummary } from "@/types";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Filter Options                                                      */
@@ -177,6 +178,7 @@ function ProfileCard({ profile }: ProfileCardProps) {
 /* ------------------------------------------------------------------ */
 
 export default function ProfilesScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<FilterOption>("All");
@@ -271,8 +273,8 @@ export default function ProfilesScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Profiles</Text>
-                <Text style={styles.headerSubtitle}>Profile Library</Text>
+                <Text style={styles.headerTitle}>{t("roasts.profiles")}</Text>
+                <Text style={styles.headerSubtitle}>{t("roasts.profileLibrary")}</Text>
               </View>
             </View>
           </View>
@@ -353,7 +355,7 @@ export default function ProfilesScreen() {
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search by name or roaster..."
+            placeholder={t("roasts.searchPlaceholder")}
             placeholderTextColor={Colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
@@ -406,7 +408,7 @@ export default function ProfilesScreen() {
       </ScrollView>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Profile Library</Text>
+        <Text style={styles.sectionTitle}>{t("roasts.profileLibrary")}</Text>
         <Text style={styles.sectionCount}>
           {displayedProfiles.length}
           {displayedProfiles.length !== profiles.length
@@ -446,7 +448,7 @@ export default function ProfilesScreen() {
                 strokeLinecap="round"
               />
             </Svg>
-            <Text style={styles.emptyText}>No profiles found.</Text>
+            <Text style={styles.emptyText}>{t("common.noResults")}</Text>
           </View>
         }
       />

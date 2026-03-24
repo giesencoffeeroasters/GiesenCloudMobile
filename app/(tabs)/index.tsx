@@ -9,19 +9,20 @@ import {
   TouchableOpacity,
   Switch,
   ScrollView,
-  FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
-import { WIDGET_MAP } from "@/constants/widgets";
+import { WIDGET_MAP, getVisibleWidgets } from "@/constants/widgets";
 import { useAuthStore } from "@/stores/authStore";
 import { useWidgetStore } from "@/stores/widgetStore";
 import apiClient from "@/api/client";
-import type { ApiResponse, DashboardData } from "@/types";
+import type { ApiResponse, DashboardData, ProductionReportData } from "@/types";
 import { useRoastPlanningBroadcast } from "@/hooks/useRoastPlanningBroadcast";
+import { useTranslation } from "react-i18next";
+import { canAccessFeature } from "@/lib/featureAccess";
 
 import { QuickStatsWidget } from "@/components/dashboard/QuickStatsWidget";
 import { ScheduleWidget } from "@/components/dashboard/ScheduleWidget";
@@ -34,6 +35,13 @@ import { RecentRoastsWidget } from "@/components/dashboard/RecentRoastsWidget";
 import { MaintenanceWidget } from "@/components/dashboard/MaintenanceWidget";
 
 type WidgetProps = { data: DashboardData | null };
+
+function formatDateParam(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 const WIDGET_COMPONENTS: Record<string, React.ComponentType<WidgetProps>> = {
   quick_stats: QuickStatsWidget,
@@ -48,11 +56,11 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<WidgetProps>> = {
 };
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const {
     widgetOrder,
-    disabledWidgets,
     isLoaded,
     loadWidgets,
     setWidgetOrder,
@@ -66,14 +74,48 @@ export default function DashboardScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   const teamId = user?.current_team?.id;
+  const hasReportsAccess = canAccessFeature(user, "reports");
+  const visibleWidgets = getVisibleWidgets(user);
+  const visibleWidgetKeySet = new Set(visibleWidgets.map((widget) => widget.key));
+  const visibleWidgetOrder = widgetOrder.filter((key) => visibleWidgetKeySet.has(key));
+  const visibleWidgetOrderToRender =
+    visibleWidgetOrder.length > 0 ? visibleWidgetOrder : [];
+  const visibleWidgetSelection = new Set(visibleWidgetOrderToRender);
+  const availableWidgets = visibleWidgets.filter(
+    (widget) => !visibleWidgetSelection.has(widget.key),
+  );
 
   const fetchDashboard = useCallback(
     async (refresh = false) => {
       if (refresh) setIsRefreshing(true);
       try {
-        const response =
-          await apiClient.get<ApiResponse<DashboardData>>("/dashboard");
-        setData(response.data.data);
+        const today = formatDateParam(new Date());
+        const requests = [
+          apiClient.get<ApiResponse<DashboardData>>("/dashboard"),
+          hasReportsAccess
+            ? apiClient.get<ApiResponse<ProductionReportData>>("/reports/production", {
+                params: {
+                  start_date: today,
+                  end_date: today,
+                },
+              })
+            : Promise.resolve(null),
+        ] as const;
+        const [dashboardResponse, productionResponse] = await Promise.allSettled(requests);
+
+        if (dashboardResponse.status !== "fulfilled") {
+          throw dashboardResponse.reason;
+        }
+
+        setData({
+          ...dashboardResponse.value.data.data,
+          production_summary:
+            hasReportsAccess &&
+            productionResponse.status === "fulfilled" &&
+            productionResponse.value !== null
+              ? productionResponse.value.data.data
+              : null,
+        });
       } catch {
         // Silently fail
       } finally {
@@ -81,7 +123,7 @@ export default function DashboardScreen() {
         setIsRefreshing(false);
       }
     },
-    []
+    [hasReportsAccess]
   );
 
   useRoastPlanningBroadcast(() => {
@@ -122,13 +164,13 @@ export default function DashboardScreen() {
   /* ── Edit mode: move helpers ── */
   const moveWidget = useCallback(
     (index: number, direction: "up" | "down") => {
-      const newOrder = [...widgetOrder];
+      const newOrder = [...visibleWidgetOrderToRender];
       const targetIndex = direction === "up" ? index - 1 : index + 1;
       if (targetIndex < 0 || targetIndex >= newOrder.length) return;
       [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
       setWidgetOrder(newOrder);
     },
-    [widgetOrder, setWidgetOrder]
+    [setWidgetOrder, visibleWidgetOrderToRender]
   );
 
   if (!isLoaded) return null;
@@ -142,7 +184,7 @@ export default function DashboardScreen() {
             <HamburgerButton />
             <View>
               <Text style={styles.headerTitle}>
-                {isEditMode ? "Edit Dashboard" : "Dashboard"}
+                {isEditMode ? t("dashboard.editDashboard") : t("dashboard.title")}
               </Text>
               {!isEditMode && (
                 <Text style={styles.headerSubtitle}>
@@ -159,7 +201,7 @@ export default function DashboardScreen() {
                 onPress={() => setIsEditMode(false)}
                 style={styles.doneButton}
               >
-                <Text style={styles.doneButtonText}>Done</Text>
+                <Text style={styles.doneButtonText}>{t("common.done")}</Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -229,8 +271,8 @@ export default function DashboardScreen() {
           style={styles.editContainer}
           contentContainerStyle={styles.editListContent}
         >
-          <Text style={styles.editSectionLabel}>ACTIVE WIDGETS</Text>
-          {widgetOrder.map((key, index) => {
+          <Text style={styles.editSectionLabel}>{t("dashboard.activeWidgets")}</Text>
+          {visibleWidgetOrderToRender.map((key, index) => {
             const widget = WIDGET_MAP[key];
             if (!widget) return null;
             return (
@@ -255,8 +297,11 @@ export default function DashboardScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => moveWidget(index, "down")}
-                    disabled={index === widgetOrder.length - 1}
-                    style={[styles.moveButton, index === widgetOrder.length - 1 && { opacity: 0.3 }]}
+                    disabled={index === visibleWidgetOrderToRender.length - 1}
+                    style={[
+                      styles.moveButton,
+                      index === visibleWidgetOrderToRender.length - 1 && { opacity: 0.3 },
+                    ]}
                     activeOpacity={0.6}
                   >
                     <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
@@ -273,8 +318,8 @@ export default function DashboardScreen() {
 
                 {/* Widget info */}
                 <View style={styles.editInfo}>
-                  <Text style={styles.editTitle}>{widget.title}</Text>
-                  <Text style={styles.editDescription}>{widget.description}</Text>
+                  <Text style={styles.editTitle}>{t(widget.titleKey)}</Text>
+                  <Text style={styles.editDescription}>{t(widget.descriptionKey)}</Text>
                 </View>
 
                 {/* Toggle */}
@@ -288,21 +333,18 @@ export default function DashboardScreen() {
             );
           })}
 
-          {/* Disabled widgets */}
-          {disabledWidgets.length > 0 && (
+          {availableWidgets.length > 0 && (
             <>
               <Text style={[styles.editSectionLabel, { marginTop: 24 }]}>
-                AVAILABLE WIDGETS
+                {t("dashboard.availableWidgets")}
               </Text>
-              {disabledWidgets.map((key) => {
-                const widget = WIDGET_MAP[key];
-                if (!widget) return null;
+              {availableWidgets.map((widget) => {
                 return (
                   <TouchableOpacity
-                    key={key}
+                    key={widget.key}
                     style={[styles.editCard, styles.editCardDisabled]}
                     activeOpacity={0.7}
-                    onPress={() => toggleWidget(key)}
+                    onPress={() => toggleWidget(widget.key)}
                   >
                     <View style={styles.dragHandle}>
                       <Svg
@@ -326,10 +368,10 @@ export default function DashboardScreen() {
                           { color: Colors.textSecondary },
                         ]}
                       >
-                        {widget.title}
+                        {t(widget.titleKey)}
                       </Text>
                       <Text style={styles.editDescription}>
-                        {widget.description}
+                        {t(widget.descriptionKey)}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -344,7 +386,7 @@ export default function DashboardScreen() {
             activeOpacity={0.7}
             onPress={resetToDefault}
           >
-            <Text style={styles.resetButtonText}>Reset to Default</Text>
+            <Text style={styles.resetButtonText}>{t("tabSettings.reset")}</Text>
           </TouchableOpacity>
         </ScrollView>
       ) : (
@@ -364,7 +406,7 @@ export default function DashboardScreen() {
               <ActivityIndicator size="large" color={Colors.slate} />
             </View>
           ) : (
-            widgetOrder.map((key) => renderWidget(key))
+            visibleWidgetOrderToRender.map((key) => renderWidget(key))
           )}
         </ScrollView>
       )}

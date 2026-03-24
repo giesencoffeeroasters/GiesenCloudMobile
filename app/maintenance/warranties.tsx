@@ -13,8 +13,10 @@ import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
 import type { WarrantyListItem, WarrantyStatus } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -46,14 +48,14 @@ function getWarrantyBg(status: WarrantyStatus): string {
   }
 }
 
-function getWarrantyLabel(status: WarrantyStatus): string {
+function getWarrantyLabel(status: WarrantyStatus, t: (key: string) => string): string {
   switch (status) {
     case "active":
-      return "Active";
+      return t("maintenance.warranty.active");
     case "suspended":
       return "Suspended";
     case "expired":
-      return "Expired";
+      return t("maintenance.warranty.expired");
     case "voided":
       return "Voided";
   }
@@ -112,6 +114,7 @@ function ShieldIcon({ color }: { color: string }) {
 /* ------------------------------------------------------------------ */
 
 function WarrantyCard({ item }: { item: WarrantyListItem }) {
+  const { t } = useTranslation();
   const compColor = getComplianceColor(item.compliance_score);
   const pct = Math.min(100, Math.max(0, item.compliance_score));
 
@@ -139,7 +142,7 @@ function WarrantyCard({ item }: { item: WarrantyListItem }) {
             { color: getWarrantyColor(item.status) },
           ]}
         >
-          {getWarrantyLabel(item.status)}
+          {getWarrantyLabel(item.status, t)}
         </Text>
       </View>
 
@@ -160,7 +163,7 @@ function WarrantyCard({ item }: { item: WarrantyListItem }) {
 
       {/* Expiry date */}
       <Text style={styles.expiryText}>
-        Expires: {formatDate(item.expires_at)}
+        {t("maintenance.warranty.endDate")}: {formatDate(item.expires_at)}
       </Text>
     </TouchableOpacity>
   );
@@ -171,7 +174,9 @@ function WarrantyCard({ item }: { item: WarrantyListItem }) {
 /* ------------------------------------------------------------------ */
 
 export default function WarrantiesScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ feature: "maintenance" });
   const [warranties, setWarranties] = useState<WarrantyListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -212,7 +217,7 @@ export default function WarrantiesScreen() {
         >
           <BackIcon />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Warranties</Text>
+        <Text style={styles.headerTitle}>{t("maintenance.warranty.title")}</Text>
       </View>
 
       {/* Loading state */}
@@ -236,7 +241,7 @@ export default function WarrantiesScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No warranties found.</Text>
+              <Text style={styles.emptyText}>{t("maintenance.warranty.noWarranties")}</Text>
             </View>
           }
         />

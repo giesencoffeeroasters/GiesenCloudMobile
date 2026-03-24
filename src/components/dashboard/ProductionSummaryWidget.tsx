@@ -1,42 +1,42 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Colors } from "@/constants/colors";
 import type { DashboardData } from "@/types";
+import { getProductionSummaryMetrics } from "./productionSummary";
 
 interface ProductionSummaryWidgetProps {
   data: DashboardData | null;
 }
 
 export function ProductionSummaryWidget({ data }: ProductionSummaryWidgetProps) {
-  const completedRoasts = data?.schedule?.filter(r => r.status === "completed") ?? [];
-  const totalKg = completedRoasts.reduce((sum, r) => sum + r.batch_size, 0);
-  const batchCount = completedRoasts.length;
-  const avgBatch = batchCount > 0 ? totalKg / batchCount : 0;
+  const { t } = useTranslation();
+  const { totalKg, batchCount, avgBatchKg } = getProductionSummaryMetrics(data);
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Production Summary</Text>
+        <Text style={styles.sectionTitle}>{t("widgets.productionSummary")}</Text>
       </View>
       <View style={styles.card}>
         <View style={styles.statsRow}>
           <View style={styles.statColumn}>
-            <Text style={styles.statLabel}>KG ROASTED</Text>
+            <Text style={styles.statLabel}>{t("widgets.totalWeight").toUpperCase()}</Text>
             <View style={styles.statValueRow}>
-              <Text style={styles.statValue}>{totalKg}</Text>
-              <Text style={styles.statUnit}>kg</Text>
+              <Text style={styles.statValue}>{totalKg.toFixed(1)}</Text>
+              <Text style={styles.statUnit}>{t("inventory.units.kg")}</Text>
             </View>
           </View>
           <View style={styles.statColumn}>
-            <Text style={styles.statLabel}>BATCHES</Text>
+            <Text style={styles.statLabel}>{t("roasts.summary.totalRoasts").toUpperCase()}</Text>
             <View style={styles.statValueRow}>
               <Text style={styles.statValue}>{batchCount}</Text>
             </View>
           </View>
           <View style={styles.statColumn}>
-            <Text style={styles.statLabel}>AVG BATCH</Text>
+            <Text style={styles.statLabel}>{t("reports.production.avgBatchSize").toUpperCase()}</Text>
             <View style={styles.statValueRow}>
-              <Text style={styles.statValue}>{avgBatch.toFixed(1)}</Text>
-              <Text style={styles.statUnit}>kg</Text>
+              <Text style={styles.statValue}>{avgBatchKg.toFixed(1)}</Text>
+              <Text style={styles.statUnit}>{t("inventory.units.kg")}</Text>
             </View>
           </View>
         </View>

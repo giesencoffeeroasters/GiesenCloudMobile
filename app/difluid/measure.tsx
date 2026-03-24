@@ -19,6 +19,8 @@ import { CoffeeTypeSelector } from "@/components/difluid/CoffeeTypeSelector";
 import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
 import { getAllMeasurements } from "@/api/difluid";
 import type { DiFluidCoffeeType, DiFluidMeasurementFromApi } from "@/types/index";
+import { useTranslation } from "react-i18next";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -40,6 +42,8 @@ function getAgtronLabel(agtron: number): string {
 /* ------------------------------------------------------------------ */
 
 export default function DiFluidMeasureScreen() {
+  const { t } = useTranslation();
+  useRouteAccessGuard({ requiresFeatures: ["quality"] });
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     inventoryId?: string;
@@ -71,9 +75,9 @@ export default function DiFluidMeasureScreen() {
 
   const handleMeasure = useCallback(async () => {
     if (!isConnected) {
-      Alert.alert("Not Connected", "Please connect to a DiFluid device first.", [
-        { text: "OK" },
-        { text: "Go to Devices", onPress: () => router.push("/difluid") },
+      Alert.alert(t("common.error"), t("difluid.bleRequired"), [
+        { text: t("common.ok") },
+        { text: t("difluid.connect"), onPress: () => router.push("/difluid") },
       ]);
       return;
     }
@@ -82,7 +86,7 @@ export default function DiFluidMeasureScreen() {
       await measure(coffeeType);
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Unknown error";
-      Alert.alert("Measurement Error", msg);
+      Alert.alert(t("common.error"), msg);
     }
   }, [isConnected, coffeeType, measure]);
 
@@ -105,7 +109,7 @@ export default function DiFluidMeasureScreen() {
       const message = linkedType
         ? "Measurement saved successfully."
         : "Measurement saved. You can link it to a roast or inventory item from the Measurements screen.";
-      Alert.alert("Saved", message, [
+      Alert.alert(t("common.done"), message, [
         {
           text: "OK",
           onPress: () => {
@@ -115,7 +119,7 @@ export default function DiFluidMeasureScreen() {
         },
       ]);
     } catch {
-      Alert.alert("Save Error", "Failed to save measurement. It has been queued for sync.");
+      Alert.alert(t("common.error"), t("common.somethingWentWrong"));
     }
   }, [params.inventoryId, params.roastId, saveMeasurement, clearCurrent]);
 
@@ -145,9 +149,9 @@ export default function DiFluidMeasureScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Measure</Text>
+              <Text style={styles.headerTitle}>{t("difluid.measure")}</Text>
               <Text style={styles.headerSubtitle}>
-                {params.itemName ?? "DiFluid Omix"}
+                {params.itemName ?? t("difluid.title")}
               </Text>
             </View>
           </View>
@@ -209,7 +213,7 @@ export default function DiFluidMeasureScreen() {
                 <Path d="M12 8v8M8 12h8" />
               </Svg>
               <Text style={styles.bigMeasureText}>
-                {isConnected ? "Start Measurement" : "Connect Device First"}
+                {isConnected ? t("difluid.startMeasurement") : t("difluid.connect")}
               </Text>
             </>
           )}
@@ -235,7 +239,7 @@ export default function DiFluidMeasureScreen() {
           <View style={styles.resultCard}>
             <View style={styles.resultHeader}>
               <Text style={styles.resultTitle}>
-                {measurementComplete ? "Measurement Complete" : "Receiving Data..."}
+                {measurementComplete ? t("difluid.measurementComplete") : t("difluid.measuring")}
               </Text>
               {!measurementComplete ? (
                 <ActivityIndicator size="small" color={Colors.sky} />
@@ -367,7 +371,7 @@ export default function DiFluidMeasureScreen() {
                   <Path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
                   <Path d="M17 21v-8H7v8M7 3v5h8" />
                 </Svg>
-                <Text style={styles.saveButtonText}>{isLinked ? "Save & Sync" : "Save"}</Text>
+                <Text style={styles.saveButtonText}>{isLinked ? t("difluid.sync") : t("common.save")}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -396,7 +400,7 @@ export default function DiFluidMeasureScreen() {
         {/* Recent Measurements */}
         {apiMeasurements.length > 0 ? (
           <>
-            <Text style={styles.recentTitle}>Recent Measurements</Text>
+            <Text style={styles.recentTitle}>{t("quality.measurements.title")}</Text>
             {apiMeasurements.slice(0, 5).map((m) => (
               <MeasurementCardFromApi key={m.id} measurement={m} />
             ))}

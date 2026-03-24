@@ -14,10 +14,12 @@ import { router, useFocusEffect } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import { PlanningItem, ProfilerDevice, ApiResponse } from "@/types/index";
 import { useRoastPlanningBroadcast } from "@/hooks/useRoastPlanningBroadcast";
+import { useTranslation } from "react-i18next";
 
 type PlanStatus = "completed" | "in_progress" | "planned";
 
@@ -280,7 +282,12 @@ function PlanCard({ plan, index, onPress }: PlanCardProps) {
 }
 
 export default function PlanningScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({
+    requiresCapabilities: ["roast_planning"],
+    requiresFeatures: ["roast_planning"],
+  });
   const { user } = useAuthStore();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<ViewOption>("Day");
@@ -461,8 +468,8 @@ export default function PlanningScreen() {
         <View style={styles.headerLeft}>
           <HamburgerButton />
           <View>
-            <Text style={styles.headerTitle}>Planning</Text>
-            <Text style={styles.headerSubtitle}>Roast Schedule</Text>
+            <Text style={styles.headerTitle}>{t("planning.title")}</Text>
+            <Text style={styles.headerSubtitle}>{t("planning.title")}</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
@@ -562,7 +569,7 @@ export default function PlanningScreen() {
                   selectedDeviceId === null && styles.filterChipTextActive,
                 ]}
               >
-                All Equipment
+                {t("common.all")} {t("equipment.title")}
               </Text>
             </TouchableOpacity>
             {devices.map((device) => (
@@ -603,7 +610,7 @@ export default function PlanningScreen() {
           </Svg>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search plans..."
+            placeholder={t("planning.searchPlaceholder")}
             placeholderTextColor={Colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -826,8 +833,8 @@ export default function PlanningScreen() {
               </Svg>
               <Text style={styles.emptyText}>
                 {activeFilter !== "All" || searchQuery
-                  ? "No matching plans found."
-                  : "No plans for this day."}
+                  ? t("planning.noPlans")
+                  : t("planning.noPlans")}
               </Text>
               <Text style={styles.emptySubtext}>
                 {activeFilter !== "All" || searchQuery

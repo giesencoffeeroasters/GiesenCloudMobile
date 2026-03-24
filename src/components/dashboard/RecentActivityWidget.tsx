@@ -1,7 +1,9 @@
 import { View, Text, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import type { DashboardData, ActivityType } from "@/types";
+import { getActivityTitle } from "./recentActivity";
 
 interface RecentActivityWidgetProps {
   data: DashboardData | null;
@@ -99,16 +101,17 @@ function ActivityIcon({ type }: { type: ActivityType }) {
 }
 
 export function RecentActivityWidget({ data }: RecentActivityWidgetProps) {
+  const { t } = useTranslation();
   const activities = data?.recent_activity;
 
   if (!activities || activities.length === 0) {
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <Text style={styles.sectionTitle}>{t("widgets.recentActivity")}</Text>
         </View>
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No recent activity</Text>
+          <Text style={styles.emptyText}>{t("widgets.noRecentActivity")}</Text>
         </View>
       </View>
     );
@@ -117,7 +120,7 @@ export function RecentActivityWidget({ data }: RecentActivityWidgetProps) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        <Text style={styles.sectionTitle}>{t("widgets.recentActivity")}</Text>
       </View>
       <View style={styles.activityCard}>
         {activities.map((activity, index) => (
@@ -130,6 +133,9 @@ export function RecentActivityWidget({ data }: RecentActivityWidgetProps) {
           >
             <ActivityIcon type={activity.type} />
             <View style={styles.activityContent}>
+              <Text style={styles.activityTitle}>
+                {getActivityTitle(activity, t)}
+              </Text>
               <Text style={styles.activityDescription}>
                 {activity.description}
               </Text>
@@ -187,10 +193,16 @@ const styles = StyleSheet.create({
   activityContent: {
     flex: 1,
   },
-  activityDescription: {
-    fontFamily: "DMSans-Regular",
+  activityTitle: {
+    fontFamily: "DMSans-SemiBold",
     fontSize: 13,
     color: Colors.text,
+    marginBottom: 2,
+  },
+  activityDescription: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 12,
+    color: Colors.textSecondary,
     marginBottom: 2,
   },
   activityTimestamp: {

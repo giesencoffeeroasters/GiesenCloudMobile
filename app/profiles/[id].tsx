@@ -24,6 +24,7 @@ import type {
   ExtendedCurveData,
   CurvePoint,
 } from "@/types";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -169,6 +170,7 @@ function RecentRoastCard({ roast }: RecentRoastCardProps) {
 /* ------------------------------------------------------------------ */
 
 export default function ProfileDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<ProfilerProfileDetail | null>(null);
@@ -185,7 +187,7 @@ export default function ProfileDetailScreen() {
       setProfile(response.data.data);
     } catch (err) {
       console.error("Failed to fetch profile:", err);
-      setError("Failed to load profile details.");
+      setError(t("common.somethingWentWrong"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -259,8 +261,8 @@ export default function ProfileDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={detailStyles.headerTitle}>Profile</Text>
-                <Text style={detailStyles.headerSubtitle}>Details</Text>
+                <Text style={detailStyles.headerTitle}>{t("roasts.profiles")}</Text>
+                <Text style={detailStyles.headerSubtitle}>{t("roasts.detail.roastDetails")}</Text>
               </View>
             </View>
           </View>
@@ -298,22 +300,22 @@ export default function ProfileDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={detailStyles.headerTitle}>Profile</Text>
-                <Text style={detailStyles.headerSubtitle}>Details</Text>
+                <Text style={detailStyles.headerTitle}>{t("roasts.profiles")}</Text>
+                <Text style={detailStyles.headerSubtitle}>{t("roasts.detail.roastDetails")}</Text>
               </View>
             </View>
           </View>
         </View>
         <View style={detailStyles.errorContainer}>
           <Text style={detailStyles.errorText}>
-            {error ?? "Profile not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={detailStyles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={detailStyles.retryButtonText}>Go Back</Text>
+            <Text style={detailStyles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -380,7 +382,7 @@ export default function ProfileDetailScreen() {
                 strokeLinejoin="round"
               />
             </Svg>
-            <Text style={detailStyles.cardTitle}>Reference Curve</Text>
+            <Text style={detailStyles.cardTitle}>{t("roasts.detail.roastCurve")}</Text>
           </View>
           {profile.curve_data ? (
             <RoastCurveChart
@@ -402,7 +404,7 @@ export default function ProfileDetailScreen() {
                 />
               </Svg>
               <Text style={detailStyles.emptyCurveText}>
-                No reference curve available
+                {t("common.noData")}
               </Text>
               <Text style={detailStyles.emptyCurveSubtext}>
                 This profile does not have recorded curve data.
@@ -423,7 +425,7 @@ export default function ProfileDetailScreen() {
                   strokeLinecap="round"
                 />
               </Svg>
-              <Text style={detailStyles.cardTitle}>Phases</Text>
+              <Text style={detailStyles.cardTitle}>{t("roasts.detail.roastDetails")}</Text>
             </View>
             <View style={detailStyles.phaseBar}>
               {profile.phases.map((phase, index) => {
@@ -462,18 +464,18 @@ export default function ProfileDetailScreen() {
         {firstCrackEvent ? (
           <View style={detailStyles.metricsRow}>
             <StatCard
-              label="DURATION"
+              label={t("roasts.detail.duration").toUpperCase()}
               value={formatDuration(profile.duration)}
               color={Colors.text}
             />
             <StatCard
-              label="FIRST CRACK"
+              label={t("roasts.detail.firstCrack").toUpperCase()}
               value={formatDuration(firstCrackEvent.timePassed)}
               unit={firstCrackTemp !== null ? ` @ ${firstCrackTemp.toFixed(0)}\u00B0` : ""}
               color={Colors.boven}
             />
             <StatCard
-              label="DEVELOPMENT"
+              label={t("roasts.detail.development").toUpperCase()}
               value={developmentTime !== null ? formatDuration(Math.round(developmentTime)) : "-"}
               unit={developmentPercentage !== null ? ` (${developmentPercentage.toFixed(0)}%)` : ""}
               color={Colors.grape}
@@ -482,12 +484,12 @@ export default function ProfileDetailScreen() {
         ) : (
           <View style={detailStyles.metricsRow}>
             <StatCard
-              label="DURATION"
+              label={t("roasts.detail.duration").toUpperCase()}
               value={formatDuration(profile.duration)}
               color={Colors.text}
             />
             <StatCard
-              label="START WEIGHT"
+              label={t("roasts.detail.batchSize").toUpperCase()}
               value={
                 profile.start_weight !== null
                   ? (profile.start_weight / 1000).toFixed(1)
@@ -496,7 +498,7 @@ export default function ProfileDetailScreen() {
               unit={profile.start_weight !== null ? " kg" : ""}
             />
             <StatCard
-              label="ROASTS"
+              label={t("roasts.title").toUpperCase()}
               value={String(profile.roasts_count)}
               color={Colors.grape}
             />
@@ -506,7 +508,7 @@ export default function ProfileDetailScreen() {
         {/* 4. Key Metrics Row 2 */}
         <View style={detailStyles.metricsRow}>
           <StatCard
-            label="START WEIGHT"
+            label={t("roasts.detail.batchSize").toUpperCase()}
             value={
               profile.start_weight !== null
                 ? (profile.start_weight / 1000).toFixed(1)
@@ -524,7 +526,7 @@ export default function ProfileDetailScreen() {
             unit={profile.end_weight !== null ? " kg" : ""}
           />
           <StatCard
-            label="WEIGHT LOSS"
+            label={t("roasts.detail.weightLoss").toUpperCase()}
             value={
               profile.weight_change !== null
                 ? Math.abs(profile.weight_change).toFixed(1)
@@ -546,7 +548,7 @@ export default function ProfileDetailScreen() {
                 strokeLinecap="round"
               />
             </Svg>
-            <Text style={detailStyles.cardTitle}>Profile Info</Text>
+            <Text style={detailStyles.cardTitle}>{t("roasts.detail.profile")}</Text>
           </View>
 
           <View style={detailStyles.detailRow}>
@@ -558,7 +560,7 @@ export default function ProfileDetailScreen() {
             <>
               <View style={detailStyles.detailDivider} />
               <View style={detailStyles.detailRow}>
-                <Text style={detailStyles.detailLabel}>Roaster Model</Text>
+                <Text style={detailStyles.detailLabel}>{t("equipment.detail.model")}</Text>
                 <Text style={detailStyles.detailValue}>
                   {profile.roaster_model}
                 </Text>
@@ -603,7 +605,7 @@ export default function ProfileDetailScreen() {
                 <Text style={detailStyles.detailLabel}>Favorite</Text>
                 <View style={detailStyles.favBadge}>
                   <Text style={detailStyles.favStar}>{"\u2605"}</Text>
-                  <Text style={detailStyles.favText}>Yes</Text>
+                  <Text style={detailStyles.favText}>{t("common.yes")}</Text>
                 </View>
               </View>
             </>
@@ -627,7 +629,7 @@ export default function ProfileDetailScreen() {
 
             {profile.curve_data.bean_temp?.[0] ? (
               <View style={detailStyles.detailRow}>
-                <Text style={detailStyles.detailLabel}>Bean Temp</Text>
+                <Text style={detailStyles.detailLabel}>{t("roasts.detail.beanTemp")}</Text>
                 <Text style={detailStyles.detailValue}>
                   {profile.curve_data.bean_temp[0].value.toFixed(0)}{"\u00B0"}
                 </Text>
@@ -638,7 +640,7 @@ export default function ProfileDetailScreen() {
               <>
                 <View style={detailStyles.detailDivider} />
                 <View style={detailStyles.detailRow}>
-                  <Text style={detailStyles.detailLabel}>Air Temp</Text>
+                  <Text style={detailStyles.detailLabel}>{t("roasts.detail.envTemp")}</Text>
                   <Text style={detailStyles.detailValue}>
                     {profile.curve_data.drum_temp[0].value.toFixed(0)}{"\u00B0"}
                   </Text>
@@ -766,7 +768,7 @@ export default function ProfileDetailScreen() {
                   strokeLinejoin="round"
                 />
               </Svg>
-              <Text style={detailStyles.cardTitle}>Connected Inventories</Text>
+              <Text style={detailStyles.cardTitle}>{t("inventory.title")}</Text>
               <Text style={detailStyles.cardCount}>
                 {profile.inventories.length}
               </Text>
@@ -822,7 +824,7 @@ export default function ProfileDetailScreen() {
                   strokeLinejoin="round"
                 />
               </Svg>
-              <Text style={detailStyles.cardTitle}>Comment</Text>
+              <Text style={detailStyles.cardTitle}>{t("roasts.detail.notes")}</Text>
             </View>
             <Text style={detailStyles.commentText}>{profile.comment}</Text>
           </View>
@@ -840,7 +842,7 @@ export default function ProfileDetailScreen() {
                 strokeLinejoin="round"
               />
             </Svg>
-            <Text style={detailStyles.cardTitle}>Recent Roasts</Text>
+            <Text style={detailStyles.cardTitle}>{t("widgets.recentRoasts")}</Text>
             <Text style={detailStyles.cardCount}>
               {profile.recent_roasts.length}
             </Text>
@@ -863,7 +865,7 @@ export default function ProfileDetailScreen() {
           ) : (
             <View style={detailStyles.emptyRoasts}>
               <Text style={detailStyles.emptyRoastsText}>
-                No roasts yet for this profile.
+                {t("widgets.noRecentRoasts")}
               </Text>
             </View>
           )}

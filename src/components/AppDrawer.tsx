@@ -14,6 +14,7 @@ import {
   BackHandler,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Constants from "expo-constants";
 import { router, usePathname } from "expo-router";
 import Svg, {
   Path,
@@ -24,9 +25,14 @@ import Svg, {
 } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { useAuthStore } from "@/stores/authStore";
-import { useTabStore } from "@/stores/tabStore";
 import { useDrawer } from "@/contexts/DrawerContext";
 import apiClient from "@/api/client";
+import {
+  canAccessFeature,
+  getVisibleTabs,
+  type AccessAwareTabDefinition,
+} from "@/lib/featureAccess";
+import { useTranslation } from "react-i18next";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 320);
@@ -269,27 +275,116 @@ interface Team {
 /* ------------------------------------------------------------------ */
 
 const NAV_ITEMS = [
-  { key: "Dashboard", route: "/(tabs)", icon: DashboardIcon, color: Colors.sky, bg: Colors.skyBg, label: "Dashboard" },
-  { key: "Roasts", route: "/(tabs)/roasts", icon: RoastsIcon, color: Colors.sky, bg: Colors.skyBg, label: "Roasts" },
-  { key: "Planning", route: "/(tabs)/planning", icon: PlanningIcon, color: Colors.sky, bg: Colors.skyBg, label: "Planning" },
-  { key: "Inventory", route: "/(tabs)/inventory", icon: InventoryIcon, color: Colors.sky, bg: Colors.skyBg, label: "Inventory" },
-  { key: "Quality", route: "/(tabs)/quality", icon: QualityIcon, color: Colors.sky, bg: Colors.skyBg, label: "Quality" },
-  { key: "Equipment", route: "/(tabs)/equipment", icon: EquipmentIcon, color: Colors.sky, bg: Colors.skyBg, label: "Equipment" },
-  { key: "Maintenance", route: "/(tabs)/maintenance", icon: MaintenanceIcon, color: Colors.boven, bg: Colors.bovenBg, label: "Maintenance" },
-  { key: "Reports", route: "/(tabs)/reports", icon: ReportsIcon, color: Colors.grape, bg: Colors.grapeBg, label: "Reports" },
-  { key: "GiesenLive", route: "/(tabs)/giesen-live", icon: LiveIcon, color: Colors.leaf, bg: Colors.leafBg, label: "Giesen Live" },
-] as const;
+  {
+    key: "Dashboard",
+    route: "/(tabs)",
+    icon: DashboardIcon,
+    color: Colors.sky,
+    bg: Colors.skyBg,
+    title: "Dashboard",
+    labelKey: "tabs.dashboard",
+  },
+  {
+    key: "Roasts",
+    route: "/(tabs)/roasts",
+    icon: RoastsIcon,
+    color: Colors.sky,
+    bg: Colors.skyBg,
+    title: "Roasts",
+    labelKey: "tabs.roasts",
+  },
+  {
+    key: "Planning",
+    route: "/(tabs)/planning",
+    icon: PlanningIcon,
+    color: Colors.sky,
+    bg: Colors.skyBg,
+    title: "Planning",
+    labelKey: "tabs.planning",
+    requiresCapabilities: ["roast_planning"],
+    requiresFeatures: ["roast_planning"],
+  },
+  {
+    key: "Inventory",
+    route: "/(tabs)/inventory",
+    icon: InventoryIcon,
+    color: Colors.sky,
+    bg: Colors.skyBg,
+    title: "Inventory",
+    labelKey: "tabs.inventory",
+    requiresCapabilities: ["inventory"],
+    requiresFeatures: ["inventory"],
+  },
+  {
+    key: "Quality",
+    route: "/(tabs)/quality",
+    icon: QualityIcon,
+    color: Colors.sky,
+    bg: Colors.skyBg,
+    title: "Quality",
+    labelKey: "tabs.quality",
+    requiresFeatures: ["quality"],
+  },
+  {
+    key: "Equipment",
+    route: "/(tabs)/equipment",
+    icon: EquipmentIcon,
+    color: Colors.sky,
+    bg: Colors.skyBg,
+    title: "Equipment",
+    labelKey: "tabs.equipment",
+  },
+  {
+    key: "Maintenance",
+    route: "/(tabs)/maintenance",
+    icon: MaintenanceIcon,
+    color: Colors.boven,
+    bg: Colors.bovenBg,
+    title: "Maintenance",
+    labelKey: "tabs.maintenance",
+    requiresFeatures: ["maintenance"],
+  },
+  {
+    key: "Reports",
+    route: "/(tabs)/reports",
+    icon: ReportsIcon,
+    color: Colors.grape,
+    bg: Colors.grapeBg,
+    title: "Reports",
+    labelKey: "tabs.reports",
+    requiresFeatures: ["reports"],
+  },
+  {
+    key: "GiesenLive",
+    route: "/(tabs)/giesen-live",
+    icon: LiveIcon,
+    color: Colors.leaf,
+    bg: Colors.leafBg,
+    title: "Giesen Live",
+    labelKey: "tabs.giesenLive",
+    requiresCapabilities: ["giesen_live"],
+    requiresFeatures: ["giesen_live"],
+  },
+] as const satisfies readonly (AccessAwareTabDefinition & {
+  route: string;
+  icon: React.ComponentType<{ color: string }>;
+  color: string;
+  bg: string;
+  labelKey: string;
+})[];
 
 /* ------------------------------------------------------------------ */
 /*  Main AppDrawer                                                     */
 /* ------------------------------------------------------------------ */
 
 export function AppDrawer() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isOpen, closeDrawer } = useDrawer();
   const { user, logout, loadUser } = useAuthStore();
-  const { tabOrder } = useTabStore();
   const pathname = usePathname();
+  const visibleNavItems = getVisibleTabs(user, NAV_ITEMS);
+  const hasQualityAccess = canAccessFeature(user, "quality");
 
   // Animation values
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -380,10 +475,10 @@ export function AppDrawer() {
   function handleLogout() {
     closeDrawer();
     setTimeout(() => {
-      Alert.alert("Log Out", "Are you sure you want to log out?", [
-        { text: "Cancel", style: "cancel" },
+      Alert.alert(t("auth.logOut"), t("auth.logOutConfirm"), [
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Log Out",
+          text: t("auth.logOut"),
           style: "destructive",
           onPress: () => logout(),
         },
@@ -398,7 +493,7 @@ export function AppDrawer() {
       const response = await apiClient.get("/teams");
       setTeams(response.data.data ?? response.data);
     } catch {
-      Alert.alert("Error", "Could not load teams. Please try again.");
+      Alert.alert(t("common.error"), t("drawer.couldNotLoadTeams"));
       setTeamModalVisible(false);
     } finally {
       setTeamsLoading(false);
@@ -413,7 +508,7 @@ export function AppDrawer() {
         await loadUser();
         setTeamModalVisible(false);
       } catch {
-        Alert.alert("Error", "Could not switch team. Please try again.");
+        Alert.alert(t("common.error"), t("drawer.couldNotSwitchTeam"));
       } finally {
         setSwitchingTeamId(null);
       }
@@ -465,7 +560,7 @@ export function AppDrawer() {
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user?.name ?? "Unknown"}</Text>
+              <Text style={styles.profileName}>{user?.name ?? t("common.unknown")}</Text>
               {user?.email ? (
                 <Text style={styles.emailText}>{user.email}</Text>
               ) : null}
@@ -479,7 +574,7 @@ export function AppDrawer() {
             activeOpacity={0.7}
             onPress={handleSwitchTeamOpen}
           >
-            <Text style={styles.switchTeamText}>Switch Team</Text>
+            <Text style={styles.switchTeamText}>{t("drawer.switchTeam")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -490,9 +585,9 @@ export function AppDrawer() {
           showsVerticalScrollIndicator={false}
         >
           {/* Navigation */}
-          <SectionHeader title="Navigation" />
+          <SectionHeader title={t("drawer.navigation")} />
           <View style={styles.menuSection}>
-            {NAV_ITEMS.map((item, idx) => {
+            {visibleNavItems.map((item, idx) => {
               const IconComponent = item.icon;
               const active = isCurrentRoute(item.route);
               return (
@@ -506,65 +601,69 @@ export function AppDrawer() {
                       </View>
                     ) : (
                       <IconComponent color={item.color} />
-                    )
+                  )
                   }
                   iconBg={item.bg}
-                  label={item.label}
+                  label={t(item.labelKey)}
                   onPress={() => navigateTo(item.route)}
-                  isLast={idx === NAV_ITEMS.length - 1}
+                  isLast={idx === visibleNavItems.length - 1}
                   isActive={active}
                 />
               );
             })}
           </View>
 
-          {/* Quality */}
-          <SectionHeader title="Quality" />
-          <View style={styles.menuSection}>
-            <MenuRow
-              icon={<QualityIcon color={Colors.sky} />}
-              iconBg={Colors.skyBg}
-              label="Measurements"
-              onPress={() => navigateTo("/quality/measurements")}
-              isLast
-              isActive={isCurrentRoute("/quality/measurements")}
-            />
-          </View>
+          {hasQualityAccess && (
+            <>
+              {/* Quality */}
+              <SectionHeader title={t("tabs.quality")} />
+              <View style={styles.menuSection}>
+                <MenuRow
+                  icon={<QualityIcon color={Colors.sky} />}
+                  iconBg={Colors.skyBg}
+                  label={t("drawer.measurements")}
+                  onPress={() => navigateTo("/quality/measurements")}
+                  isLast
+                  isActive={isCurrentRoute("/quality/measurements")}
+                />
+              </View>
 
-          {/* Devices */}
-          <SectionHeader title="Devices" />
-          <View style={styles.menuSection}>
-            <MenuRow
-              icon={<BluetoothIcon color={Colors.sky} />}
-              iconBg={Colors.skyBg}
-              label="DiFluid Omix"
-              onPress={() => navigateTo("/difluid")}
-              isLast
-              isActive={isCurrentRoute("/difluid")}
-            />
-          </View>
+              {/* Devices */}
+              <SectionHeader title={t("drawer.devices")} />
+              <View style={styles.menuSection}>
+                <MenuRow
+                  icon={<BluetoothIcon color={Colors.sky} />}
+                  iconBg={Colors.skyBg}
+                  label={t("drawer.difluidOmix")}
+                  onPress={() => navigateTo("/difluid")}
+                  isLast
+                  isActive={isCurrentRoute("/difluid")}
+                />
+              </View>
+            </>
+          )}
 
           {/* Support */}
-          <SectionHeader title="Support" />
+          <SectionHeader title={t("drawer.support")} />
           <View style={styles.menuSection}>
             <MenuRow
               icon={<SupportIcon color={Colors.boven} />}
               iconBg={Colors.bovenBg}
-              label="Support & Contact"
+              label={t("drawer.supportContact")}
               onPress={() => navigateTo("/(tabs)/support")}
               isActive={isCurrentRoute("/(tabs)/support")}
             />
             <MenuRow
               icon={<KnowledgeIcon color={Colors.boven} />}
               iconBg={Colors.bovenBg}
-              label="Knowledge Base"
+              label={t("drawer.knowledgeBase")}
               onPress={() => navigateTo("/(tabs)/knowledge-base")}
               isActive={isCurrentRoute("/(tabs)/knowledge-base")}
             />
             <MenuRow
               icon={<ServiceIcon color={Colors.boven} />}
               iconBg={Colors.bovenBg}
-              label="Service Appointments"
+              label={t("drawer.serviceAppointments")}
               onPress={() => navigateTo("/(tabs)/service-appointments")}
               isLast
               isActive={isCurrentRoute("/(tabs)/service-appointments")}
@@ -572,36 +671,36 @@ export function AppDrawer() {
           </View>
 
           {/* Account */}
-          <SectionHeader title="Account" />
+          <SectionHeader title={t("drawer.account")} />
           <View style={styles.menuSection}>
             <MenuRow
               icon={<ProfileIcon color={Colors.sky} />}
               iconBg={Colors.skyBg}
-              label="Profile Settings"
+              label={t("drawer.profileSettings")}
               onPress={() => navigateTo("/profile")}
               isLast
             />
           </View>
 
           {/* App */}
-          <SectionHeader title="App" />
+          <SectionHeader title={t("drawer.app")} />
           <View style={styles.menuSection}>
             <MenuRow
               icon={<TabOrderIcon color={Colors.slateLight} />}
               iconBg={Colors.gravelLight}
-              label="Tab Order"
+              label={t("drawer.tabOrder")}
               onPress={() => navigateTo("/tab-settings")}
             />
             <MenuRow
               icon={<NotificationsIcon color={Colors.slateLight} />}
               iconBg={Colors.gravelLight}
-              label="Notifications"
+              label={t("drawer.notifications")}
               onPress={() => navigateTo("/notifications")}
             />
             <MenuRow
               icon={<AboutIcon color={Colors.slateLight} />}
               iconBg={Colors.gravelLight}
-              label="About GiesenCloud"
+              label={t("drawer.aboutGiesenCloud")}
               onPress={() => setAboutModalVisible(true)}
               rightElement={
                 <TouchableOpacity
@@ -609,7 +708,7 @@ export function AppDrawer() {
                   onPress={() => setAboutModalVisible(true)}
                   style={styles.aboutRight}
                 >
-                  <Text style={styles.versionText}>v2.4.1</Text>
+                  <Text style={styles.versionText}>v{Constants.expoConfig?.version ?? "1.0"}</Text>
                   <ChevronRight />
                 </TouchableOpacity>
               }
@@ -619,7 +718,7 @@ export function AppDrawer() {
 
           {/* Logout */}
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Log Out</Text>
+            <Text style={styles.logoutText}>{t("auth.logOut")}</Text>
           </TouchableOpacity>
         </ScrollView>
       </Animated.View>
@@ -633,7 +732,7 @@ export function AppDrawer() {
       >
         <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Switch Team</Text>
+            <Text style={styles.modalTitle}>{t("drawer.switchTeam")}</Text>
             <TouchableOpacity
               style={styles.modalCloseButton}
               activeOpacity={0.7}
@@ -646,7 +745,7 @@ export function AppDrawer() {
           {teamsLoading ? (
             <View style={styles.modalLoading}>
               <ActivityIndicator size="large" color={Colors.safety} />
-              <Text style={styles.modalLoadingText}>Loading teams...</Text>
+              <Text style={styles.modalLoadingText}>{t("drawer.loadingTeams")}</Text>
             </View>
           ) : (
             <ScrollView style={styles.modalList}>
@@ -686,7 +785,7 @@ export function AppDrawer() {
                     {isSwitching ? (
                       <ActivityIndicator size="small" color={Colors.safety} />
                     ) : isCurrentTeam ? (
-                      <Text style={styles.teamCurrentLabel}>Current</Text>
+                      <Text style={styles.teamCurrentLabel}>{t("drawer.current")}</Text>
                     ) : null}
                   </TouchableOpacity>
                 );
@@ -713,22 +812,21 @@ export function AppDrawer() {
                 <Text style={styles.aboutLogoText}>G</Text>
               </View>
             </View>
-            <Text style={styles.aboutAppName}>GiesenCloud</Text>
-            <Text style={styles.aboutVersion}>Version 2.4.1</Text>
+            <Text style={styles.aboutAppName}>{t("splash.appName")}</Text>
+            <Text style={styles.aboutVersion}>Version {Constants.expoConfig?.version ?? "1.0"}</Text>
             <View style={styles.aboutDivider} />
             <Text style={styles.aboutCopyright}>
-              {"\u00A9"} {new Date().getFullYear()} Giesen Coffee Roasters B.V.
+              {t("drawer.copyright", { year: new Date().getFullYear() })}
             </Text>
             <Text style={styles.aboutDescription}>
-              Roastery management platform with profiler integration, inventory
-              tracking, and live roaster monitoring.
+              {t("drawer.aboutDescription")}
             </Text>
             <TouchableOpacity
               style={styles.aboutCloseBtn}
               activeOpacity={0.7}
               onPress={() => setAboutModalVisible(false)}
             >
-              <Text style={styles.aboutCloseBtnText}>Close</Text>
+              <Text style={styles.aboutCloseBtnText}>{t("common.close")}</Text>
             </TouchableOpacity>
           </View>
         </View>

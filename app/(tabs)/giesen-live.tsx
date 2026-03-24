@@ -13,9 +13,11 @@ import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Rect, Line, Path, Circle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
 import { useLiveStore, DeviceReading } from "@/stores/liveStore";
+import { useTranslation } from "react-i18next";
 
 interface DeviceMeta {
   id: string;
@@ -268,7 +270,12 @@ function MachineCard({
 
 /* ─── Main screen ─── */
 export default function GiesenLiveScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({
+    requiresCapabilities: ["giesen_live"],
+    requiresFeatures: ["giesen_live"],
+  });
   const { user } = useAuthStore();
   const [devicesMeta, setDevicesMeta] = useState<DeviceMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -337,7 +344,7 @@ export default function GiesenLiveScreen() {
           <View style={styles.headerLeft}>
             <HamburgerButton />
             <View>
-              <Text style={styles.headerTitle}>Giesen Live</Text>
+              <Text style={styles.headerTitle}>{t("giesenLive.title")}</Text>
               <Text style={styles.headerSubtitle}>
                 {isConnected
                   ? activeCount > 0
@@ -401,7 +408,7 @@ export default function GiesenLiveScreen() {
               />
             </Svg>
           </View>
-          <Text style={styles.emptyTitle}>No roasters found</Text>
+          <Text style={styles.emptyTitle}>{t("giesenLive.noDevices")}</Text>
           <Text style={styles.emptySubtitle}>
             Your team does not have any roasting equipment registered yet. Add
             devices through giesen.cloud to see them here.

@@ -6,6 +6,7 @@ import {
   getVisibleTabs,
   type AccessAwareTabDefinition,
 } from "../featureAccess";
+import { ALL_TABS } from "@/constants/tabConfig";
 import type { AccessContext, AppUser } from "@/types";
 
 describe("featureAccess", () => {
@@ -169,6 +170,50 @@ describe("featureAccess", () => {
       "Dashboard",
       "Roasts",
       "Maintenance",
+    ]);
+  });
+
+  it("uses feature scopes for quality and reports, and feature plus capability for planning, inventory, and live", () => {
+    const user: AppUser = {
+      id: 1,
+      name: "Ava",
+      email: "ava@example.com",
+      current_team: {
+        id: 10,
+        name: "Team One",
+      },
+      access_context: {
+        plan: {
+          plan_slug: "industrial",
+          plan_label: "Industrial",
+          legacy_plan_name: "profiler-industrial",
+        },
+        capabilities: {
+          profiler: true,
+          roast_planning: true,
+          giesen_live: true,
+          inventory: true,
+          quality: false,
+          reports: false,
+        },
+        features: {
+          quality: true,
+          reports: true,
+          roast_planning: false,
+          inventory: false,
+          giesen_live: false,
+        },
+        enabled_feature_keys: ["quality", "reports"],
+        devices: [],
+      },
+    };
+
+    expect(getVisibleTabs(user, ALL_TABS).map((tab) => tab.key)).toEqual([
+      "Dashboard",
+      "Roasts",
+      "Quality",
+      "Equipment",
+      "Reports",
     ]);
   });
 });

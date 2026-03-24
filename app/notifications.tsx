@@ -15,6 +15,7 @@ import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
 import { Notification } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 function formatTimestamp(dateString: string): string {
   const date = new Date(dateString);
@@ -96,6 +97,7 @@ function NotificationIcon({ type }: { type: string }) {
 }
 
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,10 +257,9 @@ export default function NotificationsScreen() {
             />
           </Svg>
         </View>
-        <Text style={styles.emptyTitle}>No notifications yet</Text>
+        <Text style={styles.emptyTitle}>{t("notifications.noNotifications")}</Text>
         <Text style={styles.emptySubtitle}>
-          When there are updates to your roasts, inventory, or team activity,
-          they will appear here.
+          {t("notifications.noNotifications")}
         </Text>
       </View>
     );
@@ -298,9 +299,9 @@ export default function NotificationsScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Notifications</Text>
+              <Text style={styles.headerTitle}>{t("notifications.title")}</Text>
               <Text style={styles.headerSubtitle}>
-                {unreadCount > 0 ? `${unreadCount} unread` : "Stay up to date"}
+                {unreadCount > 0 ? `${unreadCount} ${t("notifications.unread").toLowerCase()}` : t("notifications.title")}
               </Text>
             </View>
           </View>
@@ -315,7 +316,7 @@ export default function NotificationsScreen() {
               {markingAllRead ? (
                 <ActivityIndicator size="small" color={Colors.safety} />
               ) : (
-                <Text style={styles.markAllText}>Mark All Read</Text>
+                <Text style={styles.markAllText}>{t("notifications.markAllRead")}</Text>
               )}
             </TouchableOpacity>
           ) : null}

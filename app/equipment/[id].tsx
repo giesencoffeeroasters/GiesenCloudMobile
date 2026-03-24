@@ -14,6 +14,7 @@ import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
 import apiClient from "@/api/client";
 import { ProfilerDeviceDetail, DeviceRoast } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 function formatHours(hours: number | null): string {
   if (hours == null) return "--";
@@ -48,6 +49,7 @@ function isOnline(lastSyncedAt: string | null): boolean {
 }
 
 export default function EquipmentDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [device, setDevice] = useState<ProfilerDeviceDetail | null>(null);
@@ -95,8 +97,8 @@ export default function EquipmentDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Equipment</Text>
-                <Text style={styles.headerSubtitle}>Device Details</Text>
+                <Text style={styles.headerTitle}>{t("equipment.title")}</Text>
+                <Text style={styles.headerSubtitle}>{t("equipment.detail.equipmentDetails")}</Text>
               </View>
             </View>
           </View>
@@ -133,20 +135,20 @@ export default function EquipmentDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Equipment</Text>
-                <Text style={styles.headerSubtitle}>Device Details</Text>
+                <Text style={styles.headerTitle}>{t("equipment.title")}</Text>
+                <Text style={styles.headerSubtitle}>{t("equipment.detail.equipmentDetails")}</Text>
               </View>
             </View>
           </View>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error ?? "Device not found."}</Text>
+          <Text style={styles.errorText}>{error ?? t("common.somethingWentWrong")}</Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -219,7 +221,7 @@ export default function EquipmentDetailScreen() {
                   { color: online ? Colors.leaf : Colors.textTertiary },
                 ]}
               >
-                {online ? "Online" : "Offline"}
+                {online ? t("equipment.status.active") : t("equipment.status.inactive")}
               </Text>
             </View>
           </View>
@@ -235,31 +237,31 @@ export default function EquipmentDetailScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{formatHours(device.roasting_hours)}</Text>
-            <Text style={styles.statLabel}>Roasting Hours</Text>
+            <Text style={styles.statLabel}>{t("roasts.detail.duration")}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{formatHours(device.running_hours)}</Text>
-            <Text style={styles.statLabel}>Running Hours</Text>
+            <Text style={styles.statLabel}>{t("roasts.detail.duration")}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{device.roasts_count ?? 0}</Text>
-            <Text style={styles.statLabel}>Total Roasts</Text>
+            <Text style={styles.statLabel}>{t("roasts.summary.totalRoasts")}</Text>
           </View>
         </View>
 
         {/* Device Info Card */}
         <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Device Information</Text>
+          <Text style={styles.sectionTitle}>{t("equipment.detail.equipmentDetails")}</Text>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Model</Text>
+            <Text style={styles.detailLabel}>{t("equipment.detail.model")}</Text>
             <Text style={styles.detailValue}>{device.model ?? "N/A"}</Text>
           </View>
 
           <View style={styles.detailDivider} />
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Serial Number</Text>
+            <Text style={styles.detailLabel}>{t("equipment.detail.serialNumber")}</Text>
             <Text style={styles.detailValueMono}>
               {device.serial_number ?? "N/A"}
             </Text>
@@ -268,7 +270,7 @@ export default function EquipmentDetailScreen() {
           <View style={styles.detailDivider} />
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Version</Text>
+            <Text style={styles.detailLabel}>{t("equipment.detail.firmware")}</Text>
             <Text style={styles.detailValue}>{device.version ?? "N/A"}</Text>
           </View>
 
@@ -284,7 +286,7 @@ export default function EquipmentDetailScreen() {
           <View style={styles.detailDivider} />
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Connection</Text>
+            <Text style={styles.detailLabel}>{t("equipment.detail.status")}</Text>
             <Text style={styles.detailValue}>
               {device.connection_type ?? "N/A"}
             </Text>
@@ -294,7 +296,7 @@ export default function EquipmentDetailScreen() {
             <>
               <View style={styles.detailDivider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Last Synced</Text>
+                <Text style={styles.detailLabel}>{t("equipment.detail.lastMaintenance")}</Text>
                 <Text style={styles.detailValue}>
                   {formatDate(device.last_synced_at)}
                 </Text>
@@ -306,7 +308,7 @@ export default function EquipmentDetailScreen() {
         {/* Subscription Status */}
         {subs ? (
           <View style={styles.detailsCard}>
-            <Text style={styles.sectionTitle}>Subscriptions</Text>
+            <Text style={styles.sectionTitle}>{t("equipment.detail.subscription")}</Text>
             <View style={styles.featureList}>
               {activeFeatures.map((feature) => (
                 <View key={feature.label} style={styles.featureRow}>
@@ -361,7 +363,7 @@ export default function EquipmentDetailScreen() {
                         },
                       ]}
                     >
-                      {feature.active ? "Active" : "Inactive"}
+                      {feature.active ? t("equipment.status.active") : t("equipment.status.inactive")}
                     </Text>
                   </View>
                 </View>
@@ -373,7 +375,7 @@ export default function EquipmentDetailScreen() {
         {/* Recent Roasts */}
         {device.latest_roasts && device.latest_roasts.length > 0 ? (
           <View style={styles.detailsCard}>
-            <Text style={styles.sectionTitle}>Recent Roasts</Text>
+            <Text style={styles.sectionTitle}>{t("widgets.recentRoasts")}</Text>
             {device.latest_roasts.map((roast: DeviceRoast, index: number) => (
               <View key={roast.id}>
                 {index > 0 ? <View style={styles.detailDivider} /> : null}
@@ -417,9 +419,9 @@ export default function EquipmentDetailScreen() {
           </View>
         ) : (
           <View style={styles.detailsCard}>
-            <Text style={styles.sectionTitle}>Recent Roasts</Text>
+            <Text style={styles.sectionTitle}>{t("widgets.recentRoasts")}</Text>
             <Text style={styles.noRoastsText}>
-              No roasts recorded for this device yet.
+              {t("widgets.noRecentRoasts")}
             </Text>
           </View>
         )}

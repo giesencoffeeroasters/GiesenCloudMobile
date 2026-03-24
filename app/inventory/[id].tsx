@@ -14,11 +14,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect as SvgRect } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
 import type { InventoryItem, InventoryTransaction, ApiResponse, DiFluidMeasurementFromApi } from "@/types/index";
 import { getMeasurementsForInventory } from "@/api/difluid";
 import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
 import { useDiFluidStore } from "@/stores/difluidStore";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -135,8 +137,13 @@ type TabKey = "details" | "quality";
 /* ------------------------------------------------------------------ */
 
 export default function InventoryDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({
+    requiresCapabilities: ["inventory"],
+    requiresFeatures: ["inventory"],
+  });
   const [item, setItem] = useState<InventoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -211,8 +218,8 @@ export default function InventoryDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Inventory</Text>
-                <Text style={styles.headerSubtitle}>Item Details</Text>
+                <Text style={styles.headerTitle}>{t("inventory.title")}</Text>
+                <Text style={styles.headerSubtitle}>{t("inventory.detail.itemDetails")}</Text>
               </View>
             </View>
           </View>
@@ -250,22 +257,22 @@ export default function InventoryDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Inventory</Text>
-                <Text style={styles.headerSubtitle}>Item Details</Text>
+                <Text style={styles.headerTitle}>{t("inventory.title")}</Text>
+                <Text style={styles.headerSubtitle}>{t("inventory.detail.itemDetails")}</Text>
               </View>
             </View>
           </View>
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            {error ?? "Item not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -274,7 +281,7 @@ export default function InventoryDetailScreen() {
 
   const stockColor = getStockColor(item.stock_status);
   const quantityKg = item.current_quantity_grams / 1000;
-  const thresholdKg = item.low_stock_threshold_grams / 1000;
+  const thresholdKg = (item.low_stock_threshold_grams ?? 0) / 1000;
 
   return (
     <View style={styles.screen}>
@@ -363,10 +370,10 @@ export default function InventoryDetailScreen() {
             </Text>
             <Text style={styles.heroWeightUnit}>kg</Text>
           </View>
-          <Text style={styles.heroWeightLabel}>Current Stock</Text>
+          <Text style={styles.heroWeightLabel}>{t("inventory.detail.currentStock")}</Text>
 
           <View style={styles.thresholdRow}>
-            <Text style={styles.thresholdLabel}>Low stock threshold</Text>
+            <Text style={styles.thresholdLabel}>{t("inventory.detail.minStock")}</Text>
             <Text style={styles.thresholdValue}>
               {thresholdKg.toFixed(1)} kg
             </Text>
@@ -390,7 +397,7 @@ export default function InventoryDetailScreen() {
                 />
               </Svg>
               <Text style={[styles.tabText, activeTab === "details" && styles.tabTextActive]}>
-                Details
+                {t("inventory.details")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -408,7 +415,7 @@ export default function InventoryDetailScreen() {
                 />
               </Svg>
               <Text style={[styles.tabText, activeTab === "quality" && styles.tabTextActive]}>
-                Quality
+                {t("quality.title")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -419,10 +426,10 @@ export default function InventoryDetailScreen() {
           <>
             {/* Details card */}
             <View style={styles.detailsCard}>
-              <Text style={styles.sectionTitle}>Details</Text>
+              <Text style={styles.sectionTitle}>{t("inventory.details")}</Text>
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Location</Text>
+                <Text style={styles.detailLabel}>{t("inventory.location")}</Text>
                 <Text style={styles.detailValue}>
                   {item.location?.name ?? "N/A"}
                 </Text>
@@ -431,7 +438,7 @@ export default function InventoryDetailScreen() {
               <View style={styles.detailDivider} />
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Supplier</Text>
+                <Text style={styles.detailLabel}>{t("inventory.detail.supplier")}</Text>
                 <Text style={styles.detailValue}>
                   {item.supplier?.name ?? "N/A"}
                 </Text>
@@ -440,7 +447,7 @@ export default function InventoryDetailScreen() {
               <View style={styles.detailDivider} />
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Received</Text>
+                <Text style={styles.detailLabel}>{t("inventory.received")}</Text>
                 <Text style={styles.detailValue}>
                   {formatDate(item.received_at)}
                 </Text>
@@ -468,7 +475,7 @@ export default function InventoryDetailScreen() {
                 <>
                   <View style={styles.detailDivider} />
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Lot Code</Text>
+                    <Text style={styles.detailLabel}>{t("inventory.detail.lotNumber")}</Text>
                     <Text style={styles.detailValue}>{item.lot_code}</Text>
                   </View>
                 </>
@@ -498,7 +505,7 @@ export default function InventoryDetailScreen() {
             {/* Origin Card */}
             {item.country_of_origin || item.region_of_origin || item.size_grade ? (
               <View style={styles.detailsCard}>
-                <Text style={styles.sectionTitle}>Origin</Text>
+                <Text style={styles.sectionTitle}>{t("inventory.detail.origin")}</Text>
 
                 {item.country_of_origin ? (
                   <View style={styles.detailRow}>
@@ -571,7 +578,7 @@ export default function InventoryDetailScreen() {
             {/* Varieties */}
             {item.varieties && item.varieties.length > 0 ? (
               <View style={styles.detailsCard}>
-                <Text style={styles.sectionTitle}>Varieties</Text>
+                <Text style={styles.sectionTitle}>{t("inventory.detail.variety")}</Text>
                 <View style={styles.tagRow}>
                   {item.varieties.map((v) => (
                     <View key={v.id} style={styles.tag}>
@@ -668,7 +675,7 @@ export default function InventoryDetailScreen() {
                       strokeLinejoin="round"
                     />
                   </Svg>
-                  <Text style={styles.cardTitle}>Notes</Text>
+                  <Text style={styles.cardTitle}>{t("inventory.detail.notes")}</Text>
                 </View>
                 <Text style={styles.notesText}>{item.notes}</Text>
               </View>
@@ -687,7 +694,7 @@ export default function InventoryDetailScreen() {
                       strokeLinejoin="round"
                     />
                   </Svg>
-                  <Text style={styles.cardTitle}>Recent Transactions</Text>
+                  <Text style={styles.cardTitle}>{t("inventory.detail.stockHistory")}</Text>
                   <Text style={styles.cardCount}>{item.recent_transactions.length}</Text>
                 </View>
                 {item.recent_transactions.map((tx, index) => {

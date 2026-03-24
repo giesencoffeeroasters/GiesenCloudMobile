@@ -12,8 +12,11 @@ import Svg, {
   Stop,
   Rect,
 } from "react-native-svg";
+import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { useAuthStore } from "@/stores/authStore";
+import { hasRequiredAccess } from "@/lib/featureAccess";
 import { useLiveStore } from "@/stores/liveStore";
 import type { DashboardData, LiveRoaster } from "@/types";
 
@@ -83,6 +86,7 @@ interface RoasterCardProps {
 }
 
 function RoasterCard({ roaster }: RoasterCardProps) {
+  const { t } = useTranslation();
   const isActive = roaster.bean_temp > 0;
 
   return (
@@ -104,10 +108,10 @@ function RoasterCard({ roaster }: RoasterCardProps) {
           {isActive ? (
             <>
               <PulsingDot />
-              <Text style={styles.statusTextActive}>ROASTING</Text>
+              <Text style={styles.statusTextActive}>{t("widgets.roasting").toUpperCase()}</Text>
             </>
           ) : (
-            <Text style={styles.statusTextIdle}>IDLE</Text>
+            <Text style={styles.statusTextIdle}>{t("widgets.idle").toUpperCase()}</Text>
           )}
         </View>
       </View>
@@ -115,14 +119,14 @@ function RoasterCard({ roaster }: RoasterCardProps) {
       {/* Stats row */}
       <View style={styles.statsRow}>
         <View style={styles.statColumn}>
-          <Text style={styles.statLabel}>BEAN TEMP</Text>
+          <Text style={styles.statLabel}>{t("giesenLive.metrics.beanTemp").toUpperCase()}</Text>
           <View style={styles.statValueRow}>
             <Text style={styles.statValue}>{roaster.bean_temp}</Text>
             <Text style={styles.statUnit}>{"\u00B0C"}</Text>
           </View>
         </View>
         <View style={styles.statColumn}>
-          <Text style={styles.statLabel}>DURATION</Text>
+          <Text style={styles.statLabel}>{t("giesenLive.metrics.duration").toUpperCase()}</Text>
           <View style={styles.statValueRow}>
             <Text style={styles.statValue}>
               {formatDuration(roaster.duration)}
@@ -130,7 +134,7 @@ function RoasterCard({ roaster }: RoasterCardProps) {
           </View>
         </View>
         <View style={styles.statColumn}>
-          <Text style={styles.statLabel}>RoR</Text>
+          <Text style={styles.statLabel}>{t("roasts.detail.rateOfRise")}</Text>
           <View style={styles.statValueRow}>
             <Text style={styles.statValue}>{roaster.ror}</Text>
             <Text style={styles.statUnit}>{"\u00B0/m"}</Text>
@@ -144,8 +148,18 @@ function RoasterCard({ roaster }: RoasterCardProps) {
   );
 }
 
-export function LiveRoastersWidget({ data }: LiveRoastersWidgetProps) {
+export function LiveRoastersWidget({ data: _data }: LiveRoastersWidgetProps) {
+  const { t } = useTranslation();
+  const user = useAuthStore((state) => state.user);
+  const hasLiveAccess = hasRequiredAccess(user, {
+    requiresCapabilities: ["giesen_live"],
+    requiresFeatures: ["giesen_live"],
+  });
   const liveDevices = useLiveStore((s) => s.devices);
+
+  if (!hasLiveAccess) {
+    return null;
+  }
 
   // Map live store devices into the LiveRoaster shape for the cards
   const roasters: LiveRoaster[] = Array.from(liveDevices.values())
@@ -162,12 +176,12 @@ export function LiveRoastersWidget({ data }: LiveRoastersWidgetProps) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Live Roasters</Text>
+        <Text style={styles.sectionTitle}>{t("widgets.liveRoasters")}</Text>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push("/(tabs)/giesen-live")}
         >
-          <Text style={styles.giesenLiveLink}>Giesen Live</Text>
+          <Text style={styles.giesenLiveLink}>{t("giesenLive.title")}</Text>
         </TouchableOpacity>
       </View>
       {roasters.length > 0 ? (
@@ -178,7 +192,7 @@ export function LiveRoastersWidget({ data }: LiveRoastersWidgetProps) {
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No roasters connected</Text>
+          <Text style={styles.emptyStateText}>{t("widgets.noLiveRoasters")}</Text>
         </View>
       )}
     </View>

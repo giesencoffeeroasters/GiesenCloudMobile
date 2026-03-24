@@ -25,6 +25,7 @@ import type { RoastDetail, RoastPhase, CurvePoint, DiFluidMeasurementFromApi } f
 import { getMeasurementsForRoast } from "@/api/difluid";
 import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
 import { useDiFluidStore } from "@/stores/difluidStore";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -214,6 +215,7 @@ function StatCard({ label, value, unit, color }: StatCardProps) {
 /* ------------------------------------------------------------------ */
 
 export default function RoastDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [roast, setRoast] = useState<RoastDetail | null>(null);
@@ -332,8 +334,8 @@ export default function RoastDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={detailStyles.headerTitle}>Roast</Text>
-                <Text style={detailStyles.headerSubtitle}>Details</Text>
+                <Text style={detailStyles.headerTitle}>{t("roasts.title")}</Text>
+                <Text style={detailStyles.headerSubtitle}>{t("roasts.detail.roastDetails")}</Text>
               </View>
             </View>
           </View>
@@ -371,22 +373,22 @@ export default function RoastDetailScreen() {
                 <GiesenLogo size={18} color={Colors.text} />
               </View>
               <View>
-                <Text style={detailStyles.headerTitle}>Roast</Text>
-                <Text style={detailStyles.headerSubtitle}>Details</Text>
+                <Text style={detailStyles.headerTitle}>{t("roasts.title")}</Text>
+                <Text style={detailStyles.headerSubtitle}>{t("roasts.detail.roastDetails")}</Text>
               </View>
             </View>
           </View>
         </View>
         <View style={detailStyles.errorContainer}>
           <Text style={detailStyles.errorText}>
-            {error ?? "Roast not found."}
+            {error ?? t("common.somethingWentWrong")}
           </Text>
           <TouchableOpacity
             style={detailStyles.retryButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={detailStyles.retryButtonText}>Go Back</Text>
+            <Text style={detailStyles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -458,7 +460,7 @@ export default function RoastDetailScreen() {
                 />
               </Svg>
               <Text style={[detailStyles.tabText, activeTab === "details" && detailStyles.tabTextActive]}>
-                Details
+                {t("roasts.detail.roastDetails")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -476,7 +478,7 @@ export default function RoastDetailScreen() {
                 />
               </Svg>
               <Text style={[detailStyles.tabText, activeTab === "quality" && detailStyles.tabTextActive]}>
-                Quality
+                {t("quality.title")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -497,7 +499,7 @@ export default function RoastDetailScreen() {
                     strokeLinejoin="round"
                   />
                 </Svg>
-                <Text style={detailStyles.cardTitle}>Roast Curve</Text>
+                <Text style={detailStyles.cardTitle}>{t("roasts.detail.roastCurve")}</Text>
               </View>
               {roast.curve_data ? (
                 <RoastCurveChart
@@ -519,10 +521,10 @@ export default function RoastDetailScreen() {
                     />
                   </Svg>
                   <Text style={detailStyles.emptyCurveText}>
-                    No curve data available
+                    {t("common.noData")}
                   </Text>
                   <Text style={detailStyles.emptyCurveSubtext}>
-                    This roast does not have recorded curve data.
+                    {t("common.noData")}
                   </Text>
                 </View>
               )}
@@ -534,7 +536,7 @@ export default function RoastDetailScreen() {
             {/* 3. Key Metrics Row 1: Start Bean Temp | End Bean Temp | End Air Temp */}
             <View style={detailStyles.metricsRow}>
               <StatCard
-                label="START BEAN"
+                label={t("roasts.detail.startTemp")}
                 value={
                   startBeanTemp !== null ? startBeanTemp.toFixed(0) : "-"
                 }
@@ -542,7 +544,7 @@ export default function RoastDetailScreen() {
                 color={Colors.sky}
               />
               <StatCard
-                label="END BEAN"
+                label={t("roasts.detail.endTemp")}
                 value={
                   endBeanTemp !== null ? endBeanTemp.toFixed(0) : "-"
                 }
@@ -550,7 +552,7 @@ export default function RoastDetailScreen() {
                 color={Colors.sky}
               />
               <StatCard
-                label="END AIR"
+                label={t("roasts.detail.envTemp")}
                 value={
                   endAirTemp !== null ? endAirTemp.toFixed(0) : "-"
                 }
@@ -564,7 +566,7 @@ export default function RoastDetailScreen() {
               {firstCrackEvent ? (
                 <>
                   <StatCard
-                    label="FIRST CRACK"
+                    label={t("roasts.detail.firstCrack")}
                     value={formatDuration(Math.round(firstCrackEvent.timePassed))}
                     unit={
                       firstCrackTemp !== null
@@ -574,7 +576,7 @@ export default function RoastDetailScreen() {
                     color={Colors.traffic}
                   />
                   <StatCard
-                    label="DEVELOPMENT"
+                    label={t("roasts.detail.development")}
                     value={
                       developmentTime !== null
                         ? formatDuration(Math.round(developmentTime))
@@ -590,7 +592,7 @@ export default function RoastDetailScreen() {
                 </>
               ) : null}
               <StatCard
-                label="DURATION"
+                label={t("roasts.detail.duration")}
                 value={formatDuration(roast.duration)}
                 color={Colors.text}
               />
@@ -617,7 +619,7 @@ export default function RoastDetailScreen() {
                 unit={roast.end_weight !== null ? " kg" : ""}
               />
               <StatCard
-                label="LOSS"
+                label={t("roasts.detail.weightLoss")}
                 value={
                   roast.weight_change !== null
                     ? Math.abs(roast.weight_change).toFixed(1)
@@ -643,7 +645,7 @@ export default function RoastDetailScreen() {
                   </Svg>
                   <Text style={detailStyles.cardTitle}>
                     {roast.inventory_selections.length === 1
-                      ? "Green Bean"
+                      ? t("roasts.detail.greenBean")
                       : "Blend"}
                   </Text>
                 </View>
@@ -718,11 +720,11 @@ export default function RoastDetailScreen() {
                     strokeLinecap="round"
                   />
                 </Svg>
-                <Text style={detailStyles.cardTitle}>Roast Info</Text>
+                <Text style={detailStyles.cardTitle}>{t("roasts.detail.roastDetails")}</Text>
               </View>
 
               <View style={detailStyles.detailRow}>
-                <Text style={detailStyles.detailLabel}>Profile</Text>
+                <Text style={detailStyles.detailLabel}>{t("roasts.detail.profile")}</Text>
                 <Text style={detailStyles.detailValue}>
                   {roast.profile?.name ?? roast.profile_name}
                 </Text>
@@ -731,7 +733,7 @@ export default function RoastDetailScreen() {
               <View style={detailStyles.detailDivider} />
 
               <View style={detailStyles.detailRow}>
-                <Text style={detailStyles.detailLabel}>Device</Text>
+                <Text style={detailStyles.detailLabel}>{t("equipment.title")}</Text>
                 <Text style={detailStyles.detailValue}>{roast.device_name}</Text>
               </View>
 
@@ -739,7 +741,7 @@ export default function RoastDetailScreen() {
                 <>
                   <View style={detailStyles.detailDivider} />
                   <View style={detailStyles.detailRow}>
-                    <Text style={detailStyles.detailLabel}>Bean Type</Text>
+                    <Text style={detailStyles.detailLabel}>{t("roasts.detail.greenBean")}</Text>
                     <Text style={detailStyles.detailValue}>
                       {roast.bean_type}
                     </Text>
@@ -750,7 +752,7 @@ export default function RoastDetailScreen() {
               <View style={detailStyles.detailDivider} />
 
               <View style={detailStyles.detailRow}>
-                <Text style={detailStyles.detailLabel}>Date</Text>
+                <Text style={detailStyles.detailLabel}>{t("roasts.detail.roastDate")}</Text>
                 <Text style={detailStyles.detailValue}>
                   {formatDate(roast.roasted_at)}
                 </Text>
@@ -760,10 +762,10 @@ export default function RoastDetailScreen() {
                 <>
                   <View style={detailStyles.detailDivider} />
                   <View style={detailStyles.detailRow}>
-                    <Text style={detailStyles.detailLabel}>Favorite</Text>
+                    <Text style={detailStyles.detailLabel}>{t("roasts.filters.favorites")}</Text>
                     <View style={detailStyles.favBadge}>
                       <Text style={detailStyles.favStar}>{"\u2605"}</Text>
-                      <Text style={detailStyles.favText}>Yes</Text>
+                      <Text style={detailStyles.favText}>{t("common.yes")}</Text>
                     </View>
                   </View>
                 </>
@@ -783,7 +785,7 @@ export default function RoastDetailScreen() {
                       strokeLinejoin="round"
                     />
                   </Svg>
-                  <Text style={detailStyles.cardTitle}>Comment</Text>
+                  <Text style={detailStyles.cardTitle}>{t("roasts.detail.notes")}</Text>
                 </View>
                 <Text style={detailStyles.commentText}>{roast.comment}</Text>
               </View>
@@ -807,7 +809,7 @@ export default function RoastDetailScreen() {
                       strokeLinejoin="round"
                     />
                   </Svg>
-                  <Text style={detailStyles.cardTitle}>Cupping Score</Text>
+                  <Text style={detailStyles.cardTitle}>{t("roasts.detail.cuppingScore")}</Text>
                 </View>
                 <View style={detailStyles.scoreContainer}>
                   <View
@@ -851,7 +853,7 @@ export default function RoastDetailScreen() {
                       strokeLinejoin="round"
                     />
                   </Svg>
-                  <Text style={detailStyles.cardTitle}>Cupping Sessions</Text>
+                  <Text style={detailStyles.cardTitle}>{t("quality.cuppingSessions")}</Text>
                   <Text style={detailStyles.cardCount}>
                     {roast.cupping_samples.length}
                   </Text>
@@ -931,7 +933,7 @@ export default function RoastDetailScreen() {
                       strokeLinejoin="round"
                     />
                   </Svg>
-                  <Text style={detailStyles.cardTitle}>Measurements</Text>
+                  <Text style={detailStyles.cardTitle}>{t("quality.measurements.title")}</Text>
                   <Text style={detailStyles.cardCount}>{difluidMeasurements.length}</Text>
                 </View>
                 <View style={{ gap: 10 }}>
@@ -957,7 +959,7 @@ export default function RoastDetailScreen() {
                 <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11" />
                 </Svg>
-                <Text style={detailStyles.difluidButtonText}>Take DiFluid Measurement</Text>
+                <Text style={detailStyles.difluidButtonText}>{t("difluid.startMeasurement")}</Text>
               </TouchableOpacity>
             ) : null}
 
@@ -970,9 +972,9 @@ export default function RoastDetailScreen() {
                 <Svg width={48} height={48} viewBox="0 0 24 24" fill="none" stroke={Colors.textTertiary} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </Svg>
-                <Text style={detailStyles.emptyQualityText}>No quality data yet</Text>
+                <Text style={detailStyles.emptyQualityText}>{t("common.noData")}</Text>
                 <Text style={detailStyles.emptyQualitySubtext}>
-                  Connect a DiFluid device or add cupping scores to see quality data here.
+                  {t("common.noData")}
                 </Text>
               </View>
             ) : null}

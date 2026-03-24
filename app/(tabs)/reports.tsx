@@ -13,8 +13,10 @@ import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Rect, Line, Text as SvgText, G } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import { useAuthStore } from "@/stores/authStore";
 import apiClient from "@/api/client";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -340,7 +342,9 @@ function SkeletonCard() {
 /* ------------------------------------------------------------------ */
 
 export default function ReportsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ requiresFeatures: ["reports"] });
   const { user } = useAuthStore();
   const screenWidth = Dimensions.get("window").width;
 
@@ -401,9 +405,9 @@ export default function ReportsScreen() {
   );
 
   const tabs: { key: ReportTab; label: string }[] = [
-    { key: "production", label: "Production" },
-    { key: "quality", label: "Quality" },
-    { key: "inventory", label: "Inventory" },
+    { key: "production", label: t("reports.tabs.production") },
+    { key: "quality", label: t("reports.tabs.quality") },
+    { key: "inventory", label: t("reports.tabs.inventory") },
   ];
 
   /* Date range presets */
@@ -420,8 +424,8 @@ export default function ReportsScreen() {
           <View style={styles.headerLeft}>
             <HamburgerButton />
             <View>
-              <Text style={styles.headerTitle}>Reports</Text>
-              <Text style={styles.headerSubtitle}>Analytics & insights</Text>
+              <Text style={styles.headerTitle}>{t("reports.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("reports.title")}</Text>
             </View>
           </View>
         </View>
@@ -524,7 +528,7 @@ export default function ReportsScreen() {
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={() => fetchReport()}>
-              <Text style={styles.retryText}>Tap to retry</Text>
+              <Text style={styles.retryText}>{t("common.retry")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -547,17 +551,17 @@ export default function ReportsScreen() {
           <View>
             <View style={styles.statsRow}>
               <StatCard
-                label="Total Roasts"
+                label={t("reports.production.totalRoasts")}
                 value={String(productionData.total_roasts)}
                 color={Colors.sky}
               />
               <StatCard
-                label="Total Weight"
+                label={t("reports.production.totalWeight")}
                 value={`${productionData.total_weight_kg.toFixed(1)} kg`}
                 color={Colors.leaf}
               />
               <StatCard
-                label="Avg Duration"
+                label={t("reports.production.avgDuration")}
                 value={formatDuration(productionData.avg_duration)}
                 color={Colors.sun}
               />
@@ -615,7 +619,7 @@ export default function ReportsScreen() {
           <View>
             <View style={styles.statsRow}>
               <StatCard
-                label="Avg Score"
+                label={t("reports.qualityReport.avgScore")}
                 value={
                   qualityData.avg_cupping_score !== null
                     ? String(qualityData.avg_cupping_score)
@@ -624,12 +628,12 @@ export default function ReportsScreen() {
                 color={Colors.leaf}
               />
               <StatCard
-                label="Sessions"
+                label={t("reports.qualityReport.sessions")}
                 value={String(qualityData.total_sessions)}
                 color={Colors.sky}
               />
               <StatCard
-                label="Samples"
+                label={t("quality.detail.samples")}
                 value={String(qualityData.total_samples)}
                 color={Colors.grape}
               />
@@ -650,17 +654,17 @@ export default function ReportsScreen() {
           <View>
             <View style={styles.statsRow}>
               <StatCard
-                label="Total Items"
+                label={t("reports.inventoryReport.totalItems")}
                 value={String(inventoryData.total_items)}
                 color={Colors.sky}
               />
               <StatCard
-                label="Total Weight"
+                label={t("reports.inventoryReport.totalValue")}
                 value={`${inventoryData.total_weight_kg.toFixed(1)} kg`}
                 color={Colors.leaf}
               />
               <StatCard
-                label="Low Stock"
+                label={t("reports.inventoryReport.lowStock")}
                 value={String(inventoryData.low_stock_items)}
                 color={
                   inventoryData.low_stock_items > 0

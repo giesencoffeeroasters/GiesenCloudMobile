@@ -7,11 +7,15 @@ import type {
   DeviceCapabilityKey,
 } from "@/types";
 
-export interface AccessAwareTabDefinition<TKey extends string = string> {
-  key: TKey;
-  title: string;
+export interface AccessRequirements {
   requiresCapabilities?: AccessCapabilityKey[];
   requiresFeatures?: AccessFeatureKey[];
+}
+
+export interface AccessAwareTabDefinition<TKey extends string = string>
+  extends AccessRequirements {
+  key: TKey;
+  title: string;
 }
 
 export interface SelectableDeviceLike {
@@ -100,15 +104,21 @@ export function canAccessFeature(
   return hasFeatures(subject, [key]);
 }
 
+export function hasRequiredAccess(
+  subject: AccessSubject,
+  requirements: AccessRequirements,
+): boolean {
+  return (
+    hasCapabilities(subject, requirements.requiresCapabilities) &&
+    hasFeatures(subject, requirements.requiresFeatures)
+  );
+}
+
 export function getVisibleTabs<T extends AccessAwareTabDefinition>(
   subject: AccessSubject,
   tabDefs: readonly T[],
 ): T[] {
-  return tabDefs.filter(
-    (tab) =>
-      hasCapabilities(subject, tab.requiresCapabilities) &&
-      hasFeatures(subject, tab.requiresFeatures),
-  );
+  return tabDefs.filter((tab) => hasRequiredAccess(subject, tab));
 }
 
 export function getSelectableDevicesFor<T extends SelectableDeviceLike>(

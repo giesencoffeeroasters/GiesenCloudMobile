@@ -12,6 +12,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import apiClient from "@/api/client";
 import type {
   CalendarTask,
@@ -20,6 +21,7 @@ import type {
   MaintenancePriority,
   MaintenanceTaskStatus,
 } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -242,7 +244,9 @@ function CalendarTaskCard({ task }: { task: CalendarTask }) {
 /* ------------------------------------------------------------------ */
 
 export default function CalendarScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ feature: "maintenance" });
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [calendarData, setCalendarData] = useState<CalendarData>({});
@@ -363,7 +367,7 @@ export default function CalendarScreen() {
           >
             <BackIcon color="#ffffff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Maintenance Calendar</Text>
+          <Text style={styles.headerTitle}>{t("maintenance.calendar")}</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.loadingContainer}>
@@ -424,7 +428,7 @@ export default function CalendarScreen() {
             activeOpacity={0.7}
             onPress={goToToday}
           >
-            <Text style={styles.todayBtnText}>Today</Text>
+            <Text style={styles.todayBtnText}>{t("common.today")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -538,7 +542,7 @@ export default function CalendarScreen() {
         {selectedDate ? (
           <View style={styles.selectedDaySection}>
             <Text style={styles.selectedDayHeader}>
-              Tasks for {formatSelectedDateLabel(selectedDate)}
+              {t("maintenance.tasks")} - {formatSelectedDateLabel(selectedDate)}
             </Text>
             {selectedTasks.length > 0 ? (
               selectedTasks.map((task) => (
@@ -546,16 +550,16 @@ export default function CalendarScreen() {
               ))
             ) : (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No tasks for this day</Text>
+                <Text style={styles.emptyText}>{t("maintenance.noTasks")}</Text>
               </View>
             )}
           </View>
         ) : (
           <View style={styles.selectedDaySection}>
-            <Text style={styles.selectedDayHeader}>Select a day</Text>
+            <Text style={styles.selectedDayHeader}>{t("maintenance.calendar")}</Text>
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
-                Tap a day to see its tasks
+                {t("maintenance.noTasks")}
               </Text>
             </View>
           </View>
@@ -643,20 +647,23 @@ const styles = StyleSheet.create({
 
   /* -- Asset filter chips -- */
   assetFilterRow: {
-    maxHeight: 44,
+    minHeight: 52,
   },
   assetFilterRowContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     gap: 8,
+    alignItems: "center",
   },
   assetChip: {
+    minHeight: 36,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
+    justifyContent: "center",
   },
   assetChipActive: {
     backgroundColor: Colors.safety,
@@ -665,6 +672,7 @@ const styles = StyleSheet.create({
   assetChipText: {
     fontFamily: "DMSans-Medium",
     fontSize: 13,
+    lineHeight: 18,
     color: Colors.textSecondary,
   },
   assetChipTextActive: {

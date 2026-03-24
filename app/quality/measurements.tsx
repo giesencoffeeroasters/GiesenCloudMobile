@@ -14,16 +14,20 @@ import { router } from "expo-router";
 import Svg, { Path, Circle, Line } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
+import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
 import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
 import { LinkPickerModal } from "@/components/difluid/LinkPickerModal";
 import { getAllMeasurements } from "@/api/difluid";
 import { linkMeasurement } from "@/api/difluid";
 import type { DiFluidMeasurementFromApi } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 type FilterType = "all" | "linked" | "unlinked";
 
 export default function MeasurementsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  useRouteAccessGuard({ requiresFeatures: ["quality"] });
   const [measurements, setMeasurements] = useState<DiFluidMeasurementFromApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -80,7 +84,7 @@ export default function MeasurementsScreen() {
       setLinkingMeasurementId(null);
       fetchMeasurements();
     } catch {
-      Alert.alert("Error", "Failed to link measurement. Please try again.");
+      Alert.alert(t("common.error"), t("common.somethingWentWrong"));
     }
   }
 
@@ -109,8 +113,8 @@ export default function MeasurementsScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Measurements</Text>
-              <Text style={styles.headerSubtitle}>DiFluid</Text>
+              <Text style={styles.headerTitle}>{t("quality.measurements.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("difluid.title")}</Text>
             </View>
           </View>
         </View>
@@ -133,11 +137,11 @@ export default function MeasurementsScreen() {
           <View style={styles.summaryRow}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryValue}>{totalCount}</Text>
-              <Text style={styles.summaryLabel}>Total</Text>
+              <Text style={styles.summaryLabel}>{t("quality.score.total")}</Text>
             </View>
             <View style={[styles.summaryCard, styles.summaryLinked]}>
               <Text style={[styles.summaryValue, { color: Colors.leaf }]}>{linkedCount}</Text>
-              <Text style={styles.summaryLabel}>Linked</Text>
+              <Text style={styles.summaryLabel}>{t("quality.measurements.linkedTo")}</Text>
             </View>
             <View style={[styles.summaryCard, styles.summaryUnlinked]}>
               <Text style={[styles.summaryValue, { color: Colors.sun }]}>{unlinkedCount}</Text>
@@ -167,7 +171,7 @@ export default function MeasurementsScreen() {
               <Svg width={48} height={48} viewBox="0 0 24 24" fill="none" stroke={Colors.textTertiary} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round">
                 <Path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z" />
               </Svg>
-              <Text style={styles.emptyText}>No measurements found</Text>
+              <Text style={styles.emptyText}>{t("quality.measurements.noMeasurements")}</Text>
               <Text style={styles.emptySubtext}>
                 {filter === "unlinked"
                   ? "All measurements are linked"

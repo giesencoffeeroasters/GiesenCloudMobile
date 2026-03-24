@@ -18,6 +18,7 @@ import { Colors } from "@/constants/colors";
 import { HamburgerButton } from "@/components/HamburgerButton";
 import apiClient from "@/api/client";
 import type { KBArticle, KBCategoryStats } from "@/types/index";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  SVG Icons                                                          */
@@ -54,6 +55,7 @@ function SearchIcon({ color }: { color: string }) {
 /* ------------------------------------------------------------------ */
 
 export default function KnowledgeBaseScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [articles, setArticles] = useState<KBArticle[]>([]);
   const [categories, setCategories] = useState<KBCategoryStats[]>([]);
@@ -221,8 +223,8 @@ export default function KnowledgeBaseScreen() {
       <View style={styles.emptyState}>
         <Text style={styles.emptyText}>
           {hasSearchOrFilter
-            ? "No articles match your search."
-            : "No articles available yet."}
+            ? t("knowledgeBase.noArticles")
+            : t("knowledgeBase.noArticles")}
         </Text>
       </View>
     );
@@ -265,8 +267,8 @@ export default function KnowledgeBaseScreen() {
         <View style={styles.headerLeft}>
           <HamburgerButton />
           <View>
-            <Text style={styles.headerTitle}>Knowledge Base</Text>
-            <Text style={styles.headerSubtitle}>Search Articles</Text>
+            <Text style={styles.headerTitle}>{t("knowledgeBase.title")}</Text>
+            <Text style={styles.headerSubtitle}>{t("knowledgeBase.searchPlaceholder")}</Text>
           </View>
         </View>
       </View>
@@ -279,7 +281,7 @@ export default function KnowledgeBaseScreen() {
             style={styles.searchInput}
             value={search}
             onChangeText={setSearch}
-            placeholder="Search articles..."
+            placeholder={t("knowledgeBase.searchPlaceholder")}
             placeholderTextColor={Colors.textTertiary}
             returnKeyType="search"
             autoCapitalize="none"
@@ -309,7 +311,7 @@ export default function KnowledgeBaseScreen() {
               activeCategory === "all" && styles.filterChipTextActive,
             ]}
           >
-            All
+            {t("knowledgeBase.allCategories")}
           </Text>
         </TouchableOpacity>
         {categories.map((cat) => (

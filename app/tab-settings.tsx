@@ -10,9 +10,12 @@ import { router } from "expo-router";
 import Svg, { Path, Polyline, Line } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { GiesenLogo } from "@/components/GiesenLogo";
-import { ALL_TABS, DEFAULT_TAB_ORDER, type TabKey } from "@/constants/tabConfig";
-import { useTabStore } from "@/stores/tabStore";
-import { TabIcon } from "./(tabs)/_layout";
+import { ALL_TABS, type TabKey } from "@/constants/tabConfig";
+import { reconcileTabOrder, useTabStore } from "@/stores/tabStore";
+import { useAuthStore } from "@/stores/authStore";
+import { getVisibleTabs } from "@/lib/featureAccess";
+import { TabIcon } from "@/components/TabIcon";
+import { useTranslation } from "react-i18next";
 
 /* ------------------------------------------------------------------ */
 /*  Small icon helpers                                                  */
@@ -80,36 +83,44 @@ const MAX_TABS = 5;
 /* ------------------------------------------------------------------ */
 
 export default function TabSettingsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const user = useAuthStore((state) => state.user);
+  const authIsLoading = useAuthStore((state) => state.isLoading);
   const { tabOrder, setTabOrder, resetTabOrder } = useTabStore();
-
-  const selectedSet = new Set(tabOrder);
-  const available = ALL_TABS.filter((t) => !selectedSet.has(t.key));
+  if (authIsLoading) {
+    return null;
+  }
+  const visibleTabs = getVisibleTabs(user, ALL_TABS);
+  const visibleTabKeys = visibleTabs.map((tab) => tab.key);
+  const visibleTabOrder = reconcileTabOrder(tabOrder, visibleTabKeys);
+  const selectedSet = new Set(visibleTabOrder);
+  const available = visibleTabs.filter((tab) => !selectedSet.has(tab.key));
 
   /* -- Actions -- */
 
   function moveUp(index: number) {
     if (index === 0) return;
-    const next = [...tabOrder];
+    const next = [...visibleTabOrder];
     [next[index - 1], next[index]] = [next[index], next[index - 1]];
     setTabOrder(next);
   }
 
   function moveDown(index: number) {
-    if (index === tabOrder.length - 1) return;
-    const next = [...tabOrder];
+    if (index === visibleTabOrder.length - 1) return;
+    const next = [...visibleTabOrder];
     [next[index], next[index + 1]] = [next[index + 1], next[index]];
     setTabOrder(next);
   }
 
   function removeTab(key: TabKey) {
-    if (tabOrder.length <= MIN_TABS) return;
-    setTabOrder(tabOrder.filter((k) => k !== key));
+    if (visibleTabOrder.length <= MIN_TABS) return;
+    setTabOrder(visibleTabOrder.filter((k) => k !== key));
   }
 
   function addTab(key: TabKey) {
-    if (tabOrder.length >= MAX_TABS) return;
-    setTabOrder([...tabOrder, key]);
+    if (visibleTabOrder.length >= Math.min(MAX_TABS, visibleTabs.length)) return;
+    setTabOrder([...visibleTabOrder, key]);
   }
 
   return (
@@ -129,8 +140,8 @@ export default function TabSettingsScreen() {
               <GiesenLogo size={18} color={Colors.text} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Tab Order</Text>
-              <Text style={styles.headerSubtitle}>Customize your tabs</Text>
+              <Text style={styles.headerTitle}>{t("tabSettings.title")}</Text>
+              <Text style={styles.headerSubtitle}>{t("tabSettings.subtitle")}</Text>
             </View>
           </View>
         </View>
@@ -144,15 +155,15 @@ export default function TabSettingsScreen() {
         {/* Your Tabs section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>
-            YOUR TABS ({tabOrder.length})
+            {t("tabSettings.visible")} ({visibleTabOrder.length})
           </Text>
         </View>
 
         <View style={styles.card}>
-          {tabOrder.map((key, index) => {
+          {visibleTabOrder.map((key, index) => {
             const isFirst = index === 0;
-            const isLast = index === tabOrder.length - 1;
-            const canRemove = tabOrder.length > MIN_TABS;
+            const isLast = index === visibleTabOrder.length - 1;
+            const canRemove = visibleTabOrder.length > MIN_TABS;
 
             return (
               <View
@@ -203,13 +214,13 @@ export default function TabSettingsScreen() {
         {available.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeaderText}>AVAILABLE</Text>
+              <Text style={styles.sectionHeaderText}>{t("tabSettings.hidden")}</Text>
             </View>
 
             <View style={styles.card}>
               {available.map((tab, index) => {
                 const isLast = index === available.length - 1;
-                const canAdd = tabOrder.length < MAX_TABS;
+                const canAdd = visibleTabOrder.length < Math.min(MAX_TABS, visibleTabs.length);
 
                 return (
                   <View
@@ -240,14 +251,14 @@ export default function TabSettingsScreen() {
         <TouchableOpacity
           style={styles.resetButton}
           activeOpacity={0.7}
-          onPress={() => resetTabOrder()}
+          onPress={() => resetTabOrder(visibleTabKeys)}
         >
-          <Text style={styles.resetButtonText}>Reset to Default</Text>
+          <Text style={styles.resetButtonText}>{t("tabSettings.reset")}</Text>
         </TouchableOpacity>
 
         {/* Hint */}
         <Text style={styles.hintText}>
-          "More" tab always stays last
+          {t("tabSettings.description")}
         </Text>
       </ScrollView>
     </View>
