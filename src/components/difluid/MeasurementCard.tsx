@@ -2,22 +2,9 @@ import { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/colors";
+import { getAgtronDisplayStat } from "@/components/difluid/agtronDisplay";
+import { formatCoffeeTypeLabel } from "@/components/difluid/coffeeTypeLabel";
 import type { DiFluidMeasurement, DiFluidMeasurementFromApi } from "@/types/index";
-
-/* ------------------------------------------------------------------ */
-/*  Roast Label                                                        */
-/* ------------------------------------------------------------------ */
-
-function getAgtronLabel(agtron: number): string {
-  if (agtron < 35) return "Espresso";
-  if (agtron < 45) return "French";
-  if (agtron < 55) return "Full City";
-  if (agtron < 65) return "City";
-  if (agtron < 75) return "Dark";
-  if (agtron < 85) return "Medium";
-  if (agtron < 95) return "Cinnamon";
-  return "Light";
-}
 
 function getRoastStandardLabel(standard: number): string {
   return standard === 1 ? "SCAA" : "Common";
@@ -252,7 +239,7 @@ function ExpandedDetailFromApi({
             <DetailRow label="Agtron Mean" value={Number(measurement.agtron_number).toFixed(1)} />
           ) : null}
           {measurement.variance !== null ? (
-            <DetailRow label="Variance" value={Number(measurement.variance).toFixed(2)} />
+            <DetailRow label="Agtron Variance" value={Number(measurement.variance).toFixed(2)} />
           ) : null}
           {measurement.roast_standard !== null ? (
             <DetailRow label="Standard" value={getRoastStandardLabel(measurement.roast_standard)} />
@@ -358,7 +345,7 @@ function ExpandedDetailLocal({
             <DetailRow label="Agtron Mean" value={measurement.agtronNumber.toFixed(1)} />
           ) : null}
           {measurement.variance !== undefined ? (
-            <DetailRow label="Variance" value={measurement.variance.toFixed(2)} />
+            <DetailRow label="Agtron Variance" value={measurement.variance.toFixed(2)} />
           ) : null}
           {measurement.roastStandard !== undefined ? (
             <DetailRow label="Standard" value={getRoastStandardLabel(measurement.roastStandard)} />
@@ -406,6 +393,10 @@ interface Props {
 
 export function MeasurementCard({ measurement, compact }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const agtronStat = getAgtronDisplayStat({
+    agtronNumber: measurement.agtronNumber,
+    variance: measurement.variance,
+  });
 
   const hasDetails =
     measurement.bulkDensity !== undefined ||
@@ -421,8 +412,7 @@ export function MeasurementCard({ measurement, compact }: Props) {
       <View style={styles.header}>
         <View style={styles.coffeeBadge}>
           <Text style={styles.coffeeBadgeText}>
-            {measurement.coffeeType.charAt(0).toUpperCase() +
-              measurement.coffeeType.slice(1)}
+            {formatCoffeeTypeLabel(measurement.coffeeType)}
           </Text>
         </View>
         {measurement.syncedAt ? (
@@ -472,15 +462,14 @@ export function MeasurementCard({ measurement, compact }: Props) {
       </View>
 
       {/* Secondary stats */}
-      {(measurement.agtronNumber !== undefined ||
-        measurement.screenSizeGrade !== undefined) &&
+      {(agtronStat !== null || measurement.screenSizeGrade !== undefined) &&
       !compact ? (
         <View style={styles.statsRow}>
-          {measurement.agtronNumber !== undefined ? (
+          {agtronStat !== null ? (
             <StatCell
-              label="Agtron"
-              value={measurement.agtronNumber.toFixed(1)}
-              unit={getAgtronLabel(measurement.agtronNumber)}
+              label={agtronStat.label}
+              value={agtronStat.value}
+              unit={agtronStat.unit}
             />
           ) : null}
           {measurement.screenSizeGrade !== undefined ? (
@@ -528,6 +517,10 @@ export function MeasurementCardFromApi({
   onLinkPress?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const agtronStat = getAgtronDisplayStat({
+    agtronNumber: measurement.agtron_number,
+    variance: measurement.variance,
+  });
 
   const hasDetails =
     measurement.bulk_density !== null ||
@@ -543,8 +536,7 @@ export function MeasurementCardFromApi({
       <View style={styles.header}>
         <View style={styles.coffeeBadge}>
           <Text style={styles.coffeeBadgeText}>
-            {measurement.coffee_type.charAt(0).toUpperCase() +
-              measurement.coffee_type.slice(1)}
+            {formatCoffeeTypeLabel(measurement.coffee_type)}
           </Text>
         </View>
         {measurement.measurable_type_short ? (
@@ -596,14 +588,13 @@ export function MeasurementCardFromApi({
       </View>
 
       {/* Secondary stats */}
-      {measurement.agtron_number !== null ||
-      measurement.screen_size_grade !== null ? (
+      {agtronStat !== null || measurement.screen_size_grade !== null ? (
         <View style={styles.statsRow}>
-          {measurement.agtron_number !== null ? (
+          {agtronStat !== null ? (
             <StatCell
-              label="Agtron"
-              value={Number(measurement.agtron_number).toFixed(1)}
-              unit={getAgtronLabel(Number(measurement.agtron_number))}
+              label={agtronStat.label}
+              value={agtronStat.value}
+              unit={agtronStat.unit}
             />
           ) : null}
           {measurement.screen_size_grade !== null ? (

@@ -16,26 +16,12 @@ import { GiesenLogo } from "@/components/GiesenLogo";
 import { useDiFluidStore } from "@/stores/difluidStore";
 import { ConnectionBadge } from "@/components/difluid/ConnectionBadge";
 import { CoffeeTypeSelector } from "@/components/difluid/CoffeeTypeSelector";
+import { getAgtronDisplayStat } from "@/components/difluid/agtronDisplay";
 import { MeasurementCardFromApi } from "@/components/difluid/MeasurementCard";
 import { getAllMeasurements } from "@/api/difluid";
 import type { DiFluidCoffeeType, DiFluidMeasurementFromApi } from "@/types/index";
 import { useTranslation } from "react-i18next";
 import { useRouteAccessGuard } from "@/hooks/useRouteAccessGuard";
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-function getAgtronLabel(agtron: number): string {
-  if (agtron < 35) return "Espresso";
-  if (agtron < 45) return "French";
-  if (agtron < 55) return "Full City";
-  if (agtron < 65) return "City";
-  if (agtron < 75) return "Dark";
-  if (agtron < 85) return "Medium";
-  if (agtron < 95) return "Cinnamon";
-  return "Light";
-}
 
 /* ------------------------------------------------------------------ */
 /*  Main Screen                                                        */
@@ -63,6 +49,10 @@ export default function DiFluidMeasureScreen() {
 
   const [coffeeType, setCoffeeType] = useState<DiFluidCoffeeType>("auto");
   const [apiMeasurements, setApiMeasurements] = useState<DiFluidMeasurementFromApi[]>([]);
+  const agtronStat = getAgtronDisplayStat({
+    agtronNumber: currentMeasurement?.agtronNumber,
+    variance: currentMeasurement?.variance,
+  });
 
   const isConnected = connectionStatus === "connected" || connectionStatus === "measuring";
   const isMeasuring = connectionStatus === "measuring";
@@ -275,15 +265,13 @@ export default function DiFluidMeasureScreen() {
                   <Text style={styles.resultStatUnit}>g/L</Text>
                 </View>
               ) : null}
-              {currentMeasurement.agtronNumber !== undefined ? (
+              {agtronStat !== null ? (
                 <View style={styles.resultStat}>
-                  <Text style={styles.resultStatLabel}>Agtron</Text>
+                  <Text style={styles.resultStatLabel}>{agtronStat.label}</Text>
                   <Text style={styles.resultStatValue}>
-                    {currentMeasurement.agtronNumber.toFixed(1)}
+                    {agtronStat.value}
                   </Text>
-                  <Text style={styles.resultStatUnit}>
-                    {getAgtronLabel(currentMeasurement.agtronNumber)}
-                  </Text>
+                  <Text style={styles.resultStatUnit}>{agtronStat.unit}</Text>
                 </View>
               ) : null}
               {currentMeasurement.bulkDensity !== undefined ? (

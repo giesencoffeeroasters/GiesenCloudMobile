@@ -21,10 +21,12 @@ import { getAllMeasurements } from "@/api/difluid";
 import { linkMeasurement } from "@/api/difluid";
 import type { DiFluidMeasurementFromApi } from "@/types/index";
 import { useTranslation } from "react-i18next";
+import { goBackOrReplace } from "@/lib/navigation";
 
 type FilterType = "all" | "linked" | "unlinked";
 
 export default function MeasurementsScreen() {
+  const fallbackRoute = "/(tabs)/quality";
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   useRouteAccessGuard({ requiresFeatures: ["quality"] });
@@ -97,7 +99,7 @@ export default function MeasurementsScreen() {
             <TouchableOpacity
               style={styles.backButton}
               activeOpacity={0.7}
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, fallbackRoute)}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path

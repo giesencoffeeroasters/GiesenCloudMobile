@@ -13,6 +13,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Circle, Line } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import apiClient from "@/api/client";
+import {
+  formatLinkPickerMeta,
+  formatLinkPickerSecondary,
+  getLinkPickerTitle,
+} from "@/components/difluid/linkPickerFormat";
 
 interface LinkPickerModalProps {
   visible: boolean;
@@ -28,6 +33,12 @@ interface SearchItem {
   id: string | number;
   name?: string;
   profile_name?: string;
+  bean_type?: string | null;
+  device_name?: string;
+  start_weight?: number | null;
+  duration?: number | null;
+  weight_change?: number | null;
+  cupping_score?: number | null;
   created_at?: string;
   roasted_at?: string;
 }
@@ -112,7 +123,7 @@ export function LinkPickerModal({
   }, [visible, tab]);
 
   function getDisplayName(item: SearchItem): string {
-    return item.name ?? item.profile_name ?? `#${item.id}`;
+    return getLinkPickerTitle(item);
   }
 
   function handleSelect(item: SearchItem) {
@@ -220,9 +231,13 @@ export function LinkPickerModal({
                     {getDisplayName(item)}
                   </Text>
                   <Text style={styles.itemMeta}>
-                    ID: {item.id}
-                    {formatDate(item) ? `  •  ${formatDate(item)}` : ""}
+                    {formatLinkPickerMeta(item)}
                   </Text>
+                  {formatLinkPickerSecondary(item) ? (
+                    <Text style={styles.itemSecondary} numberOfLines={2}>
+                      {formatLinkPickerSecondary(item)}
+                    </Text>
+                  ) : null}
                 </View>
                 <Svg
                   width={16}
@@ -365,6 +380,11 @@ const styles = StyleSheet.create({
     fontFamily: "JetBrainsMono-Regular",
     fontSize: 11,
     color: Colors.textTertiary,
+  },
+  itemSecondary: {
+    fontFamily: "DMSans-Regular",
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
   emptyContainer: {
     paddingTop: 40,
