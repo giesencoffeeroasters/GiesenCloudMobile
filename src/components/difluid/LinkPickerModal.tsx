@@ -16,6 +16,8 @@ import apiClient from "@/api/client";
 import {
   formatLinkPickerMeta,
   formatLinkPickerSecondary,
+  getLinkPickerScoreBadge,
+  getLinkPickerStats,
   getLinkPickerTitle,
 } from "@/components/difluid/linkPickerFormat";
 
@@ -130,16 +132,6 @@ export function LinkPickerModal({
     onSelect({ type: tab, id: item.id, name: getDisplayName(item) });
   }
 
-  function formatDate(item: SearchItem): string {
-    const dateStr = item.roasted_at ?? item.created_at;
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  }
-
   return (
     <Modal
       visible={visible}
@@ -221,37 +213,67 @@ export function LinkPickerModal({
               { paddingBottom: insets.bottom + 20 },
             ]}
             renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.itemRow}
-                activeOpacity={0.6}
-                onPress={() => handleSelect(item)}
-              >
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName} numberOfLines={1}>
-                    {getDisplayName(item)}
-                  </Text>
-                  <Text style={styles.itemMeta}>
-                    {formatLinkPickerMeta(item)}
-                  </Text>
-                  {formatLinkPickerSecondary(item) ? (
-                    <Text style={styles.itemSecondary} numberOfLines={2}>
-                      {formatLinkPickerSecondary(item)}
-                    </Text>
-                  ) : null}
-                </View>
-                <Svg
-                  width={16}
-                  height={16}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={Colors.textTertiary}
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <Path d="M9 18l6-6-6-6" />
-                </Svg>
-              </TouchableOpacity>
+              (() => {
+                const scoreBadge = getLinkPickerScoreBadge(item);
+                const secondary = formatLinkPickerSecondary(item);
+                const stats = getLinkPickerStats(item);
+
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.itemRow,
+                      tab === "roast" ? styles.roastItemRow : undefined,
+                    ]}
+                    activeOpacity={0.6}
+                    onPress={() => handleSelect(item)}
+                  >
+                    <View style={styles.itemInfo}>
+                      <View style={styles.itemTopRow}>
+                        <Text style={styles.itemName} numberOfLines={1}>
+                          {getDisplayName(item)}
+                        </Text>
+                        {tab === "roast" && scoreBadge ? (
+                          <View style={styles.scoreBadge}>
+                            <Text style={styles.scoreBadgeText}>
+                              {scoreBadge}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={styles.itemMeta}>
+                        {formatLinkPickerMeta(item)}
+                      </Text>
+                      {tab !== "roast" && secondary ? (
+                        <Text style={styles.itemSecondary} numberOfLines={2}>
+                          {secondary}
+                        </Text>
+                      ) : null}
+                      {tab === "roast" && stats.length > 0 ? (
+                        <View style={styles.statRow}>
+                          {stats.map((stat) => (
+                            <View key={stat.label} style={styles.statBox}>
+                              <Text style={styles.statLabel}>{stat.label}</Text>
+                              <Text style={styles.statValue}>{stat.value}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
+                    </View>
+                    <Svg
+                      width={16}
+                      height={16}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={Colors.textTertiary}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <Path d="M9 18l6-6-6-6" />
+                    </Svg>
+                  </TouchableOpacity>
+                );
+              })()
             )}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
@@ -367,11 +389,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
+  roastItemRow: {
+    alignItems: "flex-start",
+    paddingVertical: 16,
+  },
   itemInfo: {
     flex: 1,
-    gap: 2,
+    gap: 6,
+  },
+  itemTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
   },
   itemName: {
+    flex: 1,
     fontFamily: "DMSans-Medium",
     fontSize: 14,
     color: Colors.text,
@@ -385,6 +417,44 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Regular",
     fontSize: 12,
     color: Colors.textSecondary,
+  },
+  scoreBadge: {
+    minWidth: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: Colors.skyBg,
+    alignItems: "center",
+  },
+  scoreBadgeText: {
+    fontFamily: "JetBrainsMono-Bold",
+    fontSize: 11,
+    color: Colors.sky,
+  },
+  statRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 2,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 2,
+  },
+  statLabel: {
+    fontFamily: "DMSans-Medium",
+    fontSize: 10,
+    color: Colors.textTertiary,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  statValue: {
+    fontFamily: "JetBrainsMono-Bold",
+    fontSize: 12,
+    color: Colors.text,
   },
   emptyContainer: {
     paddingTop: 40,
